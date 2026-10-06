@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     scheduler_mode: str = "internal"
     min_watch_interval_minutes: int = 15
 
+    # Panel
+    panel_token: str = "arac-secret-123"
+    panel_port: int = 8990
+
     # Toplama güvenliği (CLAUDE.md kural 1-2)
     block_backoff_minutes: list[int] = [30, 120, 360]
     watch_pause_after_blocks: int = 3

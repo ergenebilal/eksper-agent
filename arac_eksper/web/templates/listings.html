@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-white">İlanlar</h2>
+    <div class="flex gap-2">
+        <a href="/search" class="btn btn-primary text-sm flex items-center gap-2">
+            <span>🔍 Yeni Arama</span>
+        </a>
+    </div>
+</div>
+
+<div class="card overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="text-slate-400 text-xs uppercase border-b border-slate-700">
+                <th class="py-3 px-4 font-medium">Etiket</th>
+                <th class="py-3 px-4 font-medium">Model / Seri</th>
+                <th class="py-3 px-4 font-medium">Fiyat</th>
+                <th class="py-3 px-4 font-medium">Yıl / KM</th>
+                <th class="py-3 px-4 font-medium">Skor</th>
+                <th class="py-3 px-4 font-medium text-right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody class="text-sm divide-y divide-slate-700/50">
+            {% for v in verdicts %}
+            <tr class="hover:bg-slate-800/50 transition-colors">
+                <td class="py-3 px-4">
+                    {% if v.etiket == 'ALINIR' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/40 text-green-400 border border-green-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ALINIR
+                        </span>
+                    {% elif v.etiket == 'DUSUNULEBILIR' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-900/40 text-yellow-400 border border-yellow-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> DÜŞÜNÜLEBİLİR
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/40 text-red-400 border border-red-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> ALINMAZ
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="py-3 px-4">
+                    <div class="font-medium text-slate-200">{{ v.listing.marka }} {{ v.listing.model }}</div>
+                    <div class="text-xs text-slate-500">{{ v.listing.seri or 'Seri Belirtilmemiş' }}</div>
+                </td>
+                <td class="py-3 px-4 text-slate-300 font-medium">
+                    {{ "{:,}".format(v.listing.fiyat).replace(',', '.') }} TL
+                </td>
+                <td class="py-3 px-4 text-slate-400">
+                    {{ v.listing.yil }} <span class="text-slate-600 px-1">•</span> {{ "{:,}".format(v.listing.km).replace(',', '.') }} km
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold {% if v.guven_skoru >= 8.0 %}text-green-400{% elif v.guven_skoru >= 5.0 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                            {{ v.guven_skoru }}/10
+                        </span>
+                        <span class="text-[10px] text-slate-500" title="Veri Tamlığı">
+                            %{{ (v.veri_tamlik * 100)|int }}
+                        </span>
+                    </div>
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <a href="/listings/{{ v.ilan_no }}" class="text-blue-400 hover:text-blue-300 text-sm font-medium">Detay &rarr;</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="py-8 text-center text-slate-500">
+                    <div class="text-4xl mb-2">🚗</div>
+                    <p>Henüz değerlendirilmiş ilan bulunmuyor.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
