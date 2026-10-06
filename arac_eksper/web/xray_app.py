@@ -17,11 +17,13 @@ async def lifespan(app: FastAPI):
     if problem:
         raise RuntimeError(problem)      # token yoksa/zayıfsa sunucu ayağa kalkmaz
 
-    async def temizlik():                # saklama süresi dolan teknik kayıtlar: açılışta ve günde bir
+    async def temizlik():                # saklama süresi dolan teknik kayıtlar: açılıştan 1 dk sonra ve günde bir
         while True:
-            with contextlib.suppress(Exception):
-                await asyncio.to_thread(accounts.prune)
-            await asyncio.sleep(86400)
+            await asyncio.sleep(60)
+            if accounts._path().exists():   # sahip anahtarıyla çalışan kurulumda hesap deposu hiç oluşturulmaz
+                with contextlib.suppress(Exception):
+                    await asyncio.to_thread(accounts.prune)
+            await asyncio.sleep(86400 - 60)
 
     task = asyncio.create_task(temizlik())
     yield
