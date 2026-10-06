@@ -1,0 +1,3 @@
+# Kabuk betikleri Windows checkout'unda da LF kalsın (bash CRLF ile bozulur); .cmd CRLF
+*.sh text eol=lf
+*.cmd text eol=crlf
