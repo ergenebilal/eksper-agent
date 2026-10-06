@@ -1,0 +1,51 @@
+# sinyaller.yaml — R4.1 / R4.2 ifade listeleri (satıcı DAVRANIŞI değil, ilan METNİ sinyalleri).
+# Dil kılavuzu (OtoXray_Arge.md §7): kişi hakkında hüküm yok. Çıktı etiketleri "Hızlı satış motivasyonu",
+# "Yüksek indirim ivmesi", "Ticari satıcı sinyali". Eşikler ve teklif etkisi rules.yaml → sinyal / teklif.
+# Eşleşme: Türkçe harf katlamalı, TAM kelime ("acil" ≠ "açılır"); sonu * olan kelime önek eşleşir ("tasinacag*"); ifadenin hemen ardından olumsuzluk ("acil değil",
+# "acelemiz yok") gelirse sayılmaz. Her bulgu ilan metninden birebir alıntı taşır.
+
+aciliyet:
+  - {ifade: "acil", puan: 2, etiket: "Acil satış ifadesi"}
+  - {ifade: "acilen", puan: 2, etiket: "Acil satış ifadesi"}
+  - {ifade: "acele", puan: 2, etiket: "Acele satış ifadesi"}
+  - {ifade: "ihtiyactan", puan: 2, etiket: "İhtiyaç nedeniyle satış"}
+  - {ifade: "ihtiyac nedeniyle", puan: 2, etiket: "İhtiyaç nedeniyle satış"}
+  - {ifade: "nakit ihtiyac*", puan: 2, etiket: "Nakit ihtiyacı"}
+  - {ifade: "yurt disina", puan: 2, etiket: "Yurt dışına taşınma"}
+  - {ifade: "yurtdisina", puan: 2, etiket: "Yurt dışına taşınma"}
+  - {ifade: "tasindigim icin", puan: 1, etiket: "Taşınma nedeniyle satış"}
+  - {ifade: "tasinacag*", puan: 1, etiket: "Taşınma nedeniyle satış"}
+  - {ifade: "ev alacag*", puan: 1, etiket: "Ev alımı nedeniyle satış"}
+  - {ifade: "ev aldig*", puan: 1, etiket: "Ev alımı nedeniyle satış"}
+  - {ifade: "ev alim*", puan: 1, etiket: "Ev alımı nedeniyle satış"}
+  - {ifade: "askere", puan: 1, etiket: "Askerlik nedeniyle satış"}
+  - {ifade: "dugun*", puan: 1, etiket: "Düğün nedeniyle satış"}
+  - {ifade: "bugunluk*", puan: 2, etiket: "Süreli fiyat"}
+  - {ifade: "bu haftaya ozel", puan: 2, etiket: "Süreli fiyat"}
+  - {ifade: "hafta sonuna kadar", puan: 1, etiket: "Süreli fiyat"}
+  - {ifade: "yeni arac aldig*", puan: 1, etiket: "Araç değişikliği"}
+  - {ifade: "arac degisikligi*", puan: 1, etiket: "Araç değişikliği"}
+  - {ifade: "zararina", puan: 1, etiket: "Zararına satış ifadesi"}
+  - {ifade: "pazarlik payi var*", puan: 1, etiket: "Pazarlığa açık"}
+  - {ifade: "makul teklif*", puan: 1, etiket: "Pazarlığa açık"}
+
+ticari:
+  - "galerimiz*"
+  - "firmamiz*"
+  - "sirketimiz*"
+  - "showroom*"
+  - "kredi imkan*"
+  - "krediye uygun*"
+  - "kredili satis*"
+  - "senet*"
+  - "taksit*"
+  - "kredi kartina*"
+  - "takas degerlendiril*"
+  - "takas kabul*"
+  - "fatura kesil*"
+  - "araclarimiz*"
+  - "stoklarimiz*"
+  - "musterilerimiz*"
+  - "ofisimiz*"
+  - "noter satisi bizden"
+  - "plakali teslim"

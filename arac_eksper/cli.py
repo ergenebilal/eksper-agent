@@ -609,6 +609,11 @@ def kb_kontrol():
     errs += [f"masraf_kb: {e}" for e in m_err]
     for w in m_warn:
         say(f"  UYARI: masraf_kb: {w}")
+    from arac_eksper.analysis import likidite
+    l_err, l_warn = likidite.validate()
+    tum_l, onayli_l = likidite.kurallar(include_unapproved=True), likidite.kurallar()
+    say(f"likidite_kb: {len(tum_l)} kural · onaylı {len(onayli_l)} / taslak {len(tum_l) - len(onayli_l)}")
+    errs += [f"likidite_kb: {e}" for e in l_err]
     for e in errs:
         say(f"  HATA: {e}")
     say("Şema geçerli." if not errs else f"{len(errs)} hata")

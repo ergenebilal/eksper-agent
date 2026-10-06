@@ -150,3 +150,12 @@ button.mini{padding:6px 10px;font-size:12px;border-radius:10px}
 .order{padding-left:20px}.order li::marker{font:600 13px var(--display);color:var(--purple)}
 .cmp-row{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px dashed var(--line)}
 .cmp-row b{font-weight:500;font-size:13px}
+
+/* R4 sinyaller */
+ul.sig{margin:.4rem 0 0;padding-left:1.1rem}
+ul.sig li{margin:.25rem 0}
+ul.sig q{display:block;color:var(--muted)}
+.sig-yuksek .num,.sig-yuksek span:last-child{color:#f59e0b}
+.sig-orta span:last-child{color:#eab308}
+#ticari{margin-top:.6rem}
+#ticari q{display:block;margin-top:.2rem}

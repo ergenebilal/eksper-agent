@@ -235,6 +235,7 @@ function previewView(st, tabId) {
   }
   out.push(xrayCard(q, tabId), marketCard(q, st.meta));
   { const cc = costCard(q.gercek_maliyet, st.meta); if (cc) out.push(cc); }
+  { const sc = signalsCard(q.sinyaller); if (sc) out.push(sc); }
   const oc = offerCard(q, true); if (oc) out.push(oc);
   const rc = rehberCard(); if (rc) out.push(rc);
   return out;
@@ -345,6 +346,34 @@ function rangeBar(p, fiyat) {
   return wrap;
 }
 
+function signalsCard(sg) {
+  // Satıcı ve piyasa sinyalleri (R4): nesnel dil, alıntılı ya da veriye dayalı; kişi hakkında hüküm yok.
+  if (!sg) return null;
+  const s = sg.satis, t = sg.ticari, lq = sg.likidite;
+  const hasS = s && s.nedenler && s.nedenler.length, hasL = lq && (lq.bant || (lq.notlar && lq.notlar.length));
+  if (!hasS && !t && !hasL) return null;
+  const c = card('Satış ve piyasa sinyalleri'); c.id = 'signals';
+  if (hasS) {
+    const r = row('Hızlı satış motivasyonu', { dusuk: 'Düşük', orta: 'Orta', yuksek: 'Yüksek' }[s.bant]); r.classList.add('sig-' + s.bant); c.append(r);
+    if (s.indirim_ivmesi) c.append(el('span', 'tag', 'Yüksek indirim ivmesi'));
+    const ul = el('ul', 'sig');
+    s.nedenler.forEach((n) => { const li = el('li', '', n.etiket); if (n.alinti) li.append(el('q', 'small', n.alinti)); ul.append(li); });
+    c.append(ul);
+  }
+  if (t) {
+    const b = el('div', t.durum === 'sinyal' ? 'warnbox small' : 'small mute'); b.id = 'ticari';
+    b.append(el('b', '', t.durum === 'sinyal' ? 'Ticari satıcı sinyali' : 'Ticari satış'), el('p', 'small', t.mesaj));
+    (t.alintilar || []).slice(0, 3).forEach((a) => b.append(el('q', 'small', a)));
+    c.append(b);
+  }
+  if (hasL) {
+    if (lq.bant) c.append(row('Piyasa hızı', { hizli: 'Hızlı', orta: 'Orta', yavas: 'Yavaş' }[lq.bant]), el('p', 'small mute', lq.gerekce));
+    (lq.notlar || []).forEach((n) => c.append(el('p', 'small mute', n)));
+  }
+  c.append(el('p', 'disc', 'Sinyaller ilan metni ve ilan verisinden çıkarılır; satıcı hakkında yargı değildir. ' + ((lq && lq.uyari) || '')));
+  return c;
+}
+
 function costCard(gm, meta) {
   // Tahmini gerçek maliyet: ilanın söylediği yapılacak masraflar (alıntılı) + km'si gelmiş bakım (olası). Tutar ARALIK.
   if (!gm || !gm.kalemler || !gm.kalemler.length) return null;
@@ -440,6 +469,7 @@ function renderOk(st, tabId) {
 
   out.push(marketCard(d, st.meta));
   { const cc = costCard(d.gercek_maliyet, st.meta); if (cc) out.push(cc); }
+  { const sc = signalsCard(d.sinyaller); if (sc) out.push(sc); }
 
   // 4) Gizli kusur röntgeni
   const x = card('Gizli kusur röntgeni');

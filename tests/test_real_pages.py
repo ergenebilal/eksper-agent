@@ -1,6 +1,7 @@
 """R0.2: eklentinin gerçek okuma kodu (extract-detail.js) GERÇEK ilan sayfalarında (tests/fixtures/real, kişisel veriden
 arındırılmış) doğru okuyor mu? Beklenen değerler sayfadan Python ile BAĞIMSIZ okunur (dt/dd + hasar şeması sınıfları).
 Siteye istek atılmaz: sayfalar yerelden verilir. Chromium gerekir."""
+import os
 import pathlib
 import re
 
@@ -192,3 +193,21 @@ def test_listing_date_seller_type_and_price_change_flag(extracted):
         flag = soup.select_one("input#priceHistoryFlag")
         assert p["fiyat_degisti"] is (flag.get("value") == "true"), f.name
     assert extracted["1343974334"]["p"]["ilan_tarihi"] == "2026-10-04"
+
+
+def test_real_listings_seller_signals(extracted, monkeypatch):
+    """R4: gerçek ilanlarda sinyal alıntıları birebir; sinyal dili kılavuza uygun. Döküm elle incelendi (OtoXray_Arge.md §10)."""
+    from arac_eksper.analysis import sinyaller
+    yasak = re.compile(r"panik|fırsat|kelepir|dolandırıcı|sahtekar|alsatçı|çaresiz", re.I)
+    for no, r in extracted.items():
+        p = r["p"]
+        text = p["baslik"] + "\n" + p["aciklama"]
+        s = sinyaller.satis_motivasyonu(text)
+        t = sinyaller.ticari_dil(text, p.get("kimden"))
+        for n in s["nedenler"]:
+            assert n["alinti"] is None or n["alinti"] in text, no
+        for a in (t or {}).get("alintilar", []):
+            assert a in text, no
+        assert not yasak.search(s["ad"] + " " + ((t or {}).get("mesaj") or "")), no
+        if os.environ.get("SINYAL_DOKUM"):
+            print(no, p.get("kimden"), s["bant"], [(n["etiket"], n["alinti"]) for n in s["nedenler"]], t)

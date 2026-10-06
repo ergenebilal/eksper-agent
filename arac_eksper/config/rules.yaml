@@ -81,6 +81,17 @@ rules:
     pazarlik_dusuk_skor: 0.04     # skor < pazarlik_skor_esik
     pazarlik_yuksek_skor: 0.02
     pazarlik_skor_esik: 7.0
+    aciliyet_ek_orta: 0.01        # R4.1: satış motivasyonu ortaysa açılış teklifi ayrıca bu kadar aşağı
+    aciliyet_ek_yuksek: 0.02
+
+  sinyal:                         # R4.1/R4.2 (7 Ekim 2026): satış motivasyonu bandı ve ticari dil sinyali
+    aciliyet_orta: 2              # puan >= bu: orta
+    aciliyet_yuksek: 4            # puan >= bu: yüksek
+    ilan_gun_orta: 30             # ilan bu kadar gündür yayında: +1
+    ilan_gun_uzun: 60             # +2 (orta yerine)
+    fiyat_degisti_puan: 1         # sitenin "fiyat değişti" bayrağı
+    gorulen_dusus_puan: 1         # kullanıcının kendi gördüğü fiyat düşüşü
+    ticari_min_ifade: 2           # en az bu kadar FARKLI ticari ifade: sinyal
 
   rozet:                          # yalnızca liste rozeti (GÖRSEL); karar etiketini etkilemez
     pahali_esik: 0.05             # sapma bunun üstündeyse "pahalı" rozeti

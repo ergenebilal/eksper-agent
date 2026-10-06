@@ -158,6 +158,14 @@ async function noteListing(tabId, p, pageUrl, data) {
   await saveHavuz(h);
 }
 
+/** Kullanıcının KENDİ gördüğü en yüksek fiyattan düşüş (yalnız havuzdaki ilan; siteye istek yok) */
+async function gorulenDusus(p) {
+  const it = (await loadHavuz()).items[p.ilan_no];
+  const f = it ? it.gorulen.map((g) => g.f).filter((x) => typeof x === 'number') : [];
+  const d = f.length ? Math.max(...f) - p.fiyat : 0;
+  return d > 0 ? { gorulen_dusus: d } : {};
+}
+
 // ------------------------------------------------------------------ mesajlar
 async function handle(msg, sender) {
   if (sender.id !== chrome.runtime.id) return { ok: false, code: 'forbidden' };
@@ -184,7 +192,7 @@ async function handle(msg, sender) {
       const since = Date.now();
       await setResult(tabId, { status: 'loading', meta, since });
       const emsal = group && mk.groups[group] ? nearby(toComps(mk.groups[group]), p.yil, p.km) : [];
-      const body = { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) };
+      const body = { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}), ...(await gorulenDusus(p)) };
       // ÖN HESAP (LLM'siz, anında): piyasa + yapıdan elenme nedenleri + ön teklif; LLM röntgeni beklenirken gösterilir.
       let finished = false;
       api('/api/v1/quick', { body }).then(async (q) => {
@@ -226,7 +234,7 @@ async function handle(msg, sender) {
       }
       await noteListing(tabId, p, msg.pageUrl, hit && hit.data);
       const emsal = group && mk.groups[group] ? nearby(toComps(mk.groups[group]), p.yil, p.km) : [];
-      const q = await api('/api/v1/quick', { body: { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) } });
+      const q = await api('/api/v1/quick', { body: { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}), ...(await gorulenDusus(p)) } });
       await setResult(tabId, q.ok ? { status: 'preview', meta, quick: q.data }
                                   : { status: 'error', meta, code: q.code, message: q.message });
       return q.ok ? { ok: true, preview: true, data: q.data } : q;

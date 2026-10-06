@@ -15,7 +15,8 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
-from arac_eksper.analysis import checklist, description_llm, market_calc, masraf, offer as offer_calc, rehber, rules_engine
+from arac_eksper.analysis import (checklist, description_llm, market_calc, masraf, offer as offer_calc, rehber, rules_engine,
+                                  likidite, sinyaller)
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.config.settings import settings
 from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
@@ -71,6 +72,7 @@ class AnalyzeRequest(BaseModel):
     ilan_tarihi: date | None = None                       # sayfadaki "İlan Tarihi"
     kimden: str | None = Field(None, max_length=30)       # satıcı türü: bireysel / galeri (ilan niteliği, kişi değil)
     fiyat_degisti: bool | None = None                     # sitenin fiyat değişim bayrağı
+    gorulen_dusus: int | None = Field(None, ge=0, le=500_000_000)   # kullanıcının KENDİ gördüğü fiyat düşüşü (havuz)
     max_butce: int | None = Field(None, ge=1, le=500_000_000)
     emsal: list[Comp] = Field(default_factory=list, max_length=300)
 
@@ -167,6 +169,16 @@ def _detail(req: AnalyzeRequest) -> ListingDetail:
         aciklama=mask_phones(req.aciklama), fetched_at=datetime.now(timezone.utc))
 
 
+def _sinyaller(req: AnalyzeRequest, detail: ListingDetail) -> dict:
+    """R4.1/R4.2: satış motivasyonu bandı + ticari dil sinyali (LLM'siz, alıntılı; hak harcamaz)."""
+    text = f"{detail.baslik}\n{detail.aciklama}"
+    ayni_seri = sum(1 for c in req.emsal if (c.seri or "").lower() == (req.seri or "").lower()) if req.seri else None
+    return {"satis": sinyaller.satis_motivasyonu(text, req.ilan_tarihi, req.fiyat_degisti, req.gorulen_dusus or 0),
+            "ticari": sinyaller.ticari_dil(text, req.kimden),
+            "likidite": likidite.likidite(req.model_dump(include={"marka", "seri", "yakit", "vites", "kasa_tipi",
+                                                                  "motor_hacmi", "yil"}), ayni_seri, req.ilan_tarihi)}
+
+
 def _pending(req: AnalyzeRequest) -> dict:
     return {"ilan_no": req.ilan_no, "beklemede": True, "etiket": None, "skor": 0.0, "veri_tamlik": 0.0,
             "hard_fails": [], "artilar": [], "eksiler": ["LLM analizi bekliyor (havuza erişilemedi)"], "trace": [],
@@ -202,12 +214,14 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
     hard = rules_engine.evaluate_hard_fails(detail, empty, stats, rules, req.max_butce)
     pending = Verdict(ilan_no=req.ilan_no, etiket="DUSUNULEBILIR", guven_skoru=0.0, veri_tamlik=0.0, piyasa=stats)
     gm = masraf.gercek_maliyet(detail)
-    b = None if hard else masraf.teklife_uygula(offer_calc.breakdown(detail, empty, pending, allow_no_market=True), gm)
+    sg = _sinyaller(req, detail)
+    b = None if hard else sinyaller.teklife_uygula(
+        masraf.teklife_uygula(offer_calc.breakdown(detail, empty, pending, allow_no_market=True), gm), sg["satis"])
     return {"ilan_no": req.ilan_no, "on_hesap": True, "elenme_nedenleri": hard, "gercek_maliyet": gm,
             "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                        "min_emsal": rules["etiket"]["min_emsal"]},
             "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER,
-            "kota": _kota(user), "tekrar_ucretsiz": tekrar, "sema_uyarisi": sema_uyari}
+            "kota": _kota(user), "tekrar_ucretsiz": tekrar, "sema_uyarisi": sema_uyari, "sinyaller": sg}
 
 
 @router.post("/analyze")
@@ -235,7 +249,12 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
     # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
     gm = masraf.gercek_maliyet(detail)
-    b = masraf.teklife_uygula(offer_calc.breakdown(detail, findings, v, allow_no_market=True), gm)
+    sg = _sinyaller(req, detail)
+    b = sinyaller.teklife_uygula(masraf.teklife_uygula(offer_calc.breakdown(detail, findings, v, allow_no_market=True), gm),
+                                 sg["satis"])
+    q = sinyaller.soru(sg["ticari"])
+    if q:
+        v.soru_carsafi = sorted(v.soru_carsafi + [q], key=lambda x: x["oncelik"])[:10]
     if b:
         v.tavsiye_teklif, v.ust_sinir = b["acilis"], b["ust_sinir"]
     kanitlar, vurgu = _kanitlar(findings)
@@ -245,7 +264,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         "trace": v.trace if not user["id"] else [],     # kural ağırlıkları yalnız sahibe: davetliden kopyalanamasın
         "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                    "min_emsal": load_rules()["etiket"]["min_emsal"]},
-        "teklif": b, "gercek_maliyet": gm,
+        "teklif": b, "gercek_maliyet": gm, "sinyaller": sg,
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
         "ekspertiz": v.ekspertiz_bolumleri, "soru_carsafi": v.soru_carsafi, "soru_metni": checklist.soru_metni(v.soru_carsafi),
