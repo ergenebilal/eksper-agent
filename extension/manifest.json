@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Araç Eksper",
+  "version": "0.1.0",
+  "description": "Sahibinden ilanlarını ekspertiz öncesi eler: gizli kusur röntgeni, piyasa kıyası ve teklif önerisi. 🟢 = ekspertize götürmeye değer.",
+  "minimum_chrome_version": "116",
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": { "service_worker": "background/service-worker.js" },
+  "side_panel": { "default_path": "sidepanel/sidepanel.html" },
+  "options_ui": { "page": "options/options.html", "open_in_tab": true },
+  "action": { "default_title": "Araç Eksper" },
+  "content_scripts": [
+    {
+      "matches": ["*://*.sahibinden.com/ilan/*"],
+      "js": ["lib/selectors.js", "lib/privacy.js", "lib/extract-detail.js", "lib/highlight.js", "content/detail.js"],
+      "css": ["content/detail.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.sahibinden.com/*"],
+      "exclude_matches": ["*://*.sahibinden.com/ilan/*"],
+      "js": ["lib/selectors.js", "lib/privacy.js", "lib/extract-search.js", "content/search.js"],
+      "css": ["content/search.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

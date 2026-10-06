@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Araç Eksper · Ayarlar</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main>
+  <h1>Araç Eksper · Ayarlar</h1>
+  <form id="f" autocomplete="off">
+    <label>Sunucu adresi
+      <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8990">
+      <small>Yalnızca yerel/Tailscale (http) ya da https. Varsayılan: <code>arac panel serve</code> adresi.</small>
+    </label>
+    <label>Erişim jetonu (EXTENSION_TOKEN)
+      <input id="token" type="password" required minlength="16" autocomplete="off">
+      <small>Sunucudaki <code>.env</code> içindeki <code>EXTENSION_TOKEN</code> ile aynı olmalı. Yalnızca bu tarayıcı profilinde saklanır.</small>
+    </label>
+    <label>En yüksek bütçem (TL, isteğe bağlı)
+      <input id="maxButce" type="number" min="0" step="1000">
+      <small>Doluysa bütçeyi aşan ilanlar elenir.</small>
+    </label>
+    <label class="chk"><input id="autoAnalyze" type="checkbox"> İlan sayfası açılınca otomatik analiz et (LLM kullanır)</label>
+    <label class="chk"><input id="autoBatch" type="checkbox"> Arama sayfasında fiyat rozetlerini otomatik göster</label>
+    <div class="actions">
+      <button type="submit" class="pri">Kaydet</button>
+      <button type="button" id="test">Bağlantıyı test et</button>
+    </div>
+    <p id="msg" role="status"></p>
+  </form>
+  <p class="note">Eklenti sahibinden’e hiçbir istek atmaz; yalnızca açtığınız sayfayı okur. Satıcı adı ve telefonu okunmaz.
+    🟢 = “ekspertize götürmeye değer”, “al” değil.</p>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

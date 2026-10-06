@@ -1,0 +1,5 @@
+/* Açıklama vurguları. Kırmızı = olumsuz bulgu, sarı = belirsiz ifade, yeşil = olumlu (satıcı beyanı). */
+mark.aracx-hl { border-radius: 3px; padding: 0 2px; color: inherit; }
+mark.aracx-bad  { background: #fee2e2; box-shadow: inset 0 -2px 0 #dc2626; }
+mark.aracx-warn { background: #fef9c3; box-shadow: inset 0 -2px 0 #ca8a04; }
+mark.aracx-good { background: #dcfce7; box-shadow: inset 0 -2px 0 #16a34a; }

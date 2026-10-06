@@ -1,0 +1,12 @@
+.aracx-bar { display: flex; gap: 12px; align-items: center; margin: 8px 0; font: 13px system-ui, sans-serif; }
+.aracx-btn { background: #0f172a; color: #f1f5f9; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+.aracx-btn:disabled { opacity: .6; cursor: progress; }
+.aracx-status { color: #64748b; }
+.aracx-badge { display: inline-block; margin: 4px 0 0 6px; padding: 1px 8px; border-radius: 999px; font: 600 11px system-ui, sans-serif;
+  border: 1px solid transparent; white-space: nowrap; }
+.aracx-avantajli { background: #dcfce7; color: #166534; border-color: #16a34a; }
+.aracx-piyasada { background: #f1f5f9; color: #334155; border-color: #94a3b8; }
+.aracx-pahali { background: #fee2e2; color: #991b1b; border-color: #dc2626; }
+.aracx-cok_ucuz_suphe { background: #ffedd5; color: #9a3412; border-color: #ea580c; }
+.aracx-emsal_yetersiz { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+.aracx-km { background: #fef9c3; color: #854d0e; border-color: #ca8a04; }

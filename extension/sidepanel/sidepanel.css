@@ -1,0 +1,28 @@
+:root{--bg:#f8fafc;--card:#fff;--line:#e2e8f0;--fg:#0f172a;--mute:#64748b;--ok:#16a34a;--warn:#ca8a04;--bad:#dc2626;--acc:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--line:#26334a;--fg:#e6edf7;--mute:#8da0bd;--ok:#4ade80;--warn:#facc15;--bad:#f87171;--acc:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.mute{color:var(--mute)}.small{font-size:12px}
+.verdict{display:flex;align-items:center;gap:12px;border-width:2px}
+.verdict .emo{font-size:30px;line-height:1}
+.verdict b{display:block;font-size:16px}
+.verdict .score{margin-left:auto;text-align:right;font-size:22px;font-weight:700}
+.v-ALINIR{border-color:var(--ok)}.v-DUSUNULEBILIR{border-color:var(--warn)}.v-ALINMAZ{border-color:var(--bad)}.v-WAIT{border-color:var(--mute)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.big{font-size:18px;font-weight:700}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:600}
+.pill.good{color:var(--ok);border-color:var(--ok)}.pill.bad{color:var(--bad);border-color:var(--bad)}.pill.warn{color:var(--warn);border-color:var(--warn)}
+ul{margin:4px 0;padding-left:18px}li{margin:2px 0}
+.ev{display:flex;gap:8px;margin:6px 0}.dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+.dot.olumsuz{background:var(--bad)}.dot.olumlu{background:var(--ok)}.dot.belirsiz{background:var(--warn)}
+q{font-style:italic}
+.alert{border:1px solid var(--bad);border-radius:12px;padding:10px;background:color-mix(in srgb,var(--bad) 10%,transparent)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;width:100%}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.offer{display:flex;flex-direction:column;gap:8px}
+.disc{font-size:11px;color:var(--mute)}
