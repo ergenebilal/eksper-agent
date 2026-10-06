@@ -1,4 +1,4 @@
-"""otoXray AI API'sinin ayrı uygulaması: yalnızca /api/v1 + /healthz. Panel, toplayıcı (collector), veritabanı ve
+"""CyberOto AI API'sinin ayrı uygulaması: yalnızca /api/v1 + /healthz. Panel, toplayıcı (collector), veritabanı ve
 zamanlayıcı kodlarını İÇE AKTARMAZ (testle denetlenir): sunucu tarafında ilan sayfası çeken hiçbir kod yoktur."""
 import asyncio
 import contextlib
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     task.cancel()
 
 
-app = FastAPI(title="otoXray AI API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="CyberOto AI API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 security.harden(app)
 app.include_router(api.router)
 app.include_router(api.auth_router)
@@ -61,10 +61,10 @@ def _fail_if_port_busy() -> None:
     except Exception:  # noqa: BLE001
         ok = False
     if ok:
-        print(f"otoXray sunucusu ZATEN çalışıyor ({url} sağlıklı). Yeniden başlatmak için çalıştığı pencerede Ctrl+C "
+        print(f"CyberOto sunucusu ZATEN çalışıyor ({url} sağlıklı). Yeniden başlatmak için çalıştığı pencerede Ctrl+C "
               "yapın ya da otoxray-yeniden-baslat.cmd dosyasını çalıştırın.", file=sys.stderr)
     else:
-        print(f"{settings.xray_port} portu başka bir program tarafından kullanılıyor (otoXray değil). "
+        print(f"{settings.xray_port} portu başka bir program tarafından kullanılıyor (CyberOto değil). "
               "XRAY_PORT ile başka bir port seçin.", file=sys.stderr)
     raise SystemExit(4)
 

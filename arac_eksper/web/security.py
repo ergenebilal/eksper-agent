@@ -171,7 +171,7 @@ SECURITY_HEADERS = {
 
 
 def harden(app) -> None:
-    """Host beyaz listesi (DNS rebinding) + güvenlik başlıkları. Panel ve otoXray API ortak kullanır."""
+    """Host beyaz listesi (DNS rebinding) + güvenlik başlıkları. Panel ve CyberOto API ortak kullanır."""
     from fastapi.responses import JSONResponse
 
     @app.middleware("http")

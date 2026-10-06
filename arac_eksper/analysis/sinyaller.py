@@ -1,6 +1,6 @@
 """Satıcı tarafı sinyaller (R4.1 + R4.2): satış motivasyonu bandı ve ticari dil sinyali. LLM'siz, kural tabanlı.
 
-Dil kılavuzu (OtoXray_Arge.md §7): kişi hakkında hüküm verilmez; yalnızca ilan METNİ ve ilan VERİSİ (yayın süresi, fiyat
+Dil kılavuzu (CyberOto_Arge.md §7): kişi hakkında hüküm verilmez; yalnızca ilan METNİ ve ilan VERİSİ (yayın süresi, fiyat
 değişimi) sinyal olarak raporlanır. 0-100 skor yok: üç bant (düşük / orta / yüksek), her neden alıntılı ya da veriye dayalı.
 İfade listeleri `config/sinyaller.yaml`, eşikler ve teklif etkisi `rules.yaml` (kural 7).
 """

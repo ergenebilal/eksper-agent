@@ -1,4 +1,4 @@
-"""Statik rehber içerikleri (config/alim_gunu.yaml): alım günü / noter kontrol listesi (OtoXray_Arge.md R1.3).
+"""Statik rehber içerikleri (config/alim_gunu.yaml): alım günü / noter kontrol listesi (CyberOto_Arge.md R1.3).
 Kural 10: yalnız `onayli: true` ise sunulur."""
 from pathlib import Path
 

@@ -2,7 +2,7 @@
 
 Kararlar KODDA verilir (açıklanabilir): fiyat/performans galibi, en riskli, pazarlık şansı en yüksek, ekspertiz sırası.
 LLM yalnız bu tablodan gerekçe metni yazar; tabloda olmayan SAYI ya da dil kılavuzu dışı kelime içeren cümle atılır
-(kural 4-5, OtoXray_Arge.md §7). LLM yoksa şablon metin kullanılır.
+(kural 4-5, CyberOto_Arge.md §7). LLM yoksa şablon metin kullanılır.
 """
 import re
 from datetime import date

@@ -1,4 +1,4 @@
-# otoXray — Ürün ve Ar-Ge Planı
+# CyberOto — Ürün ve Ar-Ge Planı
 
 _Son güncelleme: 6 Ekim 2026_
 
@@ -38,7 +38,7 @@ _Son güncelleme: 6 Ekim 2026_
 - [ ] **Senden:** sunucu `.env` dosyasına SMTP ayarları ve `ADMIN_EMAILS`; Chrome Web Store geliştirici hesabı
   ("Özel" görünürlük + güvenilir test kullanıcıları listesi = davetlilerin e-postaları), sonra `STORE_URL`.
 - [ ] Davetliler için kısa kullanım koşulları (tersine mühendislik ve toplu kullanım yasak) ve KVKK aydınlatma metni.
-- [ ] "otoXray" marka araştırması ve tescil başvurusu (TÜRKPATENT).
+- [ ] "CyberOto" marka araştırması ve tescil başvurusu (TÜRKPATENT).
 - [ ] 10–30 davetli; haftalık geri bildirim özeti.
 
 ### F2 — Beta öğrenimleri (geri bildirime göre)

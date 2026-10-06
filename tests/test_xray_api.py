@@ -1,4 +1,4 @@
-"""otoXray AI API: durumsuzluk, yetki, KVKK, sıfır depolama, yasal uyarı."""
+"""CyberOto AI API: durumsuzluk, yetki, KVKK, sıfır depolama, yasal uyarı."""
 import subprocess
 import sys
 
@@ -97,11 +97,11 @@ def test_no_brand_name_in_product_code():
     assert leaks == [], leaks
 
 
-def test_product_name_is_otoxray():
+def test_product_name_is_cyberoto():
     import json
     import pathlib
     m = json.loads((pathlib.Path(__file__).resolve().parent.parent / "extension/manifest.json").read_text("utf-8"))
-    assert m["name"] == "otoXray AI"
+    assert m["name"] == "CyberOto AI"
 
 
 # ------------------------------------------------------------------ yetki

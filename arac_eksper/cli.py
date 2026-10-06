@@ -400,7 +400,7 @@ def panel_serve():
     web.serve()
 
 
-xray_app_cli = typer.Typer(help="otoXray AI (Chrome eklentisi) API'si")
+xray_app_cli = typer.Typer(help="CyberOto AI (Chrome eklentisi) API'si")
 app.add_typer(xray_app_cli, name="xray")
 
 

@@ -65,7 +65,7 @@ rules:
     dar_km_payi: 0.30
     genis_km_payi: 0.50
     dar_min_n: 8                  # bunun altında bir sonraki aşamaya genişletilir
-    min_km_bandi: 10000           # YENİ (6 Ekim 2026, eklenti): km bandı en az ±bu kadar (km=0 araçta emsal bandı sıfıra düşmesin). Yalnızca durumsuz otoXray hesabında kullanılır
+    min_km_bandi: 10000           # YENİ (6 Ekim 2026, eklenti): km bandı en az ±bu kadar (km=0 araçta emsal bandı sıfıra düşmesin). Yalnızca durumsuz CyberOto hesabında kullanılır
 
   teklif:
     lokal_boyali: 0.01

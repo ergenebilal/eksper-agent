@@ -1,4 +1,4 @@
-"""Uçtan uca: otoXray AI eklentisi GERÇEK Chromium'a yüklenir; ilan sayfaları (sentetik fixture) ağ yerine route ile
+"""Uçtan uca: CyberOto AI eklentisi GERÇEK Chromium'a yüklenir; ilan sayfaları (sentetik fixture) ağ yerine route ile
 sunulur; API durumsuz yerel uvicorn'dur. Gerçek siteye HİÇBİR istek gitmez (denetlenir).
 Çalıştırma: uv run pytest tests/test_extension_e2e.py   (Chromium: `uv run playwright install chromium`)
 Not: Alan adı yalnızca bu testte sayfa yönlendirmesi için sabit olarak geçer."""
@@ -190,7 +190,7 @@ def test_side_panel_renders_card_copies_offer_and_shows_disclaimer(browser_ctx, 
     assert panel.text_content("#avg") and "TL" in panel.text_content("#avg")  # piyasa ortalaması kartta
     assert "Piyasa ortalaması (ilan medyanı)" in panel.text_content("#basis")  # hesabın dayanağı açılır kutuda
     assert panel.text_content("#legal").strip() == DISCLAIMER                # altbilgide AYNEN
-    assert "otoXray AI" in panel.text_content(".top")
+    assert "CyberOto AI" in panel.text_content(".top")
     panel.evaluate("""() => { window.__copied = null; navigator.clipboard.writeText = async (t) => { window.__copied = t; }; }""")
     panel.click("#copy")
     panel.wait_for_function("window.__copied !== null")
@@ -290,7 +290,7 @@ def test_options_page_shows_disclaimer_and_wipe_clears_local_data(browser_ctx):
     page.goto(f"chrome-extension://{browser_ctx['id']}/options/options.html")
     page.wait_for_selector("#legal")
     page.wait_for_function("document.getElementById('legal').textContent.length > 20")
-    assert page.text_content("#legal").strip() == DISCLAIMER and "otoXray AI" in page.title()
+    assert page.text_content("#legal").strip() == DISCLAIMER and "CyberOto AI" in page.title()
     page.click("#wipe")
     page.wait_for_function("document.getElementById('msg').textContent.includes('silindi')")
     left = sw.evaluate("async () => Object.keys(await chrome.storage.local.get(null)).filter(k => k === 'mk' || k.startsWith('ac:'))")

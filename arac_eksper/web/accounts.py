@@ -1,4 +1,4 @@
-"""otoXray davetli üyeleri: e-postaya bağlı hesap + kişiye özel haklar, e-posta koduyla giriş, cihaz anahtarları,
+"""CyberOto davetli üyeleri: e-postaya bağlı hesap + kişiye özel haklar, e-posta koduyla giriş, cihaz anahtarları,
 günlük/aylık sayaçlar, kullanıcının bilerek gönderdiği geri bildirim ve yönetim oturumları.
 
 İLAN İÇERİĞİ SAKLANMAZ (açıklama, başlık, fiyat, parça tablosu yok). Anahtar, giriş kodu ve oturum kimliği yalnızca

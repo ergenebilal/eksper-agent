@@ -1,4 +1,4 @@
-# otoXray — davetli kullanım için barındırma
+# CyberOto — davetli kullanım için barındırma
 
 ## Canlı kurulum: Hermes (CyberGene) — 6 Ekim 2026
 | | |

@@ -1,4 +1,4 @@
-"""otoXray yönetim sayfası (/yonetim): üye ekle, hak/bitiş belirle, durdur/iptal, cihazları sıfırla, davet gönder,
+"""CyberOto yönetim sayfası (/yonetim): üye ekle, hak/bitiş belirle, durdur/iptal, cihazları sıfırla, davet gönder,
 kullanımı ve geri bildirimleri gör. Giriş: ADMIN_EMAILS listesindeki adrese e-posta kodu (şifre yok).
 Oturum: DB'de özetli kimlik, HttpOnly + Secure + SameSite=Strict çerez (yalnız /yonetim). Değiştirici her istek CSRF
 jetonu + Origin denetimi ister. Ekrana kullanıcı girdisi yansıtılmaz; bildirimler sabit kodlardır."""

@@ -456,7 +456,7 @@ def test_invite_email_is_branded_html_with_plain_text_and_real_rights(client, ou
     assert "12 analiz" in h and "200 analiz" in h and "31.01.2099 tarihine kadar" in h
     assert "Ayşe &lt;b&gt;" in h and "<b>," not in h                        # ad kaçışlı
     assert "https://chromewebstore.google.com/detail/otoxray/abc" in h and "Eklentiyi kurun" in h
-    assert "/yonetim/static/mail-logo.png" in h and "otoXray AI" in h
+    assert "/yonetim/static/mail-logo.png" in h and "CyberOto AI" in h
 
 
 def test_code_email_html_and_logo_is_public(client, outbox):

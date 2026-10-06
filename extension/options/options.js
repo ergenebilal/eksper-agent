@@ -1,4 +1,4 @@
-/* otoXray ayarlar: e-posta koduyla giriş (anahtar sayfaya hiç verilmez, service worker saklar), tercihler, gelişmiş. */
+/* CyberOto ayarlar: e-posta koduyla giriş (anahtar sayfaya hiç verilmez, service worker saklar), tercihler, gelişmiş. */
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
 

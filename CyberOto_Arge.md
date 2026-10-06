@@ -1,4 +1,4 @@
-# otoXray — Ar-Ge Planı ve Takip Dosyası
+# CyberOto — Ar-Ge Planı ve Takip Dosyası
 
 > **Bu dosya canlı takip dosyasıdır.** İşi devralan her ajan (Claude, Codex, başka bir model) önce bu dosyayı,
 > sonra `CLAUDE.md`'yi okur. İş paketini başlatırken durumunu `🔄`, bitirince `✅` yapar ve en alttaki
@@ -18,7 +18,7 @@ Son güncelleme: 2026-10-07 · Hazırlayan: Claude (oturum 5d82b169)
 
 ## 1. Ürün ve mevcut durum (6 Ekim 2026)
 
-**otoXray AI** — CyberGene ürünü. Kullanıcının kendi tarayıcısında açtığı araç ilanını okuyan Chrome eklentisi + sunucu.
+**CyberOto AI** — CyberGene ürünü. Kullanıcının kendi tarayıcısında açtığı araç ilanını okuyan Chrome eklentisi + sunucu.
 🟢 = "ekspertize götürmeye değer", **"satın al" değil**. Kapalı B2C beta: davetli kullanıcılar, kişiye özel haklar.
 
 | Bileşen | Durum | Yer |
@@ -56,7 +56,7 @@ Kullanıcının önerileri (1: Savaş Odası, 2A–2E) aşağıda **değer / ris
 dürüst sınırlarla, düşük güvenle başlamalı.
 
 ### 1 · Savaş Odası (Havuz + Karşılaştır ve Karar Ver) — ⭐ ana özellik
-- **Neden güçlü:** Gerçek alıcı tek ilana değil, 3-5 aday arasında karar verir. Bugün otoXray her ilanı tek başına puanlıyor; karşılaştırma eksik.
+- **Neden güçlü:** Gerçek alıcı tek ilana değil, 3-5 aday arasında karar verir. Bugün CyberOto her ilanı tek başına puanlıyor; karşılaştırma eksik.
 - **Kısıtlarla uyum:** Havuz **kullanıcının tarayıcısında** tutulur (ilan verisi sunucuda saklanmaz). Karşılaştırma isteğinde seçili ilanların verisi geçici gönderilir, sunucu hesaplayıp unutur.
 - **Zenginleştirme:**
   - Karşılaştırmanın **sayısal iskeleti deterministik** olsun: fiyat, piyasa sapması, km/yıl, puan, tramer, gerçek maliyet (B), likidite (D) — tablo halinde. LLM yalnızca bu tablodan **gerekçeli sıralama ve anlatı** üretir; tabloda olmayan bir sayı söyleyemez (çıktı doğrulanır).

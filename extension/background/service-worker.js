@@ -1,4 +1,4 @@
-/* otoXray AI — MV3 service worker: ağa çıkan TEK katman. Durum bellekte tutulmaz (worker her an öldürülebilir):
+/* CyberOto AI — MV3 service worker: ağa çıkan TEK katman. Durum bellekte tutulmaz (worker her an öldürülebilir):
  * ayarlar, yerel piyasa deposu ve çözümleme önbelleği chrome.storage.local'da (YALNIZ kullanıcının kendi tarayıcısı),
  * sekme sonuçları chrome.storage.session'da. Token yalnızca burada okunur; sayfaya/içerik betiğine verilmez.
  * Desteklenen siteye HİÇBİR istek atılmaz; yalnızca kullanıcının açtığı sayfadan okunan veri yerel API'ye gider. */

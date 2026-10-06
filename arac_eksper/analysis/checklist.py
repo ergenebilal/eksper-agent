@@ -2,7 +2,7 @@
 
 Her madde bir kaynağa bağlıdır (izlenebilirlik): sema | bulgu | kronik | bakim | veri | piyasa | genel.
 Sorular öncelik sırasıyla: 1 eleyici (şase/tavan/airbag/ağır hasar/tramer) → 2 maliyetli (bakım, kronik, motor) → 3 pazarlık.
-Dil kılavuzu (OtoXray_Arge.md §7): nesnel, finansal/analitik; kişi hakkında hüküm yok.
+Dil kılavuzu (CyberOto_Arge.md §7): nesnel, finansal/analitik; kişi hakkında hüküm yok.
 """
 from arac_eksper.analysis.models_kb import bakim_kalemleri, kronik_arizalar
 from arac_eksper.schemas import DescriptionFindings, ListingDetail, MarketStats, PartState

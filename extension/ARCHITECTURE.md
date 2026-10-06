@@ -1,6 +1,6 @@
-# otoXray AI — Mimari ve Karar Kayıtları
+# CyberOto AI — Mimari ve Karar Kayıtları
 
-otoXray AI, kullanıcının **kendi tarayıcısında zaten açtığı** araç ilanı sayfasındaki teknik veriyi okuyup yerel bir
+CyberOto AI, kullanıcının **kendi tarayıcısında zaten açtığı** araç ilanı sayfasındaki teknik veriyi okuyup yerel bir
 API'ye çözümletir ve sonucu sayfanın yanında gösterir. Bir bot/crawler değildir: siteye kendi başına istek atmaz.
 
 ## 1. Pazarlıksız kurallar ve kodda nasıl karşılandıkları
@@ -11,7 +11,7 @@ API'ye çözümletir ve sonucu sayfanın yanında gösterir. Bir bot/crawler de�
 | Kişisel veri (KVKK) yok | Satıcı alanları için seçici tanımlı değil; ad/telefon/profil okunmaz. Açıklamadaki telefon numaraları **iki uçta** maskelenir. İstek şemasında bağlantı (URL), konum, satıcı türü alanı yok. | `test_phone_numbers_masked_before_reaching_the_llm`, `test_url_and_personal_fields_are_ignored_not_processed`, e2e KVKK testi |
 | Durumsuz API | Veritabanı, dosya, önbellek, günlük yok (`access_log=False`). Günlük LLM sınırı yalnız zaman damgası sayar. | `test_nothing_is_written_to_disk_or_db` |
 | Davetli hesapları | Kişi başı anahtar (yalnız SHA-256 özeti saklanır), günlük kota, iptal; kullanıcının bilerek gönderdiği geri bildirim. İlan açıklaması/başlığı/fiyatı saklanmaz. Sahip anahtarı hesap deposuna hiç dokunmaz. Kural ağırlıkları (`trace`) yalnız sahibe döner. | `tests/test_xray_accounts.py` |
-| Marka ihlali yok | Ürün adı **otoXray AI**. Site adı yalnızca manifest eşleşmesinde ve tek sabit dosyada (`lib/site.js`) alan adı olarak geçer (teknik zorunluluk); arayüz, ad, simge, metin ve kodun geri kalanında yok. | `test_no_brand_name_in_product_code` |
+| Marka ihlali yok | Ürün adı **CyberOto AI**. Site adı yalnızca manifest eşleşmesinde ve tek sabit dosyada (`lib/site.js`) alan adı olarak geçer (teknik zorunluluk); arayüz, ad, simge, metin ve kodun geri kalanında yok. | `test_no_brand_name_in_product_code` |
 | Yasal uyarı | Yan panel altbilgisi, ayarlar, arama çubuğu ve **API'nin döndürdüğü her rapor** (`yasal_uyari`). Tek kaynak: `report/legal.py` ↔ `lib/legal.js`. | `test_disclaimer_text_is_exact`, `test_disclaimer_in_every_report`, e2e |
 | Engel aşma yok | CAPTCHA/parmak izi/proxy kodu yok; tarayıcı otomasyonu yok. | (kod incelemesi) |
 

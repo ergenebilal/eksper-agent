@@ -1,4 +1,4 @@
-# otoXray AI — Chrome Eklentisi (Manifest V3)
+# CyberOto AI — Chrome Eklentisi (Manifest V3)
 
 Araç ilanı sayfasını açtığınızda ilan açıklamasını yapay zekayla tarar, piyasa kıyası ve teklif önerisi çıkarır.
 **Yapay zeka karar destek aracıdır; resmi ekspertiz raporu değildir.** Mimari ve kurallar: [ARCHITECTURE.md](ARCHITECTURE.md).

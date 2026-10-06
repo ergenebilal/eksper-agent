@@ -1,45 +1,155 @@
 {
   "meta": {
-    "name": "CyberGene — otoXray ürün arayüzü",
-    "description": "cybergene.co kurumsal kimliğinden çıkarılan tasarım DNA'sı; otoXray eklentisi (yan panel, ayarlar) ve yönetim sayfasına uygulanır. Ürün arayüzü olduğu için pazarlama sitesinin efektleri sadeleştirilmiştir.",
-    "source_references": ["https://cybergene.co (ana sayfa, ekran görüntüsü + hesaplanmış CSS, 6 Ekim 2026)", "https://cybergene.co/favicon.svg"],
+    "name": "CyberGene — CyberOto ürün arayüzü",
+    "description": "cybergene.co kurumsal kimliğinden çıkarılan tasarım DNA'sı; CyberOto eklentisi (yan panel, ayarlar) ve yönetim sayfasına uygulanır. Ürün arayüzü olduğu için pazarlama sitesinin efektleri sadeleştirilmiştir.",
+    "source_references": [
+      "https://cybergene.co (ana sayfa, ekran görüntüsü + hesaplanmış CSS, 6 Ekim 2026)",
+      "https://cybergene.co/favicon.svg"
+    ],
     "created_at": "2026-10-06"
   },
   "design_system": {
     "color": {
       "palette_type": "analogous (mor → mavi → camgöbeği/zümrüt) koyu zemin üzerinde",
-      "primary": { "hex": "#a855f7", "role": "Marka moru: vurgu, odak halkası, gradyan başlangıcı (--purple)" },
-      "secondary": { "hex": "#06b6d4", "role": "Camgöbeği: ikincil vurgu, gradyan sonu, bilgi (--cyan)" },
-      "accent": { "hex": "#704ed3", "role": "Birincil düğme yüzü (ölçülen; site gradyanı #5d34d0 → #7547dc → #3b82f6)" },
+      "primary": {
+        "hex": "#a855f7",
+        "role": "Marka moru: vurgu, odak halkası, gradyan başlangıcı (--purple)"
+      },
+      "secondary": {
+        "hex": "#06b6d4",
+        "role": "Camgöbeği: ikincil vurgu, gradyan sonu, bilgi (--cyan)"
+      },
+      "accent": {
+        "hex": "#704ed3",
+        "role": "Birincil düğme yüzü (ölçülen; site gradyanı #5d34d0 → #7547dc → #3b82f6)"
+      },
       "neutral": {
-        "scale": ["#f4f4f6", "#c2c1cf", "#b1b1c0", "#989ba9", "#514f67", "#1a1f2e", "#0f131d", "#0a0d14", "#07090e"],
+        "scale": [
+          "#f4f4f6",
+          "#c2c1cf",
+          "#b1b1c0",
+          "#989ba9",
+          "#514f67",
+          "#1a1f2e",
+          "#0f131d",
+          "#0a0d14",
+          "#07090e"
+        ],
         "usage": "Açık uç metin (#f4f4f6 ana metin, #c2c1cf gövde, #989ba9 soluk); koyu uç zemin ve yüzeyler (#07090e sayfa, #0a0d14 kart). Çizgiler rgba(185,192,224,.13)."
       },
-      "semantic": { "success": "#10b981", "warning": "#f5b544", "error": "#f05d6c", "info": "#06b6d4" },
-      "surface": { "background": "#07090e", "card": "#0a0d14", "elevated": "#0f131d" },
+      "semantic": {
+        "success": "#10b981",
+        "warning": "#f5b544",
+        "error": "#f05d6c",
+        "info": "#06b6d4"
+      },
+      "surface": {
+        "background": "#07090e",
+        "card": "#0a0d14",
+        "elevated": "#0f131d"
+      },
       "contrast_strategy": "Koyu zemin üzerinde yüksek kontrastlı açık metin; hiyerarşi soluk metin tonları ve ince çizgilerle, renk yalnızca vurgu ve durumda",
-      "measurement": { "k": 8, "sampling": { "method": "deterministic_stratified", "max_pixels": 160000, "sampled_pixels": 160000 } },
+      "measurement": {
+        "k": 8,
+        "sampling": {
+          "method": "deterministic_stratified",
+          "max_pixels": 160000,
+          "sampled_pixels": 160000
+        }
+      },
       "measured_palette": [
-        { "hex": "#0c0e18", "coverage": 0.8864, "role": "background" },
-        { "hex": "#9590a3", "coverage": 0.0456, "role": "unassigned" },
-        { "hex": "#704ed3", "coverage": 0.024, "role": "accent" },
-        { "hex": "#514f67", "coverage": 0.0163, "role": "unassigned" },
-        { "hex": "#f1f0f6", "coverage": 0.0146, "role": "text" },
-        { "hex": "#b4b4d8", "coverage": 0.0088, "role": "unassigned" },
-        { "hex": "#6ebfcd", "coverage": 0.003, "role": "unassigned" },
-        { "hex": "#5aaba7", "coverage": 0.0012, "role": "unassigned" }
+        {
+          "hex": "#0c0e18",
+          "coverage": 0.8864,
+          "role": "background"
+        },
+        {
+          "hex": "#9590a3",
+          "coverage": 0.0456,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#704ed3",
+          "coverage": 0.024,
+          "role": "accent"
+        },
+        {
+          "hex": "#514f67",
+          "coverage": 0.0163,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#f1f0f6",
+          "coverage": 0.0146,
+          "role": "text"
+        },
+        {
+          "hex": "#b4b4d8",
+          "coverage": 0.0088,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#6ebfcd",
+          "coverage": 0.003,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#5aaba7",
+          "coverage": 0.0012,
+          "role": "unassigned"
+        }
       ]
     },
     "typography": {
       "type_scale": {
-        "display": { "size": "65px", "weight": "500", "line_height": "1.05", "tracking": "-0.064em" },
-        "heading_1": { "size": "36.9px", "weight": "500", "line_height": "1.08", "tracking": "-0.045em" },
-        "heading_2": { "size": "24px", "weight": "500", "line_height": "1.15", "tracking": "-0.03em" },
-        "heading_3": { "size": "18px", "weight": "500", "line_height": "1.25", "tracking": "-0.02em" },
-        "body": { "size": "16px", "weight": "400", "line_height": "1.5", "tracking": "0" },
-        "body_small": { "size": "14px", "weight": "400", "line_height": "1.5", "tracking": "0" },
-        "caption": { "size": "12px", "weight": "500", "line_height": "1.5", "tracking": "0.065em" },
-        "overline": { "size": "11px", "weight": "600", "line_height": "1.3", "tracking": "0.14em" }
+        "display": {
+          "size": "65px",
+          "weight": "500",
+          "line_height": "1.05",
+          "tracking": "-0.064em"
+        },
+        "heading_1": {
+          "size": "36.9px",
+          "weight": "500",
+          "line_height": "1.08",
+          "tracking": "-0.045em"
+        },
+        "heading_2": {
+          "size": "24px",
+          "weight": "500",
+          "line_height": "1.15",
+          "tracking": "-0.03em"
+        },
+        "heading_3": {
+          "size": "18px",
+          "weight": "500",
+          "line_height": "1.25",
+          "tracking": "-0.02em"
+        },
+        "body": {
+          "size": "16px",
+          "weight": "400",
+          "line_height": "1.5",
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "14px",
+          "weight": "400",
+          "line_height": "1.5",
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "12px",
+          "weight": "500",
+          "line_height": "1.5",
+          "tracking": "0.065em"
+        },
+        "overline": {
+          "size": "11px",
+          "weight": "600",
+          "line_height": "1.3",
+          "tracking": "0.14em"
+        }
       },
       "font_families": {
         "heading": "\"Space Grotesk\", Inter, system-ui, sans-serif",
@@ -50,7 +160,18 @@
     },
     "spacing": {
       "base_unit": "4px",
-      "scale": ["4px", "8px", "12px", "16px", "20px", "24px", "32px", "48px", "64px", "96px"],
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "20px",
+        "24px",
+        "32px",
+        "48px",
+        "64px",
+        "96px"
+      ],
       "content_density": "ürün arayüzünde comfortable-compact (site: spacious)",
       "section_rhythm": "Kartlar arası 12-16px, kart içi 16-20px; sitede bölümler arası 96px+"
     },
@@ -59,11 +180,20 @@
       "max_content_width": "1120px",
       "columns": "1 (panel) / 2-4 (yönetim formları)",
       "gutter": "16px",
-      "breakpoints": ["480px", "768px", "1120px"],
+      "breakpoints": [
+        "480px",
+        "768px",
+        "1120px"
+      ],
       "alignment_tendency": "sol hizalı, kartlara gruplanmış"
     },
     "shape": {
-      "border_radius": { "small": "10px", "medium": "18px", "large": "22px", "pill": "999px" },
+      "border_radius": {
+        "small": "10px",
+        "medium": "18px",
+        "large": "22px",
+        "pill": "999px"
+      },
       "border_usage": "Her yüzeyde ince 1px çizgi rgba(255,255,255,.12)",
       "divider_style": "1px rgba(185,192,224,.13)"
     },
@@ -79,12 +209,21 @@
     "iconography": {
       "style": "ince çizgi (outline), yuvarlatılmış kapak; logo gradyanlı çizgi işareti",
       "stroke_weight": "1.5-2px",
-      "size_scale": ["14px", "16px", "20px", "24px"],
+      "size_scale": [
+        "14px",
+        "16px",
+        "20px",
+        "24px"
+      ],
       "preferred_set": "Lucide benzeri outline; ürün işareti: CyberGene 'CG' gradyan çizgi logosu"
     },
     "motion": {
       "easing": "cubic-bezier(.2,.8,.2,1)",
-      "duration_scale": { "micro": "140ms", "normal": "220ms", "macro": "480ms" },
+      "duration_scale": {
+        "micro": "140ms",
+        "normal": "220ms",
+        "macro": "480ms"
+      },
       "entrance_pattern": "kısa fade + 4px yukarı kayma",
       "exit_pattern": "fade",
       "philosophy": "sakin, işlevsel; ışıma ve gradyan hareketsiz, yalnız bekleme durumunda yumuşak nabız"
@@ -101,12 +240,29 @@
   },
   "design_style": {
     "aesthetic": {
-      "mood": ["gece", "teknolojik", "sakin", "güven veren", "premium"],
+      "mood": [
+        "gece",
+        "teknolojik",
+        "sakin",
+        "güven veren",
+        "premium"
+      ],
       "visual_metaphor": "Karanlıkta aydınlanan yapay zeka çekirdeği: mor-camgöbeği ışık, ince devre çizgileri",
       "era_influence": "2024-26 AI SaaS (koyu mod, gradyan metin, yumuşak ışıma)",
       "genre": "dark AI agency / SaaS",
-      "personality_traits": ["sakin", "yetkin", "şeffaf", "insan odaklı"],
-      "adjectives": ["koyu", "ışıltılı", "rafine", "sade", "geometrik"]
+      "personality_traits": [
+        "sakin",
+        "yetkin",
+        "şeffaf",
+        "insan odaklı"
+      ],
+      "adjectives": [
+        "koyu",
+        "ışıltılı",
+        "rafine",
+        "sade",
+        "geometrik"
+      ]
     },
     "visual_language": {
       "complexity": "moderate",
@@ -157,51 +313,155 @@
       "type": "gradient-animation",
       "description": "Sayfa zemininde büyük, çok soluk mor ve camgöbeği radyal ışımalar (statik). Sitede ince yörünge çemberleri.",
       "technology": "CSS radial-gradient",
-      "params": { "color_palette": ["rgba(168,85,247,.10)", "rgba(6,182,212,.06)"], "speed": "statik", "density": "2 ışıma", "opacity": "0.06-0.12", "blend_mode": "normal" }
+      "params": {
+        "color_palette": [
+          "rgba(168,85,247,.10)",
+          "rgba(6,182,212,.06)"
+        ],
+        "speed": "statik",
+        "density": "2 ışıma",
+        "opacity": "0.06-0.12",
+        "blend_mode": "normal"
+      }
     },
     "particle_systems": {
-      "enabled": false, "type": "none", "description": "Yok", "technology": "none",
-      "params": { "count": "0", "shape": "none", "size_range": "none", "movement_pattern": "none", "color_behavior": "none", "interaction": "none", "spawn_area": "none" }
+      "enabled": false,
+      "type": "none",
+      "description": "Yok",
+      "technology": "none",
+      "params": {
+        "count": "0",
+        "shape": "none",
+        "size_range": "none",
+        "movement_pattern": "none",
+        "color_behavior": "none",
+        "interaction": "none",
+        "spawn_area": "none"
+      }
     },
     "3d_elements": {
-      "enabled": false, "type": "none", "description": "Yok (sitedeki siluet düz görsel)", "technology": "none",
-      "params": { "renderer": "none", "lighting": "none", "camera": "none", "materials": "none", "geometry": "none", "post_processing": [], "interaction_model": "none" }
+      "enabled": false,
+      "type": "none",
+      "description": "Yok (sitedeki siluet düz görsel)",
+      "technology": "none",
+      "params": {
+        "renderer": "none",
+        "lighting": "none",
+        "camera": "none",
+        "materials": "none",
+        "geometry": "none",
+        "post_processing": [],
+        "interaction_model": "none"
+      }
     },
     "shader_effects": {
-      "enabled": false, "type": "none", "description": "Yok", "technology": "none",
-      "params": { "uniforms": "none", "vertex_manipulation": "none", "fragment_output": "none", "noise_type": "none", "distortion": "none" }
+      "enabled": false,
+      "type": "none",
+      "description": "Yok",
+      "technology": "none",
+      "params": {
+        "uniforms": "none",
+        "vertex_manipulation": "none",
+        "fragment_output": "none",
+        "noise_type": "none",
+        "distortion": "none"
+      }
     },
     "scroll_effects": {
-      "parallax": { "enabled": false, "layers": "0", "depth_range": "none", "speed_curve": "none" },
-      "scroll_triggered_animations": { "enabled": false, "trigger_points": "none", "animation_type": "none", "scrub_behavior": "none" },
-      "scroll_morphing": { "enabled": false, "description": "Yok" }
+      "parallax": {
+        "enabled": false,
+        "layers": "0",
+        "depth_range": "none",
+        "speed_curve": "none"
+      },
+      "scroll_triggered_animations": {
+        "enabled": false,
+        "trigger_points": "none",
+        "animation_type": "none",
+        "scrub_behavior": "none"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "Yok"
+      }
     },
     "text_effects": {
       "type": "gradient-fill",
       "description": "Vurgulu başlık kelimeleri statik gradyan dolgu",
       "technology": "CSS background-clip:text",
-      "params": { "split_strategy": "by-word", "animation_per_unit": "none", "stagger": "none", "effect_style": "linear-gradient(110deg,#c6a1f2 0%,#a2bce7 45%,#53c6d0 78%,#6edcb6 110%)" }
+      "params": {
+        "split_strategy": "by-word",
+        "animation_per_unit": "none",
+        "stagger": "none",
+        "effect_style": "linear-gradient(110deg,#c6a1f2 0%,#a2bce7 45%,#53c6d0 78%,#6edcb6 110%)"
+      }
     },
     "cursor_effects": {
-      "enabled": false, "type": "none", "description": "Yok",
-      "params": { "shape": "none", "size": "none", "blend_mode": "none", "trail": "none", "interaction_zone": "none" }
+      "enabled": false,
+      "type": "none",
+      "description": "Yok",
+      "params": {
+        "shape": "none",
+        "size": "none",
+        "blend_mode": "none",
+        "trail": "none",
+        "interaction_zone": "none"
+      }
     },
     "image_effects": {
-      "type": "none", "description": "Yok", "technology": "none",
-      "params": { "filter_pipeline": "none", "hover_transform": "none", "reveal_animation": "none", "distortion_type": "none" }
+      "type": "none",
+      "description": "Yok",
+      "technology": "none",
+      "params": {
+        "filter_pipeline": "none",
+        "hover_transform": "none",
+        "reveal_animation": "none",
+        "distortion_type": "none"
+      }
     },
     "glassmorphism_neumorphism": {
-      "enabled": false, "style": "none",
-      "params": { "blur_radius": "0", "transparency": "1", "border_treatment": "ince açık çizgi", "shadow_type": "soft diffused", "light_source_angle": "üstten" }
+      "enabled": false,
+      "style": "none",
+      "params": {
+        "blur_radius": "0",
+        "transparency": "1",
+        "border_treatment": "ince açık çizgi",
+        "shadow_type": "soft diffused",
+        "light_source_angle": "üstten"
+      }
     },
     "canvas_drawings": {
-      "enabled": false, "type": "none", "description": "Sitedeki tek canvas ürün arayüzüne taşınmadı (eklenti performansı)", "technology": "none",
-      "params": { "draw_method": "none", "animation_loop": "none", "color_scheme": "none", "responsiveness": "none", "interaction": "none" }
+      "enabled": false,
+      "type": "none",
+      "description": "Sitedeki tek canvas ürün arayüzüne taşınmadı (eklenti performansı)",
+      "technology": "none",
+      "params": {
+        "draw_method": "none",
+        "animation_loop": "none",
+        "color_scheme": "none",
+        "responsiveness": "none",
+        "interaction": "none"
+      }
     },
     "svg_animations": {
-      "enabled": false, "type": "none", "description": "Logo statik SVG (gradyan çizgi + ışıyan çekirdek noktası)",
-      "params": { "animation_method": "none", "path_morphing": "none", "stroke_animation": "none", "filter_effects": "feGaussianBlur glow (logoda)" }
+      "enabled": false,
+      "type": "none",
+      "description": "Logo statik SVG (gradyan çizgi + ışıyan çekirdek noktası)",
+      "params": {
+        "animation_method": "none",
+        "path_morphing": "none",
+        "stroke_animation": "none",
+        "filter_effects": "feGaussianBlur glow (logoda)"
+      }
     },
     "composite_notes": "Pazarlama sitesindeki canvas yörüngeleri ve sohbet balonu ürün arayüzüne alınmadı; kimliği taşıyan katmanlar: koyu zemin, kart tepesi mor ışıma, gradyan birincil düğme, gradyan vurgulu başlık, Space Grotesk/Inter ve CG logosu."
+  },
+  "urun_aileleri": {
+    "kalip": "Cyber + alan adı (CyberOto, CyberMülk, ...). 'Cyber' beyaz #F4F4F6 Inter 500; alan adı ürün rengiyle Inter 650.",
+    "CyberOto": {
+      "renk": "#FF9A24",
+      "logo": "design/brand/CyberOto.svg (CyberGene ikonu + dış hatlı yazı; 2026-10-07 kullanıcıdan)",
+      "ui": "wordmark: Cyber<span class=oto>Oto</span> AI; --oto token; ikon CyberGene G (değişmedi)"
+    }
   }
 }

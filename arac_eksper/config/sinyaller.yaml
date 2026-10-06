@@ -1,5 +1,5 @@
 # sinyaller.yaml — R4.1 / R4.2 ifade listeleri (satıcı DAVRANIŞI değil, ilan METNİ sinyalleri).
-# Dil kılavuzu (OtoXray_Arge.md §7): kişi hakkında hüküm yok. Çıktı etiketleri "Hızlı satış motivasyonu",
+# Dil kılavuzu (CyberOto_Arge.md §7): kişi hakkında hüküm yok. Çıktı etiketleri "Hızlı satış motivasyonu",
 # "Yüksek indirim ivmesi", "Ticari satıcı sinyali". Eşikler ve teklif etkisi rules.yaml → sinyal / teklif.
 # Eşleşme: Türkçe harf katlamalı, TAM kelime ("acil" ≠ "açılır"); sonu * olan kelime önek eşleşir ("tasinacag*"); ifadenin hemen ardından olumsuzluk ("acil değil",
 # "acelemiz yok") gelirse sayılmaz. Her bulgu ilan metninden birebir alıntı taşır.

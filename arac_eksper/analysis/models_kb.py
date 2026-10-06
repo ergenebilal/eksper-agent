@@ -1,6 +1,6 @@
 """Model bilgi tabanı (config/models_kb.yaml): kronik arızalar, km eşikleri, periyodik bakım.
 
-Kural 10 (OtoXray_Arge.md): yalnız `onayli: true` kayıtlar kararı ve listeleri etkiler; taslaklar yüklenmez.
+Kural 10 (CyberOto_Arge.md): yalnız `onayli: true` kayıtlar kararı ve listeleri etkiler; taslaklar yüklenmez.
 Eşleşme: marka + model (ilan "Seri"), model yılı; maddede motor/vites/yakıt/yıl filtresi ve km eşiği olabilir.
 """
 from pathlib import Path

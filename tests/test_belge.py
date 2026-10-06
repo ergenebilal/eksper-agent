@@ -1,4 +1,4 @@
-"""R5.4 + R5.1 Belge röntgeni. ⚠ Belgeler SENTETİKTİR (gerçek rapor örnekleri gelene kadar; OtoXray_Arge.md R5.4 👤).
+"""R5.4 + R5.1 Belge röntgeni. ⚠ Belgeler SENTETİKTİR (gerçek rapor örnekleri gelene kadar; CyberOto_Arge.md R5.4 👤).
 Doğrulanan: kişisel veri maskeleme, alıntısız/uydurma bulgunun atılması, ilanla kurallı karşılaştırma, teklif, hak, PDF."""
 import base64
 

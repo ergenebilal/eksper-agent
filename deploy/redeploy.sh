@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# otoXray API'sini Hermes'e yeniden yayınlar: son COMMIT'i (çalışma ağacını değil) gönderir, bağımlılıkları eşitler,
+# CyberOto API'sini Hermes'e yeniden yayınlar: son COMMIT'i (çalışma ağacını değil) gönderir, bağımlılıkları eşitler,
 # servisi yeniden başlatır ve sağlık kontrolü yapar. Sunucudaki .env ve data/ (hesaplar) korunur.
 # Kullanım: bash deploy/redeploy.sh   (OTOXRAY_HOST / OTOXRAY_KEY ile değiştirilebilir)
 set -euo pipefail

@@ -42,7 +42,7 @@
   @media (prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 <div class="bar" part="bar">
-  <span class="brand"><img alt=""><span><b>otoXray AI</b><small>CyberGene</small></span></span>
+  <span class="brand"><img alt=""><span><b>Cyber<span class="oto">Oto</span><span class="ai"> AI</span></b><small>CyberGene</small></span></span>
   <button type="button" class="aracx-btn"><svg class="scan" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 8h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Bu sayfayı eksperle</span></button>
   <span class="status aracx-status" role="status"></span>
   <div class="legal aracx-legal"></div>

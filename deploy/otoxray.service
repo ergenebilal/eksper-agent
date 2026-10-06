@@ -1,6 +1,6 @@
-# /etc/systemd/system/otoxray.service — otoXray API'si (yalnız 127.0.0.1'de dinler, dışarıya Caddy açar)
+# /etc/systemd/system/otoxray.service — CyberOto API'si (yalnız 127.0.0.1'de dinler, dışarıya Caddy açar)
 [Unit]
-Description=otoXray AI API
+Description=CyberOto AI API
 After=network-online.target
 
 [Service]

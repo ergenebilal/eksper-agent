@@ -196,7 +196,7 @@ def test_listing_date_seller_type_and_price_change_flag(extracted):
 
 
 def test_real_listings_seller_signals(extracted, monkeypatch):
-    """R4: gerçek ilanlarda sinyal alıntıları birebir; sinyal dili kılavuza uygun. Döküm elle incelendi (OtoXray_Arge.md §10)."""
+    """R4: gerçek ilanlarda sinyal alıntıları birebir; sinyal dili kılavuza uygun. Döküm elle incelendi (CyberOto_Arge.md §10)."""
     from arac_eksper.analysis import sinyaller
     yasak = re.compile(r"panik|fırsat|kelepir|dolandırıcı|sahtekar|alsatçı|çaresiz", re.I)
     for no, r in extracted.items():

@@ -1,4 +1,4 @@
-"""otoXray AI uç noktaları (/api/v1). İLAN VERİSİ AÇISINDAN DURUMSUZ: ilan metni, başlık, bağlantı ya da karar sunucuda
+"""CyberOto AI uç noktaları (/api/v1). İLAN VERİSİ AÇISINDAN DURUMSUZ: ilan metni, başlık, bağlantı ya da karar sunucuda
 SAKLANMAZ; ilan önbelleği ve günlük kaydı yoktur, her istek bellekte işlenir. Tek kalıcı kayıt davetli kullanıcı hesabıdır
 (web/accounts.py: e-postaya bağlı üye ve hakları, anahtar/kod özetleri, sayaçlar, kullanıcının bilerek gönderdiği geri
 bildirim); sahip anahtarı ona da dokunmaz.

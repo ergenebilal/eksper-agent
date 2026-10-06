@@ -1,4 +1,4 @@
-# otoXray API — otomatik HTTPS (Let's Encrypt). ALAN_ADINIZ yerine kendi alt alan adınızı yazın (ör. api.ornek.com).
+# CyberOto API — otomatik HTTPS (Let's Encrypt). ALAN_ADINIZ yerine kendi alt alan adınızı yazın (ör. api.ornek.com).
 ALAN_ADINIZ {
 	encode gzip
 	# Yalnız API ve sağlık kontrolü dışarı açılır; panel (8990) ASLA buradan yayınlanmaz.
