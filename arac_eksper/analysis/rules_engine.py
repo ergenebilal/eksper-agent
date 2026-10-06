@@ -33,6 +33,8 @@ def alinir_engelleri(detail: ListingDetail, findings: DescriptionFindings) -> li
         out.append(f"motor/şanzıman {findings.motor_sanziman}")
     if findings.km_degisimi_suphesi:
         out.append("km değişimi şüphesi")
+    if findings.dogrulanamayan_iddia:
+        out.append("açıklamadaki olumsuz bir iddia doğrulanamadı (alıntı yok)")
     return out
 
 
@@ -43,6 +45,9 @@ def evaluate_hard_fails(detail: ListingDetail, findings: DescriptionFindings, ma
 
     if detail.agir_hasar_kayitli:
         fails.append("Ağır hasar kayıtlı")
+
+    if findings.agir_hasar_beyan == "var":
+        fails.append("Açıklamada pert/çekme belgeli/ağır hasar beyanı")
 
     if findings.sase_direk_podye_islem == "var":
         fails.append("Şase, podye veya direkte işlem var")

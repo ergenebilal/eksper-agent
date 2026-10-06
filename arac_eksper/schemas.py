@@ -66,6 +66,9 @@ class DescriptionFindings(BaseModel):
     motor_sanziman: Literal["sorunsuz_beyan", "degisen", "sorunlu", "belirsiz"]
     motor_alinti: Optional[str] = None
     km_degisimi_suphesi: bool
+    agir_hasar_beyan: Literal["yok_beyan", "var", "belirsiz"] = "belirsiz"   # pert / çekme belgeli / ağır hasar
+    agir_hasar_alinti: Optional[str] = None
+    dogrulanamayan_iddia: bool = False   # LLM olumsuz iddia kurdu ama alıntısı metinde doğrulanamadı → 🟢 olamaz
     olumlu_sinyaller: List[Evidence] = Field(default_factory=list)
     olumsuz_sinyaller: List[Evidence] = Field(default_factory=list)
     dolandiricilik_sinyalleri: List[Evidence] = Field(default_factory=list)

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from pydantic import BaseModel, ValidationError
 from arac_eksper.llm.client import OpenAIClient, LLMUnavailable
 from arac_eksper.analysis.description_llm import analyze_description
-from arac_eksper.schemas import DescriptionFindings
+from arac_eksper.schemas import DescriptionFindings, Evidence
 from openai import RateLimitError
 import httpx
 
@@ -80,6 +80,7 @@ def test_description_llm_two_pass(monkeypatch):
             # Eğer fast ise red flag döndür, değilse temiz döndür
             if model_name == "gpt-4o-mini":
                 return DescriptionFindings(
+                    olumsuz_sinyaller=[Evidence(etiket="podye", alinti="Test aciklama")],  # kanıtlı kırmızı bayrak
                     sase_direk_podye_islem="belirsiz",
                     airbag="orijinal_beyan",
                     motor_sanziman="sorunsuz_beyan",
