@@ -268,7 +268,7 @@ def test_few_rows_say_comparables_are_insufficient(browser_ctx):
     page.goto(FEW_URL)
     page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 3", timeout=60000)
     classes = page.eval_on_selector_all(".aracx-badge", "els => els.map(e => e.className + '|' + e.textContent)")
-    assert all("aracx-emsal_yetersiz" in c and "Emsal yetersiz" in c for c in classes)
+    assert all("aracx-emsal_yetersiz" in c and "Benzer ilan az" in c for c in classes)
     page.close()
 
 

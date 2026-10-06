@@ -45,7 +45,9 @@
       const b = document.createElement('span');
       b.className = 'aracx-badge aracx-' + s.rozet;
       b.textContent = s.rozet_metin;
-      b.title = s.emsal_medyan ? `Emsal medyanı ${s.emsal_medyan.toLocaleString('tr-TR')} TL (n=${s.emsal_n})`
+      b.title = s.rozet === 'emsal_yetersiz'
+        ? `Kıyas için aynı seri, yakın yıl ve km'de en az 5 benzer ilan gerekir (şu an ${s.emsal_n}). Aynı modelin diğer arama sayfalarını gezdikçe artar.`
+        : s.emsal_medyan ? `Emsal medyanı ${s.emsal_medyan.toLocaleString('tr-TR')} TL (n=${s.emsal_n})`
                                : `Emsal sayısı: ${s.emsal_n}`;
       row.priceEl.appendChild(b);
       if (s.km_uyari) {

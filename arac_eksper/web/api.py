@@ -186,7 +186,7 @@ def rozet(sapma: float | None, n: int, rules: dict) -> tuple[str, str]:
     """Liste rozeti: YALNIZ fiyata dair, nötr dil. Karar etiketi değildir."""
     et, bt = rules["etiket"], rules["bantlar"]
     if sapma is None or n < et["min_emsal"]:
-        return "emsal_yetersiz", f"Emsal yetersiz (n={n})"
+        return "emsal_yetersiz", f"Benzer ilan az ({n}/{et['min_emsal']})"
     s = sapma / 100
     if s < bt["sapma_ucuz_uyari"]:
         return "cok_ucuz_suphe", f"⚠ %{abs(sapma):.0f} ucuz: önce nedenini sor"

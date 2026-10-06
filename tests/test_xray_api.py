@@ -250,7 +250,7 @@ def test_batch_badges_cover_all_bands(client):
 def test_batch_few_comparables_and_km_warning(client):
     s = client.post("/api/v1/batch-evaluate", headers=H, json={
         "items": [dict(ilan_no="B1", fiyat=700_000, yil=2022, km=300_000)], "emsal": comps(2)}).json()["sonuclar"][0]
-    assert s["rozet"] == "emsal_yetersiz" and s["km_uyari"] is True
+    assert s["rozet"] == "emsal_yetersiz" and s["km_uyari"] is True and "Benzer ilan az" in s["rozet_metin"]
 
 
 def test_batch_limits_and_no_llm(client):
