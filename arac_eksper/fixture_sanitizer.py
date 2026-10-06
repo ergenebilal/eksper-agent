@@ -13,6 +13,8 @@ from arac_eksper.privacy import mask_phones
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # Türk plakası: il kodu 01-81, 1-3 harf, 2-4 rakam ("34 ABC 123", "16AB1234"); "/" sonrası değil (lastik 205/55 R16)
 _PLATE = re.compile(r"(?<![\w./])(0[1-9]|[1-7]\d|8[01])\s?[A-PR-VYZ]{1,3}\s?\d{2,4}(?!\w|\.\w)")
+# Kişisel olmayan, ilanın niteliğini taşıyan gizli alanlar korunur (ör. fiyat değişti mi)
+_KEEP_HIDDEN = {"priceHistoryFlag"}
 _DROP_TAGS = ("script", "noscript", "iframe", "object", "embed", "template")
 # Harita/konum öznitelikleri (satıcının konumu olabilir): değeriyle birlikte silinir
 _GEO_ATTR = re.compile(r"(^|[-_])(lat|lon|lng|latitude|longitude|coords?|geo)($|[-_])", re.I)
@@ -40,6 +42,8 @@ def sanitize(html: str, remove: list[str] | None = None) -> tuple[str, dict]:
         el.decompose()
         rep["silinen_etiket"] += 1
     for el in soup.select('input[type="hidden"], meta[name*="csrf" i], meta[name*="token" i]'):
+        if el.get("id") in _KEEP_HIDDEN:
+            continue
         el.decompose()
         rep["silinen_etiket"] += 1
     for c in soup.find_all(string=lambda s: isinstance(s, Comment)):
@@ -63,7 +67,7 @@ def sanitize(html: str, remove: list[str] | None = None) -> tuple[str, dict]:
             if attr == "href" and isinstance(val, str) and val.lower().startswith(("tel:", "mailto:")):
                 del el.attrs[attr]
                 continue
-            if attr == "value" and el.name in ("input", "textarea"):
+            if attr == "value" and el.name in ("input", "textarea") and el.get("id") not in _KEEP_HIDDEN:
                 del el.attrs[attr]          # form değerleri (arama kutusu, oturum alanları) fixture'a girmez
                 continue
             if isinstance(val, str):

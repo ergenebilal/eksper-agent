@@ -68,6 +68,9 @@ class AnalyzeRequest(BaseModel):
     tramer_tutari_yapilandirilmis: int | None = Field(None, ge=0, le=500_000_000)
     parts: dict[str, PartState] = Field(default_factory=dict)
     aciklama: str = Field("", max_length=8000)
+    ilan_tarihi: date | None = None                       # sayfadaki "İlan Tarihi"
+    kimden: str | None = Field(None, max_length=30)       # satıcı türü: bireysel / galeri (ilan niteliği, kişi değil)
+    fiyat_degisti: bool | None = None                     # sitenin fiyat değişim bayrağı
     max_butce: int | None = Field(None, ge=1, le=500_000_000)
     emsal: list[Comp] = Field(default_factory=list, max_length=300)
 

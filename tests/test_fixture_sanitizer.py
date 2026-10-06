@@ -59,3 +59,8 @@ def test_map_coordinates_are_removed():
                          '<meta itemprop="latitude" data-latitude="40.1">')
     assert "40.1885" not in html and "29.0610" not in html and "40.1" not in html
     assert 'data-zoom="14"' in html and rep["silinen_konum"] == 3
+
+
+def test_non_personal_hidden_flag_is_kept_with_value():
+    html, _ = sanitize('<input id="priceHistoryFlag" type="hidden" value="true"><input type="hidden" name="s" value="tok">')
+    assert 'id="priceHistoryFlag"' in html and 'value="true"' in html and "tok" not in html

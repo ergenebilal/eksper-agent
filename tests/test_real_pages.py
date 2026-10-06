@@ -181,3 +181,14 @@ def test_real_listings_declared_costs_via_quick(extracted, monkeypatch):
             for k in (gm or {}).get("kalemler", []):
                 if k["alinti"]:
                     assert k["alinti"] in r["p"]["baslik"] + "\n" + r["p"]["aciklama"], no
+
+
+def test_listing_date_seller_type_and_price_change_flag(extracted):
+    for f in PAGES:
+        soup = BeautifulSoup(f.read_text(encoding="utf-8"), "lxml")
+        p = extracted[f.stem.split("_")[1]]["p"]
+        assert re.match(r"^20\d\d-\d\d-\d\d$", p["ilan_tarihi"]), f.name
+        assert p["kimden"] in ("Sahibinden", "Galeriden", "Yetkili Bayiden"), f.name
+        flag = soup.select_one("input#priceHistoryFlag")
+        assert p["fiyat_degisti"] is (flag.get("value") == "true"), f.name
+    assert extracted["1343974334"]["p"]["ilan_tarihi"] == "2026-10-04"
