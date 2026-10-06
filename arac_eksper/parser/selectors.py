@@ -1,0 +1,22 @@
+class Selectors:
+    LIST_ITEM = "div.list-item"
+    LIST_ILAN_LINK = "a.ilan-link"
+    LIST_ILAN_NO = "span.ilan-no"
+    LIST_BASLIK = "h3.baslik"
+    LIST_FIYAT = "span.fiyat"
+    LIST_YIL = "span.yil"
+    LIST_KM = "span.km"
+    LIST_IL = "span.il"
+    LIST_ILCE = "span.ilce"
+    LIST_TARIH = "span.ilan-tarihi"
+    LIST_NEXT_PAGE = "a.next-page"
+
+    DETAIL_ILAN_NO = "span.ilan-no"
+    DETAIL_BASLIK = "h1.baslik"
+    DETAIL_FIYAT = "span.fiyat"
+    DETAIL_INFO_LIST = "div.info-item"
+    DETAIL_INFO_LABEL = "span.label"
+    DETAIL_INFO_VALUE = "span.value"
+    DETAIL_ACIKLAMA = "div.aciklama"
+
+    DAMAGE_PART = "div.part"

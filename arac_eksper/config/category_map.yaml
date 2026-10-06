@@ -1,0 +1,6 @@
+# Sahibinden kategori haritası
+# Kullanıcı `arac map add` ile buraya yeni URL'lerden çıkardığı kategorileri ekleyebilir.
+categories:
+  Renault:
+    Megane:
+      1.5 dCi Touch: "renault-megane-1.5-dci-touch"
