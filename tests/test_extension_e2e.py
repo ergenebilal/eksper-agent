@@ -275,6 +275,15 @@ def test_label_driven_reading_on_a_realistic_layout_and_diagnose_report(browser_
     page.close()
 
 
+def test_rejected_input_names_the_field_but_never_echoes_the_value(browser_ctx):
+    sw = browser_ctx["sw"]
+    secret = "GIZLI-ILAN-METNI-" + "x" * 20
+    res = sw.evaluate("async (b) => await api('/api/v1/analyze', {body: b})",
+                      {"ilan_no": "1", "baslik": secret, "fiyat": -5, "yil": 2022, "km": 1})
+    assert res["ok"] is False and res["code"] == "invalid"
+    assert "fiyat" in res["message"] and "GIZLI" not in res["message"]
+
+
 def test_extension_never_requests_the_site_by_itself(browser_ctx):
     """Siteye giden her istek test sayfalarının kendi gezintisidir; service worker/eklenti hiç istek atmaz."""
     hits = browser_ctx["hits"]

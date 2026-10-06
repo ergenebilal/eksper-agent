@@ -45,7 +45,15 @@ async function api(path, { method = 'POST', body } = {}) {
     if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Jeton reddedildi (EXTENSION_TOKEN).' };
     if (r.status === 503) return { ok: false, code: 'disabled', message: 'Sunucuda EXTENSION_TOKEN ayarlı değil.' };
     if (r.status === 429) return { ok: false, code: 'rate_limited', message: 'Günlük analiz sınırı doldu ya da çok fazla deneme.' };
-    if (r.status === 422) return { ok: false, code: 'invalid', message: 'Sunucu ilan verisini reddetti.' };
+    if (r.status === 422) {          // yalnız ALAN ADI ve kural mesajı gösterilir; girdi değeri (ilan metni) asla
+      let why = '';
+      try {
+        const j = await r.json();
+        why = (Array.isArray(j.detail) ? j.detail : []).slice(0, 3)
+          .map((e) => `${(e.loc || []).filter((x) => x !== 'body').join('.')}: ${e.msg}`).join(' · ');
+      } catch (_) { /* gövde okunamadı */ }
+      return { ok: false, code: 'invalid', message: 'Sunucu ilan verisini reddetti' + (why ? ' (' + why + ')' : '.') };
+    }
     if (!r.ok) return { ok: false, code: 'server', message: `Sunucu hatası (${r.status}).` };
     return { ok: true, data: await r.json() };
   } catch (e) {
