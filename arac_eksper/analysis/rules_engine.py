@@ -2,6 +2,7 @@ import yaml
 from pathlib import Path
 from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, PartState
 from arac_eksper.schemas import MarketStats
+from arac_eksper.analysis.diagram_check import sema_kontrolu, tamami_orijinal
 from arac_eksper.analysis.models_kb import ekspertiz_maddeleri, kronik_arizalar
 
 from arac_eksper.config.rules_loader import load_rules  # noqa: F401  (yeniden dışa aktarım)
@@ -162,6 +163,8 @@ def evaluate_score(detail: ListingDetail, findings: DescriptionFindings, market:
 def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, market: MarketStats,
                       max_butce: int | None = None, kb: list[dict] | None = None) -> Verdict:
     rules = load_rules()
+    beyan_orijinal = tamami_orijinal(detail.parts)
+    detail, sema_uyari = sema_kontrolu(detail)        # doldurulmamış şema "orijinal" sayılmaz (parçalar → bilinmiyor)
     kronik = kronik_arizalar(detail, kb)
 
     hard_fails = evaluate_hard_fails(detail, findings, market, rules, max_butce)
@@ -208,7 +211,12 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
         eksiler.append("Piyasa emsali yetersiz: fiyat karşılaştırması güvenilir değil")
     eksiler += [f"Kronik arıza riski: {k.get('etiket', '?')}" for k in _puanlanan(kronik)]
 
+    if sema_uyari:
+        eksiler.insert(0, sema_uyari)
     kontrol = ["Şase uçları", "Podyeler", "Direkler", "Airbag modülü", "Motor üfleme testi"]
+    if sema_uyari or beyan_orijinal:
+        kontrol.insert(0, "Tüm panellerde boya kalınlığı (mikron) ölçümü: hasar şemasındaki 'tamamı orijinal' bilgisi "
+                          "satıcı beyanıdır" + (" ve ilan metniyle çelişiyor" if sema_uyari else ""))
     kontrol += ekspertiz_maddeleri(detail, kb)      # araca özel: tetiklenmiş kronik + bakım zamanı + diğer kronik
 
     verdict = Verdict(

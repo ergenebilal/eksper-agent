@@ -78,5 +78,19 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/cg.svg",
+        "fonts/inter-latin.woff2",
+        "fonts/inter-latin-ext.woff2",
+        "fonts/space-grotesk-latin.woff2",
+        "fonts/space-grotesk-latin-ext.woff2"
+      ],
+      "matches": [
+        "*://*.sahibinden.com/*"
+      ]
+    }
+  ]
 }

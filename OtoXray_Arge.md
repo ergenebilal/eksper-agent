@@ -134,6 +134,21 @@ dürüst sınırlarla, düşük güvenle başlamalı.
 - **Temizleme:** satıcı kutusu, giriş menüsü, bildirimler silinir; harita koordinatları (`data-lat/lon`) satıcı konumu olabileceği için
   silinir; lastik ölçüsü (`205/55 R16`) plaka sanılıyordu, düzeltildi. Ham sayfalar `data/samples/` (git dışı).
 - **Python ayrıştırıcı** (kişisel araç, `parser/`) hâlâ eski sentetik seçicilerde; ürünü etkilemez → R0.4.
+- **Boş/doldurulmamış hasar şeması (2. tur, 18 ilan):** site doldurulmamış şemayı 13/13 "orijinal" + "Aracın tüm parçaları
+  orijinaldır" metniyle gösterir; DOM'da gerçek "hepsi orijinal" beyanından **ayırt edilemez** ("komple boyalı" başlıklı 3 ilanla
+  kanıtlandı). Çözüm anlam düzeyinde: `analysis/diagram_check.py` — şema tamamen orijinal + başlık/açıklamada olumsuzlanmamış
+  boya/değişen beyanı → parçalar **bilinmiyor**, 🟢 engelli, panelde "Hasar şeması güvenilir değil" uyarısı, kontrol listesine mikron
+  ölçümü. Olumsuzlamalar ("boyasız", "değişeni yok", "boya işlemi yoktur"), kaporta dışı değişimler (termostat, far, filtre) ve
+  "boya koruma" sayılmaz; "boyası var ama değişeni yok" doğru okunur. Çelişkisiz "tamamı orijinal" şema da kontrol listesinde
+  "satıcı beyanı, boya kalınlığı ölçtürün" maddesi alır. 4/18 gerçek ilan çelişkili çıktı (elle doğrulandı).
+- **"Galeriden" klasöründeki 2 ilanın Kimden alanı "Sahibinden"**: sayfa ne diyorsa o okunur; ticari dil sinyali R4.2'de.
+- **Arama sayfası:** başlıklar `thead td` (th değil) → Seri sütunu okunmuyordu; metinle aramada yol `/otomobil` olduğundan emsaller
+  tek havuzda birikip **farklı modeller kıyaslanıyordu** (ör. A4/A5/A7). Düzeltildi: Marka+Seri satırdan okunur, emsal grubu
+  `m:marka seri` (ilan sayfalarıyla ortak havuz). Reklam satırı (`tr.nativeAd`) atlanır, "okunamadı" sayılmaz.
+- **"Bu sayfayı eksperle" çubuğu** yalnız ilk sayfada çıkıyordu (tek seferlik kurulum + eski kapsayıcıya bağlı gözlemci +
+  geri/ileri önbellek). Yeniden yazıldı: shadow DOM'da CyberGene tasarımı, tek belge gözlemcisiyle "tablo göründükçe yerinde tut",
+  liste değişince yeniden değerlendirme, `pageshow`/`popstate`, hata sonrası 30 sn bekleme. E2E: tablo kapsayıcısıyla değişince
+  ve önbellekten dönüşte çubuk geri gelir.
 
 ## 4. Mimari ilkeler (yeni özellikler için)
 
@@ -151,8 +166,8 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 ### R0 — Önkoşul: gerçek sayfa doğrulaması
 | ID | Paket | Durum | Kabul ölçütü | Dosyalar |
 |---|---|---|---|---|
-| R0.1 | 15-20 gerçek ilan sayfası (farklı marka, galeri/sahibinden, diyagramlı/diyagramsız) + 3 arama sayfası | 🔄 13 detay geldi · 👤 3 arama + birkaç **galeriden** ve **boya/değişen belirtilmemiş** ilan eksik | Kullanıcı "Farklı kaydet" ile **`data/samples/`** klasörüne koyar (git'e girmez, ham kalır); ajan `arac fixture sanitize data/samples/*.html` ile temizleyip `tests/fixtures/real/`'a alır | `fixture_sanitizer.py` |
-| R0.2 | Eklenti seçicilerini gerçek fixture'lardan çıkar (UNVERIFIED işaretlerini kaldır) + **ilan tarihi** alanı | 🔄 detay ✅ (13/13, `tests/test_real_pages.py`) · arama sayfası ⬜ (örnek bekliyor) · ilan tarihi okuma ⬜ | Tüm gerçek fixture'larda zorunlu alanlar %100 okunur; e2e gerçek fixture ile koşar | `extension/lib/selectors.js`, `extract-*.js`, `tests/test_extension_e2e.py` |
+| R0.1 | 15-20 gerçek ilan sayfası (farklı marka, galeri/sahibinden, diyagramlı/diyagramsız) + 3 arama sayfası | ✅ 18 detay (2 "galeriden" klasörlü, 3 "komple boyalı" boş şemalı dahil) + 3 arama sayfası | Kullanıcı "Farklı kaydet" ile **`data/samples/`** klasörüne koyar (git'e girmez, ham kalır); ajan `arac fixture sanitize data/samples/*.html` ile temizleyip `tests/fixtures/real/`'a alır | `fixture_sanitizer.py` |
+| R0.2 | Eklenti seçicilerini gerçek fixture'lardan çıkar (UNVERIFIED işaretlerini kaldır) + **ilan tarihi** alanı | ✅ detay 18/18 + arama 3/3 (`tests/test_real_pages.py`, e2e gerçek arama testi) · ilan tarihi okuma → R3.2'ye taşındı | Tüm gerçek fixture'larda zorunlu alanlar %100 okunur; e2e gerçek fixture ile koşar | `extension/lib/selectors.js`, `extract-*.js`, `tests/test_extension_e2e.py` |
 | R0.3 | Gerçek açıklamalardan 100+ etiketli vaka (`kaynak: gercek`) | 👤/⬜ | `arac eval` recall ≥ %90, temiz vakada 🟢 engeli ≤ %5. Başlangıç: 13 gerçek açıklama için ajan etiket taslağı → kullanıcı onayı | `tests/data/aciklamalar.jsonl` |
 | R0.4 | Python ayrıştırıcıyı (`parser/selectors.py`, `damage_parser.py`) gerçek yapıya geçir (kişisel araç) | ⬜ | `tests/fixtures/real` ile alan doğruluğu %100 | `parser/` |
 
@@ -258,5 +273,6 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
+| 2026-10-07 | Claude (5d82b169) | R0 ✅ | 2. tur örnekler (3 arama, 2 galeriden, 3 boş şemalı) işlendi. Boş şema = "orijinal" sanma hatası anlam düzeyinde çözüldü (`diagram_check.py`, 22 birim testi). Arama: seri/marka okuma, model karışması, reklam satırı düzeltildi. Kullanıcı isteği: arama çubuğu sayfa geçişi/geri dönüşte kayboluyordu → kalıcı + CyberGene tasarımı. 356 test. **R0 tamam; R1'e geçiliyor.** |
 | 2026-10-07 | Claude (5d82b169) | R0.1, R0.2 | 13 gerçek ilan temizlenip `tests/fixtures/real`'e alındı (satıcı/hesap blokları, telefon, plaka, harita koordinatı silindi; hesap adı 0 eşleşme). Eklenti detay okuması 13/13 doğrulandı; **hasar şeması okunmuyordu (tüm gerçek ilanlar 🟢 alamıyordu) → düzeltildi**. KB şanzıman maddeleri vites+model+yıl eşleşmesine geçti. `tests/test_real_pages.py` (19 test). 324 test. Bulgular §3b. Sıradaki: kullanıcıdan 3 arama sayfası + galeriden/belirtilmemiş örnekler; R0.3 için 13 açıklamanın etiket taslağı; ilan tarihi okuma. |
 | 2026-10-07 | Claude (5d82b169) | R1.1, R1.2, R1.3 | Kararlar §8'e işlendi. R1.1: `models_kb.yaml` 32 model/59 madde taslak (hepsi onaysız → etkisiz). Yükleyici yeniden yazıldı (onay filtresi, Türkçe harf katlama, motor/vites/yakıt/yıl, km eşiği, bakım). Puan: yalnız yüksek ciddiyet + tetiklenmiş kronik (eskiden her eşleşme -0.5). R1.3: `alim_gunu.yaml` + `/api/v1/rehber` + panel bölümü. `arac kb kontrol` eklendi. 303 test. **Sıradaki ajan için:** kullanıcı onaylarını bekle; onay gelince `arac kb kontrol` → yayın. R0.1 sayfaları gelince R0.2'ye geç. Bekleme sırasında yapılabilecek: R2.1 `masraf_kb.yaml` taslağı (aralıklar, kaynak/tarih, onaysız). |

@@ -105,6 +105,7 @@ function previewView(st, tabId) {
   const plate = el('section', 'plate v-WAIT'); plate.id = 'preview';
   plate.append(carLine(st.meta), el('p', 'small mute', 'Ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. Hak harcanmadı.'));
   out.push(plate);
+  if (q.sema_uyarisi) { const w = el('section', 'alert'); w.id = 'sema-uyari'; w.append(el('b', '', 'Hasar şeması güvenilir değil'), el('p', 'small', q.sema_uyarisi)); out.push(w); }
   if (q.elenme_nedenleri && q.elenme_nedenleri.length) {
     const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri (ön hesap)'));
     const ul = el('ul'); q.elenme_nedenleri.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);

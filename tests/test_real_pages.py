@@ -20,6 +20,10 @@ PART_CLASS = {"front-bumper": "on_tampon", "rear-bumper": "arka_tampon", "front-
               "front-right-door": "sag_on_kapi", "rear-left-door": "sol_arka_kapi", "rear-right-door": "sag_arka_kapi"}
 STATE_CLASS = {"original-new": "orijinal", "painted-new": "boyali", "localpainted-new": "lokal_boyali", "changed-new": "degisen"}
 
+# Şeması "tamamı orijinal" ama metni boya/değişen diyen gerçek ilanlar (elle doğrulandı, 2026-10-07):
+# 3 "komple boyalı" başlıklı ilan + açıklamasında "orijinal boyasız parçayla değişmiştir" yazan ağır hasarlı Clio
+SEMA_CELISKILI = {"1343639279", "1343765078", "1343961525", "1343969213"}
+
 pytestmark = [pytest.mark.e2e, pytest.mark.skipif(not PAGES, reason="gerçek fixture yok")]
 
 
@@ -70,7 +74,7 @@ def extracted():
 
 
 def test_every_real_page_is_read(extracted):
-    assert len(extracted) == len(PAGES) >= 13
+    assert len(extracted) == len(PAGES) >= 18
     bad = {no: r["eksik"] for no, r in extracted.items() if not r["ok"]}
     assert bad == {}
 
@@ -106,7 +110,13 @@ def test_server_accepts_every_real_payload(extracted, monkeypatch):
                 res = c.post("/api/v1/quick", json=r["p"], headers={"Authorization": "Bearer " + "r" * 24})
                 assert res.status_code == 200, (no, res.text[:300])
                 v = c.post("/api/v1/analyze", json=r["p"], headers={"Authorization": "Bearer " + "r" * 24}).json()
-                assert "parça diyagramı yok / parçalar bilinmiyor" not in " ".join(v["eksiler"]), no
+                eks = " ".join(v["eksiler"])
+                if no in SEMA_CELISKILI:        # boş/çelişkili şema: parçalar bilinmiyor, 🟢 engelli, açık uyarı
+                    assert res.json()["sema_uyarisi"] and "Hasar şeması 'tamamı orijinal'" in eks, no
+                    assert v["etiket"] != "ALINIR", no                     # (ağır hasarlı olan zaten 🔴)
+                else:
+                    assert res.json()["sema_uyarisi"] is None, no
+                    assert "parça diyagramı yok / parçalar bilinmiyor" not in eks, no
     finally:
         xray_app.app.dependency_overrides.clear()
 
@@ -140,3 +150,16 @@ def test_kb_gearbox_items_match_a_real_listing_once_approved():
     assert names.get("EDC şanzıman kavrama aşınması") is False                       # eşleşti, 88k < 100k eşik
     assert "1.5 dCi DPF/EGR tıkanması" in names
     assert models_kb.kronik_arizalar(d, models_kb.load_kb()) == []                    # onaysız: etkisiz
+
+
+def test_unfilled_diagram_is_indistinguishable_in_dom_so_text_decides(extracted):
+    """Kanıt: 'komple boyalı' ilanların şeması DOM'da 13/13 'orijinal' (site doldurulmamış şemayı böyle gösterir)."""
+    for no in ("1343639279", "1343765078", "1343961525"):
+        assert set(extracted[no]["p"]["parts"].values()) == {"orijinal"} and len(extracted[no]["p"]["parts"]) == 13
+        assert "boyal" in extracted[no]["p"]["baslik"].lower()
+
+
+def test_gallery_samples_are_read():
+    """'Galeriden' klasöründeki örnekler: alanlar okunur; Kimden alanı sayfanın kendisinde ne yazıyorsa o."""
+    for no in ("1344374164", "1344374417"):
+        assert (FX / f"detail_{no}.html").exists()

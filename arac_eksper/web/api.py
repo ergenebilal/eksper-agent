@@ -191,7 +191,7 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
     etiket ÜRETMEZ (açıklama analizi olmadan karar verilmez). LLM bütçesinden düşmez, hiçbir şey saklanmaz."""
     _take(user, "quick", settings.user_daily_batch)
     tekrar = bool(user["id"]) and accounts.charged_recently(user["id"], accounts.listing_hash(req.ilan_no, req.aciklama))
-    detail = _detail(req)
+    detail, sema_uyari = rules_engine.sema_kontrolu(_detail(req))
     stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     empty = DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz",
                                 km_degisimi_suphesi=False)
@@ -203,7 +203,7 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
             "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                        "min_emsal": rules["etiket"]["min_emsal"]},
             "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER,
-            "kota": _kota(user), "tekrar_ucretsiz": tekrar}
+            "kota": _kota(user), "tekrar_ucretsiz": tekrar, "sema_uyarisi": sema_uyari}
 
 
 @router.post("/analyze")

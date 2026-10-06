@@ -205,15 +205,21 @@ async function handle(msg, sender) {
     }
     case 'batch': {
       if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
-      const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km, seri }) => (seri ? { ilan_no, fiyat, yil, km, seri: String(seri).slice(0, 60) } : { ilan_no, fiyat, yil, km })).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
-      const mk = await loadMk(), group = groupOfPath(msg.pagePath), now = Date.now();
-      const pageRows = Object.fromEntries(items.map((i) => [i.ilan_no, i.seri ? { y: i.yil, k: i.km, f: i.fiyat, t: now, s: i.seri } : { y: i.yil, k: i.km, f: i.fiyat, t: now }]));
-      if (group) {            // sayfada ZATEN görünen satırlar yerel emsal olarak birikir
-        mk.groups[group] = { ...(mk.groups[group] || {}), ...pageRows };
-        for (const id of Object.keys(pageRows)) mk.idx[id] = group;
-        await chrome.storage.local.set({ [MK]: pruneMk(mk) });
+      const raw = (msg.items || []).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
+      const items = raw.map(({ ilan_no, fiyat, yil, km, seri }) => (seri ? { ilan_no, fiyat, yil, km, seri: String(seri).slice(0, 60) } : { ilan_no, fiyat, yil, km }));
+      // Emsal grubu: satırın marka+serisi (ilan sayfalarıyla AYNI havuz). Okunamazsa sayfa yolu (eski davranış).
+      // Metinle aramada yol "/otomobil" olduğundan yol grubu farklı modelleri karıştırırdı.
+      const mk = await loadMk(), pathGroup = groupOfPath(msg.pagePath), now = Date.now(), touched = new Set();
+      for (const i of raw) {
+        const g = groupOfDetail({ marka: i.marka, seri: i.seri }) || pathGroup;
+        if (!g) continue;
+        mk.groups[g] = mk.groups[g] || {};
+        mk.groups[g][i.ilan_no] = i.seri ? { y: i.yil, k: i.km, f: i.fiyat, t: now, s: String(i.seri).slice(0, 60) } : { y: i.yil, k: i.km, f: i.fiyat, t: now };
+        mk.idx[i.ilan_no] = g;
+        touched.add(g);
       }
-      const pool = group ? (mk.groups[group] || pageRows) : pageRows;
+      if (touched.size) await chrome.storage.local.set({ [MK]: pruneMk(mk) });
+      const pool = Object.assign({}, ...[...touched].map((g) => mk.groups[g] || {}));
       const emsal = toComps(pool).slice(0, 300);
       return api('/api/v1/batch-evaluate', { body: { items, emsal } });
     }

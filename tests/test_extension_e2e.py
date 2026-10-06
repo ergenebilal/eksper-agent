@@ -30,6 +30,7 @@ SEARCH_URL = f"{SITE}/renault-megane"
 FEW_URL = f"{SITE}/az-ilan"
 BAD_URL = f"{SITE}/ilan/vasita-otomobil-bozuk-9999999999/detail"
 REAL_URL = f"{SITE}/ilan/vasita-arazi-suv-pickup-nissan-qashqai-1343960581/detail"
+REAL_SEARCH_URL = f"{SITE}/otomobil"          # gerçek (temizlenmiş) arama sayfası: tests/fixtures/real/search_renault.html
 
 
 class ScriptedLLM:
@@ -97,6 +98,9 @@ def browser_ctx(backend, tmp_path_factory):
                         REAL_URL: "detail_realish_synthetic.html"}.get(url.split("?")[0])
                 if name:
                     return r.fulfill(status=200, content_type="text/html; charset=utf-8", body=(FX / name).read_text("utf-8"))
+                if url.split("?")[0] == REAL_SEARCH_URL and r.request.resource_type == "document":
+                    return r.fulfill(status=200, content_type="text/html; charset=utf-8",
+                                     body=(ROOT / "tests/fixtures/real/search_renault.html").read_text("utf-8"))
                 return r.fulfill(status=404, body="yok")
             if host.startswith("127.0.0.1") or url.startswith("chrome-extension://"):
                 return r.continue_()
@@ -245,7 +249,7 @@ def test_empty_list_is_never_sent_and_list_changes_are_reevaluated(browser_ctx):
     page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=60000)
     page.evaluate("""() => { window.__saved = document.querySelector('tbody').innerHTML; document.querySelector('tbody').replaceChildren(); }""")
     page.click(".aracx-btn")
-    page.wait_for_function("document.querySelector('.aracx-status').textContent.includes('okunabilir ilan yok')", timeout=15000)
+    page.wait_for_function("document.getElementById('aracx-bar-host').shadowRoot.querySelector('.aracx-status').textContent.includes('okunabilir ilan yok')", timeout=15000)
     assert "reddetti" not in page.inner_text(".aracx-status")
     page.evaluate("() => { document.querySelector('tbody').innerHTML = window.__saved; }")      # liste yeniden dolar
     page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=30000)   # kendiliğinden
@@ -392,7 +396,7 @@ def test_extension_never_requests_the_site_by_itself(browser_ctx):
     hits = browser_ctx["hits"]
     assert hits, "test sayfaları yüklenmedi"
     assert all(not from_sw for _, from_sw in hits)
-    allowed = {DETAIL_URL, SEARCH_URL, FEW_URL, BAD_URL, REAL_URL}
+    allowed = {DETAIL_URL, SEARCH_URL, FEW_URL, BAD_URL, REAL_URL, REAL_SEARCH_URL}
     stray = [u for u, _ in hits if u.split("?")[0] not in allowed and not u.endswith("favicon.ico")]
     assert stray == [], f"beklenmeyen istek: {stray}"
 
@@ -509,3 +513,53 @@ def test_opening_a_listing_spends_nothing_until_the_xray_button(browser_ctx):
         page.close()
     finally:
         sw.evaluate("t => chrome.storage.local.set({token: t, autoAnalyze: true})", TOKEN)
+
+
+
+BAR = "document.getElementById('aracx-bar-host')"
+
+
+def test_real_search_page_badges_rows_and_groups_by_series(browser_ctx):
+    """Gerçek arama sayfası: reklam satırı 'okunamadı' sayılmaz; emsaller marka+seri grubuna yazılır (yol değil)."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    page = ctx.new_page()
+    page.goto(REAL_SEARCH_URL + "?query_text=renault")
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 15", timeout=60000)
+    st = page.inner_text(".aracx-status")
+    assert "21 ilan" in st and "okunamadı" not in st
+    assert page.eval_on_selector_all("tr.nativeAd .aracx-badge", "e => e.length") == 0
+    groups = sw.evaluate("async () => Object.keys((await chrome.storage.local.get('mk')).mk.groups)")
+    assert "m:renault megane" in groups and "m:renault clio" in groups and "p:otomobil" not in groups
+    page.close()
+
+
+def test_bar_survives_site_replacing_the_table_and_new_rows_get_badges(browser_ctx):
+    """Site sayfa geçişini yenilemeden yapıp tabloyu kapsayıcısıyla değiştirince çubuk geri gelir, yeni satırlar değerlendirilir."""
+    page = browser_ctx["ctx"].new_page()
+    page.goto(SEARCH_URL)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=60000)
+    page.evaluate("""() => {
+        const t = document.querySelector('table'); const box = t.parentElement;
+        const clone = box.cloneNode(true);                          // "2. sayfa": aynı yapı, farklı ilan numaraları
+        clone.querySelectorAll('.aracx-badge').forEach(b => b.remove());
+        clone.querySelectorAll('#aracx-bar-host').forEach(b => b.remove());
+        clone.querySelectorAll('tr.searchResultsItem').forEach((tr, i) => {
+            const id = tr.getAttribute('data-id'); if (!id) return;
+            const nid = String(5000000000 + i); tr.setAttribute('data-id', nid);
+            tr.querySelectorAll('a').forEach(a => a.setAttribute('href', (a.getAttribute('href') || '').replace(id, nid)));
+        });
+        box.replaceWith(clone); }""")
+    page.wait_for_function(BAR + " && " + BAR + ".isConnected", timeout=15000)
+    page.wait_for_function("document.querySelectorAll('tr[data-id^=\"5000000\"] .aracx-badge').length >= 7", timeout=30000)
+    page.close()
+
+
+def test_bar_comes_back_after_back_forward_cache(browser_ctx):
+    page = browser_ctx["ctx"].new_page()
+    page.goto(SEARCH_URL)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=60000)
+    page.evaluate("() => { document.getElementById('aracx-bar-host').remove(); document.querySelectorAll('.aracx-badge').forEach(b => b.remove());"
+                  " window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true})); }")
+    page.wait_for_function(BAR + " && " + BAR + ".isConnected", timeout=15000)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=30000)
+    page.close()
