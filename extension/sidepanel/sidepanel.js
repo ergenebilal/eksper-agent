@@ -358,7 +358,7 @@ function rangeBar(p, fiyat) {
 
 // ------------------------------------------------------------------ Belge röntgeni (R5.4 ekspertiz raporu, R5.1 tramer)
 let BS = null;                                          // bu sekmenin son belge sonucu (session)
-const BD = { tur: 'ekspertiz', metin: '', pdf: null, pdfAd: '', msg: '', busy: false };   // taslak: yeniden çizimde kaybolmaz
+const BD = { tur: 'ekspertiz', metin: '', pdf: null, gorseller: [], pdfAd: '', msg: '', busy: false };   // taslak: yeniden çizimde kaybolmaz
 
 function belgeCard(meta, tabId) {
   const c = card('Belge röntgeni'); c.id = 'belge';
@@ -371,26 +371,49 @@ function belgeCard(meta, tabId) {
   const ta = document.createElement('textarea'); ta.id = 'belge-metin'; ta.rows = 5; ta.maxLength = 30000; ta.value = BD.metin;
   ta.placeholder = BD.tur === 'tramer' ? 'Sorgu sonucunu (SMS ya da e-Devlet ekranı) buraya yapıştırın' : 'Rapor metnini buraya yapıştırın ya da PDF seçin';
   ta.addEventListener('input', () => { BD.metin = ta.value; });
-  const fl = el('label', 'file'); const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'application/pdf,.pdf'; fi.id = 'belge-pdf';
-  fl.append(fi, el('span', '', BD.pdfAd ? 'PDF: ' + BD.pdfAd : 'PDF seç (metin içeren, en fazla 4 MB)'));
-  fi.addEventListener('change', () => {
-    const f = fi.files && fi.files[0]; if (!f) return;
-    if (f.size > 4 * 1024 * 1024) { BD.msg = 'PDF en fazla 4 MB olabilir.'; render(); return; }
-    const rd = new FileReader();
-    rd.onload = () => { BD.pdf = String(rd.result).split(',')[1] || null; BD.pdfAd = f.name.slice(0, 60); BD.msg = ''; render(); };
-    rd.readAsDataURL(f);
+  const fl = el('label', 'file'); const fi = document.createElement('input'); fi.type = 'file'; fi.id = 'belge-pdf';
+  fi.accept = 'application/pdf,.pdf,image/jpeg,image/png,image/webp'; fi.multiple = true;
+  fl.append(fi, el('span', '', BD.pdfAd || 'PDF ya da fotoğraf / ekran görüntüsü seç (en fazla 4 görsel)'));
+  fi.addEventListener('change', async () => {
+    const files = Array.from(fi.files || []); if (!files.length) return;
+    BD.pdf = null; BD.gorseller = []; BD.pdfAd = ''; BD.msg = '';
+    if (files[0].type === 'application/pdf' || /\.pdf$/i.test(files[0].name)) {
+      const f = files[0];
+      if (f.size > 4 * 1024 * 1024) { BD.msg = 'PDF en fazla 4 MB olabilir.'; render(); return; }
+      BD.pdf = (await dataUrl(f)).split(',')[1] || null; BD.pdfAd = 'PDF: ' + f.name.slice(0, 60);
+    } else {
+      const imgs = files.filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type)).slice(0, 4);
+      if (!imgs.length) { BD.msg = 'Yalnız PDF, JPEG, PNG ya da WebP seçin.'; render(); return; }
+      try { BD.gorseller = await Promise.all(imgs.map(kucult)); } catch (_) { BD.msg = 'Görsel okunamadı.'; render(); return; }
+      BD.pdfAd = `${imgs.length} görsel seçildi` + (files.length > 4 ? ' (ilk 4)' : '');
+    }
+    render();
   });
   const go = el('button', 'pri', BD.busy ? 'Belge okunuyor…' : 'Belgeyi analiz et'); go.id = 'belge-go'; go.disabled = BD.busy;
   go.addEventListener('click', async () => {
     BD.busy = true; BD.msg = ''; render();
-    const r = await chrome.runtime.sendMessage({ type: 'belge', tabId, tur: BD.tur, metin: BD.metin, pdf_b64: BD.pdf });
+    const r = await chrome.runtime.sendMessage({ type: 'belge', tabId, tur: BD.tur, metin: BD.metin, pdf_b64: BD.pdf, gorseller: BD.gorseller });
     BD.busy = false; BD.msg = r && r.ok ? '' : ((r && r.message) || 'Belge okunamadı.');
-    if (r && r.ok) { BD.metin = ''; BD.pdf = null; BD.pdfAd = ''; }
+    if (r && r.ok) { BD.metin = ''; BD.pdf = null; BD.gorseller = []; BD.pdfAd = ''; }
     render();
   });
-  c.append(seg, ta, fl, go, el('p', 'quota', BD.msg || '1 analiz hakkı kullanır; aynı belgeyi tekrar okumak ücretsiz.'));
+  c.append(seg, ta, fl);
+  if (BD.gorseller.length) c.append(el('p', 'small mute', 'Fotoğraf, okunmak için yapay zeka hizmetine gönderilir; okunan metindeki ad, plaka, şasi ve telefon gizlenir. İsterseniz bu alanları kapatarak çekin.'));
+  c.append(go, el('p', 'quota', BD.msg || '1 analiz hakkı kullanır; aynı belgeyi tekrar okumak ücretsiz.'));
   if (BS && BS.data && (!meta || !BS.ilan_no || BS.ilan_no === meta.ilan_no)) c.append(belgeSonuc(BS.data));
   return c;
+}
+
+const dataUrl = (blob) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = no; r.readAsDataURL(blob); });
+
+/** Fotoğrafı tarayıcıda küçültür (en uzun kenar 2000 px, JPEG): yükleme hızlı, görsel okuma ucuz; EXIF yönü uygulanır. */
+async function kucult(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  const blob = await new Promise((ok) => cv.toBlob(ok, 'image/jpeg', 0.85));
+  return (await dataUrl(blob)).split(',')[1];
 }
 
 function belgeSonuc(d) {
@@ -416,6 +439,11 @@ function belgeSonuc(d) {
     const ul = el('ul', 'sig'); d.teklif.dayanak.forEach((x) => ul.append(el('li', 'small', x))); box.append(ul);
   }
   if (d.dusen_bulgu) box.append(el('p', 'small mute', `${d.dusen_bulgu} bulgu belgede birebir bulunamadığı için gösterilmedi.`));
+  if (d.okunan_metin) {                               // fotoğraftan okunan metin: kullanıcı belgenin aslıyla karşılaştırabilsin
+    const det = document.createElement('details'); det.id = 'belge-okunan';
+    det.append(el('summary', 'small', 'Fotoğraftan okunan metin (kişisel bilgiler gizlendi)'), el('pre', 'okunan', d.okunan_metin));
+    box.append(det);
+  }
   box.append(el('p', 'disc', d.uyari));
   return box;
 }

@@ -35,7 +35,9 @@ analiz sonuçları. Bunları eklenti ayarlarından tek tuşla silebilirsiniz.
 ## 4. Aktarım
 - E-posta gönderimi için e-posta hizmet sağlayıcısı: [Spaceship / ...].
 - Yapay zeka analizi: ilan **açıklama metni** (telefonlar maskelenmiş) analiz için [LLM sağlayıcısı / kendi sunucumuz]
-  üzerinde işlenir. [Sağlayıcı yurt dışındaysa KVKK m.9 kapsamında ayrıca değerlendirilmelidir — avukat.]
+  üzerinde işlenir. **Belge fotoğrafı / ekran görüntüsü** yüklenirse görsel, okunabilmesi için aynı sağlayıcıya **olduğu gibi**
+  gönderilir (üzerindeki ad, plaka, şasi no görünür olabilir); okunan metinden bu bilgiler maskelenir ve görsel saklanmaz.
+  Kullanıcıya bu alanları kapatarak çekebileceği panelde söylenir. [Sağlayıcı yurt dışındaysa KVKK m.9 kapsamında ayrıca değerlendirilmelidir — avukat.]
 - Sunucu barındırma: [Hermes sunucusu — konum / sağlayıcı].
 - Üçüncü kişilere satış, reklam ya da profil oluşturma amacıyla aktarım yapılmaz.
 

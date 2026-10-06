@@ -42,6 +42,31 @@ class OpenAIClient:
                 raise LLMUnavailable("LLM kotası doldu.") from e
             raise
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError, InternalServerError)),
+        wait=tenacity.wait_exponential_jitter(initial=2, max=20),
+        stop=tenacity.stop_after_attempt(3),
+        reraise=True
+    )
+    def _call_vision(self, messages, model_name):
+        return self.client.chat.completions.create(model=model_name, messages=messages, temperature=0)
+
+    def vision_text(self, system_prompt: str, user_text: str, images: list[tuple[str, str]],
+                    model_name: str | None = None) -> str:
+        """Görselden düz metin (R5.2 belge fotoğrafı). images: [(mime, base64)]. Hata türleri parse_structured ile aynı."""
+        content = [{"type": "text", "text": user_text}] + [
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}} for mime, b64 in images]
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": content}]
+        try:
+            out = self._call_vision(messages, model_name or settings.llm_model_fast)
+            return (out.choices[0].message.content or "").strip()
+        except RateLimitError as e:
+            raise LLMUnavailable("LLM kotası doldu." if "quota" in str(e).lower() else "LLM havuzuna erişilemiyor.") from e
+        except (APIConnectionError, APITimeoutError, InternalServerError) as e:
+            raise LLMUnavailable("LLM havuzuna erişilemiyor.") from e
+        except APIError as e:
+            raise LLMUnavailable(f"LLM çağrısı reddedildi ({type(e).__name__}).") from None
+
     def parse_structured(self, system_prompt: str, user_prompt: str, response_model: Type[T], model_name: str | None = None) -> T:
         model = model_name or settings.llm_model_fast
         

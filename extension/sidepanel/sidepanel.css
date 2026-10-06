@@ -174,3 +174,8 @@ ul.sig q{display:block;color:var(--muted)}
 
 /* R5.3 havuz sonucu */
 .havuz-item select.durum{margin-top:6px;max-width:100%;background:transparent;color:var(--text-2);border:1px solid var(--line-2);border-radius:8px;padding:4px 6px;font:inherit;font-size:12px}
+
+/* R5.2 fotoğraftan okunan metin */
+#belge-okunan{margin-top:.6rem}
+#belge-okunan summary{cursor:pointer;color:var(--text-2)}
+#belge-okunan pre.okunan{white-space:pre-wrap;word-break:break-word;font:12px/1.5 var(--body);color:var(--text-2);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:260px;overflow:auto}

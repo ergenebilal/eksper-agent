@@ -38,6 +38,11 @@ class ScriptedLLM:
     calls = 0
     last_prompt = ""
     delay = 0.0          # yapay LLM gecikmesi (ön hesap testi için)
+    gorsel = []          # R5.2: görsel okuma çağrılarına gelen (mime, boyut)
+
+    def vision_text(self, system_prompt, user_text, images, model_name=None):
+        ScriptedLLM.gorsel.append([(m, len(b)) for m, b in images])
+        return "Sorgu fotoğrafı\nAd Soyad: [gizlendi]\nKaza: 27.250 TL\nToplam: 27.250 TL"
 
     def parse_structured(self, system_prompt, user_prompt, response_model, model_name=None):
         ScriptedLLM.calls += 1
@@ -45,6 +50,8 @@ class ScriptedLLM:
         if ScriptedLLM.delay:
             time.sleep(ScriptedLLM.delay)
         from arac_eksper.analysis import belge as bg
+        if response_model is bg.TramerBulgular and "Sorgu fotoğrafı" in user_prompt:
+            return bg.TramerBulgular(toplam=27250, toplam_alinti="Toplam: 27.250 TL", agir_hasar="belirsiz")
         if response_model is bg.TramerBulgular:
             return bg.TramerBulgular(kayitlar=[bg.TramerKayit(tutar=64000, alinti="Kaza: 64.000 TL")], toplam=64000,
                                      toplam_alinti="Toplam: 64.000 TL", agir_hasar="belirsiz")
@@ -653,3 +660,27 @@ def test_old_domain_setting_migrates_and_keeps_the_login(browser_ctx):
     finally:
         ctx.unroute("https://cyberoto.cybergene.co/healthz")
         sw.evaluate("async (v) => chrome.storage.local.set(v)", eski)
+
+
+def test_document_xray_photo_upload(browser_ctx):
+    """R5.2: panelde fotoğraf seçilir → tarayıcıda JPEG'e küçültülür → görsel okuma + karşılaştırma; okunan metin gösterilir."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    ScriptedLLM.gorsel = []
+    page = ctx.new_page()
+    page.goto(DETAIL_URL + "?foto=1")
+    page.wait_for_selector("#aracx-badge-host", state="attached", timeout=90000)
+    page.wait_for_function("document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('/10')", timeout=90000)
+    tab_id = next(k[2:] for k, v in session_state(sw).items()
+                  if k.startswith("r:") and (v.get("meta") or {}).get("ilan_no") == "1234567890" and v.get("status") == "ok")
+    panel = ctx.new_page()
+    panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={tab_id}")
+    panel.wait_for_selector("#belge", timeout=15000)
+    panel.click("#belge .seg button[data-tur=tramer]")
+    foto = __import__("pathlib").Path(__file__).parent / "fixtures" / "belge" / "rapor_sentetik_foto.jpg"
+    panel.set_input_files("#belge-pdf", str(foto))
+    panel.locator("#belge label.file", has_text="1 görsel").wait_for(timeout=15000)      # panel CSP: string eval yok
+    panel.click("#belge-go")
+    panel.wait_for_selector("#belge-okunan", state="attached", timeout=60000)
+    assert "27.250" in panel.text_content("#belge-sonuc") and "Ad Soyad: [gizlendi]" in panel.text_content("#belge-okunan")
+    assert ScriptedLLM.gorsel and ScriptedLLM.gorsel[0][0][0] == "image/jpeg"
+    panel.close(); page.close()

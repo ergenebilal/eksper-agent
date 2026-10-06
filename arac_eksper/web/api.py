@@ -518,40 +518,67 @@ class BelgeRequest(BaseModel):
     tur: Literal["ekspertiz", "tramer"]
     metin: str = Field("", max_length=30_000)
     pdf_b64: str | None = Field(None, max_length=6_000_000)
+    gorseller: list[str] = Field(default_factory=list, max_length=4)    # R5.2: fotoğraf / ekran görüntüsü (base64)
     ilan: AnalyzeRequest | None = None
+
+    @field_validator("gorseller")
+    @classmethod
+    def _boyut(cls, v):
+        if any(len(x) > 4_200_000 for x in v):
+            raise ValueError("her görsel en fazla 3 MB olabilir")
+        return v
+
+
+def _iade(charge: bool, user: dict) -> None:
+    if charge:
+        accounts.refund(user["id"])
 
 
 @router.post("/belge")
 def belge(req: BelgeRequest, llm=Depends(get_llm), user=Depends(current_user)):
-    """Kullanıcının kendi ekspertiz raporu ya da tramer sorgusu → maskeleme → alıntılı çıkarım → ilanla kurallı karşılaştırma,
-    onarım aralığı, üst sınır önerisi. 1 hak; aynı belge + ilan tekrar ücretsiz. Belge SAKLANMAZ (yalnız özet hash'i)."""
+    """Kullanıcının kendi ekspertiz raporu ya da tramer sorgusu (metin, metin katmanlı PDF ya da fotoğraf/ekran görüntüsü)
+    → maskeleme → alıntılı çıkarım → ilanla kurallı karşılaştırma, onarım aralığı, üst sınır önerisi. 1 hak; aynı belge +
+    ilan tekrar ücretsiz. Belge ve görsel SAKLANMAZ (yalnız özet hash'i). Görsel, okunmak için LLM sağlayıcısına gider."""
     import hashlib
 
     from arac_eksper.analysis import belge as bg
-    metin = req.metin
-    if req.pdf_b64:
+    ilan_no = req.ilan.ilan_no if req.ilan else ""
+    gorseller, metin = [], req.metin
+    if req.gorseller:
         try:
-            metin = bg.pdf_metni(req.pdf_b64)
+            gorseller = bg.gorseller_coz(req.gorseller)
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e))
-    metin = bg.maskele(metin or "")
-    if len(metin.strip()) < 40:
-        raise HTTPException(status_code=422, detail="Belgede okunabilir metin yok. Taranmış (fotoğraf) PDF ise metni "
-                                                    "kopyalayıp yapıştırın.")
-    ilan_no = req.ilan.ilan_no if req.ilan else ""
-    h = "belge:" + hashlib.sha256(f"{req.tur}|{ilan_no}|{metin}".encode()).hexdigest()
+        ozet = hashlib.sha256("|".join(b for _, b in gorseller).encode()).hexdigest()
+    else:
+        if req.pdf_b64:
+            try:
+                metin = bg.pdf_metni(req.pdf_b64)
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+        metin = bg.maskele(metin or "")
+        if len(metin.strip()) < 40:
+            raise HTTPException(status_code=422, detail="Belgede okunabilir metin yok. Taranmış PDF ya da fotoğrafsa "
+                                                        "görsel olarak yükleyin.")
+        ozet = hashlib.sha256(metin.encode()).hexdigest()
+    h = "belge:" + hashlib.sha256(f"{req.tur}|{ilan_no}|{ozet}".encode()).hexdigest()
     charge = bool(user["id"]) and not accounts.charged_recently(user["id"], h)
     if charge:
         _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
-    if not _llm_budget_ok():
-        if charge:
-            accounts.refund(user["id"])
+    if not _llm_budget_ok() or (gorseller and not _llm_budget_ok()):      # görsel okuma ayrı bir LLM çağrısıdır
+        _iade(charge, user)
         raise HTTPException(status_code=429, detail="Sunucunun günlük analiz sınırı doldu")
     try:
+        if gorseller:
+            metin = bg.gorselden_metin(llm, gorseller, settings.llm_model_fast)
         b, atilan = bg.cikar(llm, req.tur, metin, settings.llm_model_fast)
-    except (LLMUnavailable, ValueError):
-        if charge:
-            accounts.refund(user["id"])
+    except ValueError as e:
+        _iade(charge, user)
+        if gorseller and "bulunamadı" in str(e):
+            raise HTTPException(status_code=422, detail=f"{e} Hakkınız iade edildi.")
+        raise HTTPException(status_code=503, detail="Belge şu an okunamadı; hakkınız iade edildi. Biraz sonra tekrar deneyin.")
+    except LLMUnavailable:
+        _iade(charge, user)
         raise HTTPException(status_code=503, detail="Belge şu an okunamadı; hakkınız iade edildi. Biraz sonra tekrar deneyin.")
     if charge:
         accounts.add_charge(user["id"], h)
@@ -565,5 +592,8 @@ def belge(req: BelgeRequest, llm=Depends(get_llm), user=Depends(current_user)):
     return {"tur": req.tur, "bulgular": b.model_dump(), "dusen_bulgu": atilan, "celiskiler": cel, "maliyet": mal,
             "teklif": bg.teklif(req.tur, b, ilan, mal), "ozet": bg.ozet(req.tur, cel, b),
             "ilan_tramer_beyani": ilan and ilan["tramer_beyan"], "hak_kullanildi": charge, "kota": _kota(user),
-            "uyari": "Belge okuması yapay zeka ile yapıldı; her bulgu belgeden alıntılanır. Belgenin aslıyla karşılaştırın.",
+            "kaynak": "gorsel" if gorseller else "metin", "okunan_metin": metin if gorseller else None,
+            "uyari": ("Belge fotoğraftan yapay zeka ile okundu; okunan metni ve bulguları belgenin aslıyla karşılaştırın."
+                      if gorseller else
+                      "Belge okuması yapay zeka ile yapıldı; her bulgu belgeden alıntılanır. Belgenin aslıyla karşılaştırın."),
             "yasal_uyari": DISCLAIMER}

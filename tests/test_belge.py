@@ -155,3 +155,98 @@ def test_endpoint_rejects_empty_or_bad_documents(client):
     assert client.post("/api/v1/belge", headers=H, json={"tur": "tramer", "metin": "kısa"}).status_code == 422
     bad = base64.b64encode(b"%PDF-1.4 bozuk").decode()
     assert client.post("/api/v1/belge", headers=H, json={"tur": "ekspertiz", "pdf_b64": bad}).status_code == 422
+
+
+# ------------------------------------------------------------------ R5.2: fotoğraf / ekran görüntüsü
+FIX = __import__("pathlib").Path(__file__).parent / "fixtures" / "belge"
+# Canlı görüş modelinin (gemini-3.5-flash) sentetik rapor fotoğrafından gerçekten ürettiği metin (2026-10-07): tablolar
+# markdown, kişisel veriler AÇIK — maskeleme bunu da yakalamalı.
+OKUNAN = """**OTO EKSPERTİZ RAPORU**
+Rapor No: 2026-10-118 Tarih: 05.10.2026
+| Müşteri | Ahmet Yılmaz | Plaka | 34 ABC 123 |
+| :--- | :--- | :--- | :--- |
+| **Marka / Model** | Renault Megane 1.5 dCi | **Şasi No** | VF1RFB00X12345678 |
+| **Kilometre** | 98.450 | **Telefon** | 0532 111 22 33 |
+| Parça | Durum | Parça | Durum |
+| Motor kaputu | Boyalı | Tavan | Orijinal |
+| Sağ ön çamurluk | Değişen | Sol ön çamurluk | Orijinal |
+**Şase, podye ve direkler:** İşlem yok, temiz.
+**Motor:** Yağ terlemesi mevcut. **Şanzıman:** Debriyaj seti aşınmış, değişmeli.
+**Tramer kaydı:** 42.300 TL"""
+
+
+class GorselLLM(FakeLLM):
+    def __init__(self, okunan=OKUNAN):
+        super().__init__()
+        self.okunan, self.prompts, self.gorsel = okunan, [], 0
+
+    def vision_text(self, system_prompt, user_text, images, model_name=None):
+        self.gorsel += 1
+        assert images and images[0][0] == "image/jpeg"
+        return self.okunan
+
+    def parse_structured(self, system_prompt, user_prompt, response_model, model_name=None):
+        self.prompts.append(user_prompt)
+        if response_model is bg.EkspertizBulgular:
+            return bg.EkspertizBulgular(
+                rapor_km=98450, km_alinti="Kilometre** | 98.450", parcalar=[
+                    bg.BelgeParca(parca="motor_kaputu", durum="boyali", alinti="Motor kaputu | Boyalı"),
+                    bg.BelgeParca(parca="sag_on_camurluk", durum="degisen", alinti="Sağ ön çamurluk | Değişen")],
+                kusurlar=[bg.BelgeKusur(baslik="Debriyaj seti aşınmış", ciddiyet="yuksek", alinti="Debriyaj seti aşınmış, değişmeli")],
+                tramer_tutari=42300, tramer_alinti="Tramer kaydı:** 42.300 TL")
+        return super().parse_structured(system_prompt, user_prompt, response_model, model_name)
+
+
+def test_masking_handles_markdown_tables_from_vision():
+    m = bg.maskele(OKUNAN)
+    for s in ("Ahmet", "34 ABC 123", "VF1RFB00X12345678", "0532 111 22 33"):
+        assert s not in m, s
+    assert "98.450" in m and "Motor kaputu | Boyalı" in m
+
+
+def test_image_type_comes_from_file_signature():
+    jpg = base64.b64encode((FIX / "rapor_sentetik_foto.jpg").read_bytes()).decode()
+    assert bg.gorseller_coz([jpg])[0][0] == "image/jpeg"
+    for bad in (base64.b64encode(b"GIF89a....").decode(), "!!!"):
+        with pytest.raises(ValueError):
+            bg.gorseller_coz([bad])
+    with pytest.raises(ValueError):
+        bg.gorseller_coz([jpg] * 5)
+
+
+@pytest.fixture
+def gclient(monkeypatch):
+    monkeypatch.setattr(settings, "extension_token", EXT)
+    security._fails.clear()
+    api._calls.clear()
+    llm = GorselLLM()
+    xray_app.app.dependency_overrides[api.get_llm] = lambda: llm
+    with TestClient(xray_app.app, base_url="http://panel.test") as c:
+        c.llm = llm
+        yield c
+    xray_app.app.dependency_overrides.clear()
+
+
+def test_photo_endpoint_reads_masks_compares_and_charges_once(gclient):
+    mid = accounts.create_member("g@ornek.com", gunluk_kota=5)
+    h = {"Authorization": f"Bearer {accounts.issue_key(mid)}"}
+    jpg = base64.b64encode((FIX / "rapor_sentetik_foto.jpg").read_bytes()).decode()
+    ilan = payload(km=92_000, parts={"motor_kaputu": "orijinal", "sag_on_camurluk": "boyali"}, aciklama="Tramer 18.000 TL.")
+    body = {"tur": "ekspertiz", "gorseller": [jpg], "ilan": ilan}
+    d = gclient.post("/api/v1/belge", headers=h, json=body).json()
+    assert d["kaynak"] == "gorsel" and d["hak_kullanildi"] is True and accounts.used_today(mid) == 1
+    assert "Ahmet" not in d["okunan_metin"] and "0532" not in d["okunan_metin"]
+    assert not any(s in p for p in gclient.llm.prompts for s in ("Ahmet", "34 ABC 123", "0532"))   # metin adımına giden
+    msg = " ".join(c["mesaj"] for c in d["celiskiler"])
+    assert "Motor kaputu: ilanda orijinal, raporda boyalı" in msg and "42.300" in msg and "98.450" in msg
+    again = gclient.post("/api/v1/belge", headers=h, json=body).json()
+    assert again["hak_kullanildi"] is False and accounts.used_today(mid) == 1
+
+
+def test_photo_without_a_document_is_rejected_and_refunded(gclient):
+    gclient.llm.okunan = "BELGE_DEGIL"
+    mid = accounts.create_member("n@ornek.com", gunluk_kota=5)
+    h = {"Authorization": f"Bearer {accounts.issue_key(mid)}"}
+    jpg = base64.b64encode((FIX / "rapor_sentetik.jpg").read_bytes()).decode()
+    r = gclient.post("/api/v1/belge", headers=h, json={"tur": "tramer", "gorseller": [jpg]})
+    assert r.status_code == 422 and "iade" in r.json()["detail"] and accounts.used_today(mid) == 0

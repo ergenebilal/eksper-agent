@@ -295,10 +295,12 @@ async function handle(msg, sender) {
       if (!fromPanel(sender)) return { ok: false, code: 'forbidden' };
       if (!['ekspertiz', 'tramer'].includes(msg.tur)) return { ok: false, message: 'Belge türü geçersiz.' };
       const metin = String(msg.metin || '').slice(0, 30000), pdf = msg.pdf_b64 ? String(msg.pdf_b64) : null;
-      if (!metin.trim() && !pdf) return { ok: false, message: 'Metni yapıştırın ya da PDF seçin.' };
+      const gorseller = Array.isArray(msg.gorseller) ? msg.gorseller.slice(0, 4).map(String) : [];
+      if (!metin.trim() && !pdf && !gorseller.length) return { ok: false, message: 'Metni yapıştırın ya da PDF / fotoğraf seçin.' };
       if (pdf && pdf.length > 6000000) return { ok: false, message: 'PDF en fazla 4 MB olabilir.' };
+      if (gorseller.reduce((n, g) => n + g.length, 0) > 7000000) return { ok: false, message: 'Görseller çok büyük; daha az ya da daha küçük görsel seçin.' };
       const cur = (await chrome.storage.session.get('p:' + msg.tabId))['p:' + msg.tabId];
-      const r = await api('/api/v1/belge', { body: { tur: msg.tur, ...(pdf ? { pdf_b64: pdf } : { metin }), ...(cur && cur.p ? { ilan: cur.p } : {}) } });
+      const r = await api('/api/v1/belge', { body: { tur: msg.tur, ...(gorseller.length ? { gorseller } : pdf ? { pdf_b64: pdf } : { metin }), ...(cur && cur.p ? { ilan: cur.p } : {}) } });
       if (r.ok) await chrome.storage.session.set({ ['b:' + msg.tabId]: { t: Date.now(), ilan_no: cur && cur.p ? cur.p.ilan_no : null, data: r.data } });
       return r;
     }
