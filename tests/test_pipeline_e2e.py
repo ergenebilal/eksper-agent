@@ -91,3 +91,34 @@ def test_prefilter_skips_over_budget_and_high_km(db):
     col = FakeCollector([ok(list_html([over] + ITEMS))], {"1001": ok(detail_html("1001", 820_000))})
     run(pipeline.run_search(db, col, FakeLLM(), CRIT, pages=1, max_details=2))
     assert "3001" not in col.detail_calls
+
+
+def test_connection_error_and_invalid_json_become_pending_not_exception(tmp_path):
+    """K3: LLM bağlantı/şema hatası 'beklemede' karar üretir; ilan temiz görünmez, sayfa yeniden çekilmez."""
+    import pytest
+    from datetime import datetime, timezone, date
+    from pydantic import ValidationError
+    from arac_eksper import pipeline
+    from arac_eksper.llm.client import LLMUnavailable
+    from arac_eksper.schemas import ListingDetail, DescriptionFindings
+    from arac_eksper.storage import repo
+    from arac_eksper.storage.db import Base
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    eng = create_engine(f"sqlite:///{tmp_path/'t.db'}")
+    Base.metadata.create_all(eng)
+    db = sessionmaker(bind=eng)()
+    d = ListingDetail(ilan_no="9", url="u", baslik="b", marka="Renault", model="Megane", fiyat=1, yil=2022, km=1,
+                      il="x", ilan_tarihi=date.today(), aciklama="a", fetched_at=datetime.now(timezone.utc))
+    repo.create_or_update_listing(db, d)
+
+    class BadJSON:
+        def parse_structured(self, *a, **k):
+            try:
+                DescriptionFindings.model_validate_json("{}")
+            except ValidationError as e:
+                raise e
+    for llm in (BadJSON(),):
+        out = pipeline.evaluate_detail(db, llm, d, None)
+        assert out.verdict.beklemede and out.verdict.etiket == "DUSUNULEBILIR"

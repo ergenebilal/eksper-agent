@@ -3,7 +3,7 @@ import random
 import time
 from typing import Protocol, TypeVar, Type
 from pydantic import BaseModel, ValidationError
-from openai import OpenAI, RateLimitError, APIError, APITimeoutError, InternalServerError
+from openai import OpenAI, RateLimitError, APIError, APIConnectionError, APITimeoutError, InternalServerError
 from arac_eksper.config.settings import settings
 import tenacity
 
@@ -24,7 +24,7 @@ class OpenAIClient:
         )
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type((RateLimitError, APITimeoutError, InternalServerError)),
+        retry=tenacity.retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError, InternalServerError)),
         wait=tenacity.wait_exponential_jitter(initial=2, max=20),
         stop=tenacity.stop_after_attempt(5),
         reraise=True
@@ -75,8 +75,10 @@ class OpenAIClient:
                 error_msg = f"JSON doğrulama hatası aldım:\n{str(e)}\n\nLütfen düzeltip sadece geçerli JSON gönder."
                 messages.append({"role": "assistant", "content": raw_content})
                 messages.append({"role": "user", "content": error_msg})
-            except (RateLimitError, APITimeoutError, InternalServerError) as e:
+            except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as e:
                 raise LLMUnavailable("LLM havuzuna erişilemiyor.") from e
+            except APIError as e:  # kimlik/istek hatası vb.: ham metin (anahtar parçası içerebilir) sızmasın
+                raise LLMUnavailable(f"LLM çağrısı reddedildi ({type(e).__name__}).") from None
             except tenacity.RetryError as e:
                 raise LLMUnavailable("LLM havuzuna erişilemiyor.") from e
         

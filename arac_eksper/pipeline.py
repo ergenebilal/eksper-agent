@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from arac_eksper.analysis import description_llm, market, rules_engine
@@ -101,7 +102,7 @@ def evaluate_detail(db: Session, llm, detail: ListingDetail, max_butce: Optional
     try:
         findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama,
                                                        db=db, ilan_no=detail.ilan_no)
-    except LLMUnavailable:
+    except (LLMUnavailable, ValidationError):  # havuz yok ya da kalıcı geçersiz yanıt: 'beklemede', asla 'bulgu yok' değil
         verdict = pending_outcome(detail)
         repo.save_verdict(db, verdict, detail, None)
         return EvalOutcome(detail, None, verdict)

@@ -104,3 +104,25 @@ def test_description_llm_two_pass(monkeypatch):
     assert client.calls[0] == "gpt-4o-mini"
     assert client.calls[1] == "gpt-4o"
     assert res.sase_direk_podye_islem == "yok_beyan"
+
+
+def test_llm_connection_error_is_unavailable():
+    """Proxy kapalıyken ham APIConnectionError sızmamalı (K3)."""
+    from openai import APIConnectionError
+    client = OpenAIClient()
+    err = APIConnectionError(request=httpx.Request("POST", "http://x"))
+    with patch.object(client.client.chat.completions, 'create', side_effect=err):
+        with patch('time.sleep'):
+            with pytest.raises(LLMUnavailable):
+                client.parse_structured("sys", "user", DummySchema)
+
+
+def test_llm_api_error_message_does_not_leak_body():
+    from openai import AuthenticationError
+    client = OpenAIClient()
+    resp = httpx.Response(401, request=httpx.Request("POST", "http://x"))
+    err = AuthenticationError("Incorrect API key provided: sk-SECRET123", response=resp, body=None)
+    with patch.object(client.client.chat.completions, 'create', side_effect=err):
+        with pytest.raises(LLMUnavailable) as ei:
+            client.parse_structured("sys", "user", DummySchema)
+    assert "SECRET" not in str(ei.value) and "SECRET" not in repr(ei.value.__cause__)
