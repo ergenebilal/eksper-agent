@@ -21,7 +21,10 @@ COOKIE = "oxr_yonetim"
 
 MESAJ = {
     "kod": ("ok", "Adres yönetici listesindeyse giriş kodu gönderildi."),
-    "kod_hatali": ("err", "Kod hatalı ya da süresi dolmuş."),
+    "kod_hatali": ("err", "Kod hatalı ya da süresi dolmuş. Yalnız EN SON gelen e-postadaki kod geçerlidir; yeni kod isteyince "
+                          "eskisi iptal olur."),
+    "sifre_hatali": ("err", "E-posta ya da şifre hatalı. Çok sayıda hatalı denemede şifreyle giriş 15 dakika kapanır; "
+                            "o sırada kodla girebilirsiniz."),
     "cok_istek": ("err", "Çok fazla deneme. Biraz sonra tekrar deneyin."),
     "smtp_yok": ("err", "E-posta gönderimi yapılandırılmamış (SMTP ayarları)."),
     "eklendi": ("ok", "Üye eklendi."),
@@ -127,14 +130,30 @@ def giris_form(request: Request):
     return _page(request, "giris.html", None, adim="email", email="")
 
 
+def _oturum_ac(e: str) -> RedirectResponse:
+    sid, _ = accounts.new_admin_session(e)
+    resp = _go("")
+    resp.set_cookie(COOKIE, sid, max_age=12 * 3600, path="/yonetim", httponly=True,
+                    secure=settings.admin_cookie_secure, samesite="strict")
+    return resp
+
+
 @router.post("/giris")
-def giris_kod(request: Request, email: str = Form("", max_length=254)):
+def giris_kod(request: Request, email: str = Form("", max_length=254), sifre: str = Form("", max_length=256)):
     if not _ip_ok(request):
         return _go("/giris", "cok_istek")
     try:
         e = accounts.normalize_email(email)
     except ValueError:
         return _go("/giris", "email_gecersiz")
+    if sifre:                                     # şifreyle giriş (yönetici `arac xray admin-sifre` ile belirlediyse)
+        ip = security.client_ip(request)
+        if security.login_blocked(ip):
+            return _go("/giris", "cok_istek")
+        if e in _admins() and accounts.check_admin_password(e, sifre):
+            return _oturum_ac(e)
+        security.record_fail(ip)
+        return _go("/giris", "sifre_hatali")
     if not mailer.configured():
         return _go("/giris", "smtp_yok")
     if e in _admins():
@@ -161,11 +180,7 @@ def giris_dogrula(request: Request, email: str = Form("", max_length=254), kod: 
     if e not in _admins() or not accounts.verify_code(e, "yonetim", kod):
         security.record_fail(ip)
         return _go("/giris", "kod_hatali")
-    sid, _ = accounts.new_admin_session(e)
-    resp = _go("")
-    resp.set_cookie(COOKIE, sid, max_age=12 * 3600, path="/yonetim", httponly=True,
-                    secure=settings.admin_cookie_secure, samesite="strict")
-    return resp
+    return _oturum_ac(e)
 
 
 @router.post("/cikis")

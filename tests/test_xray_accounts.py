@@ -524,3 +524,41 @@ def test_prune_removes_only_expired_technical_records(client):
     r = accounts.prune()
     assert r["charges"] == 1 and r["usage"] == 1
     assert accounts.charged_recently(mid, "yeni") and accounts.get_member(mid) and accounts.list_feedback()
+
+
+def test_admin_password_login_lockout_and_code_fallback(client, outbox, monkeypatch):
+    """Yönetici şifresi: yalnız scrypt özeti; doğru şifre oturum açar; 8 hatalı denemede 15 dk kilit; şifre boşsa kod akışı."""
+    from arac_eksper.web import yonetim
+    accounts.set_admin_password(ADMIN, "dogru-sifre-123")
+    with accounts.closing(accounts._conn()) as c:
+        h = c.execute("SELECT pw_hash FROM admin_creds").fetchone()[0]
+    assert h.startswith("scrypt$") and "dogru-sifre-123" not in h
+    with pytest.raises(ValueError):
+        accounts.set_admin_password(ADMIN, "kisa")
+    r = client.post("/yonetim/giris", data={"email": ADMIN, "sifre": "yanlis"}, follow_redirects=False)
+    assert r.headers["location"].endswith("m=sifre_hatali") and "oxr_yonetim" not in r.cookies
+    r = client.post("/yonetim/giris", data={"email": "baskasi@ornek.com", "sifre": "dogru-sifre-123"}, follow_redirects=False)
+    assert r.headers["location"].endswith("m=sifre_hatali")                        # listede olmayan adres
+    security._fails.clear()
+    r = client.post("/yonetim/giris", data={"email": ADMIN, "sifre": "dogru-sifre-123"}, follow_redirects=False)
+    assert r.status_code == 303 and "oxr_yonetim" in r.cookies and client.get("/yonetim").status_code == 200
+    import time as _t
+    for _ in range(accounts.SIFRE_KILIT_DENEME):
+        assert not accounts.check_admin_password(ADMIN, "yanlis")
+    assert not accounts.check_admin_password(ADMIN, "dogru-sifre-123")                 # kilitli
+    assert accounts.check_admin_password(ADMIN, "dogru-sifre-123", now=_t.time() + accounts.SIFRE_KILIT_SN + 1)
+    client.cookies.clear()
+    client.post("/yonetim/giris", data={"email": ADMIN, "sifre": ""})                    # boş şifre → kod gönderilir
+    assert last_code(outbox, ADMIN)
+
+
+def test_admin_password_cli_prompts_hidden_and_checks_list(client, monkeypatch):
+    from arac_eksper.cli import app
+    girdiler = iter(["cli-sifresi-456", "cli-sifresi-456"])
+    monkeypatch.setattr("getpass.getpass", lambda *_: next(girdiler))
+    r = runner.invoke(app, ["xray", "admin-sifre", ADMIN])
+    assert r.exit_code == 0 and "cli-sifresi-456" not in r.output and accounts.check_admin_password(ADMIN, "cli-sifresi-456")
+    girdiler = iter(["bir-sifre-0001", "baska-sifre-02"])
+    assert runner.invoke(app, ["xray", "admin-sifre", ADMIN]).exit_code != 0                     # tekrar eşleşmedi
+    assert accounts.check_admin_password(ADMIN, "cli-sifresi-456")
+    assert runner.invoke(app, ["xray", "admin-sifre", "yabanci@ornek.com"]).exit_code != 0        # listede değil

@@ -411,6 +411,28 @@ def xray_serve():
     xray_app.serve()
 
 
+@xray_app_cli.command("admin-sifre")
+def xray_admin_sifre(email: str = typer.Argument(..., help="ADMIN_EMAILS listesindeki yönetici adresi")):
+    """Yönetim sayfası için şifre belirler (kodla girişe ek). Şifre gizli sorulur; yalnız scrypt özeti saklanır."""
+    import getpass
+
+    from arac_eksper.web import accounts, yonetim
+    e = accounts.normalize_email(email)
+    if e not in yonetim._admins():
+        say("Bu adres ADMIN_EMAILS listesinde değil; şifre belirlenmedi.")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    p1 = getpass.getpass(f"Yeni şifre (en az {accounts.SIFRE_MIN} karakter, ekranda görünmez): ")
+    if p1 != getpass.getpass("Tekrar: "):
+        say("Şifreler aynı değil; değişiklik yapılmadı.")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    try:
+        accounts.set_admin_password(e, p1)
+    except ValueError as err:
+        say(str(err))
+        raise typer.Exit(EXIT_BAD_INPUT)
+    say(f"Şifre belirlendi: {e}. https://cyberoto.cybergene.co/yonetim adresinden şifreyle girebilirsiniz.")
+
+
 xray_user_app = typer.Typer(help="Davetli üyeler (e-postaya bağlı): haklar, durum, davet. Web: /yonetim")
 xray_app_cli.add_typer(xray_user_app, name="user")
 

@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS charges (member_id INTEGER NOT NULL, h TEXT NOT NULL,
     PRIMARY KEY (member_id, h));
 CREATE TABLE IF NOT EXISTS invites (
     id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, sent_at TEXT NOT NULL, ok INTEGER NOT NULL, hata TEXT);
+CREATE TABLE IF NOT EXISTS admin_creds (
+    email TEXT PRIMARY KEY, pw_hash TEXT NOT NULL, updated_at TEXT NOT NULL, fails INTEGER NOT NULL DEFAULT 0,
+    locked_until REAL NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS admin_sessions (
     sid_hash TEXT PRIMARY KEY, email TEXT NOT NULL, csrf TEXT NOT NULL, expires_at REAL NOT NULL);
 """
@@ -360,6 +363,55 @@ def kalibrasyon() -> dict:
     return {"tablo": tablo, "toplam": len(rows), "ekspertizli": len(ekspertizli), "yanlis_yesil": yanlis_yesil,
             "kacan": kacan, "yesil_isabet": (sum(1 for r in yesil if r["sonuc"] != "ekspertiz_agir_kusur") / len(yesil))
             if yesil else None}
+
+
+# ------------------------------------------------------------------ yönetici şifresi (isteğe bağlı, kodla girişe ek)
+SIFRE_MIN = 10
+SIFRE_KILIT_DENEME, SIFRE_KILIT_SN = 8, 15 * 60
+_SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1}
+
+
+def _pw_hash(pw: str, salt: bytes | None = None) -> str:
+    salt = salt or secrets.token_bytes(16)
+    h = hashlib.scrypt(pw.encode(), salt=salt, dklen=32, **_SCRYPT)
+    return f"scrypt${_SCRYPT['n']}${_SCRYPT['r']}${_SCRYPT['p']}${salt.hex()}${h.hex()}"
+
+
+def set_admin_password(email: str, pw: str) -> None:
+    """Yalnız scrypt özeti saklanır (tuzlu). Düz şifre hiçbir yere yazılmaz."""
+    if len(pw or "") < SIFRE_MIN:
+        raise ValueError(f"Şifre en az {SIFRE_MIN} karakter olmalı.")
+    e = normalize_email(email)
+    with closing(_conn()) as c, c:
+        c.execute("INSERT OR REPLACE INTO admin_creds (email, pw_hash, updated_at, fails, locked_until) VALUES (?,?,?,0,0)",
+                  (e, _pw_hash(pw), _now()))
+
+
+def check_admin_password(email: str, pw: str, now: float | None = None) -> bool:
+    """Doğruysa True. Adres başına 8 hatalı denemede 15 dk kilit (kilitliyken doğru şifre de reddedilir)."""
+    t = time.time() if now is None else now
+    try:
+        e = normalize_email(email)
+    except ValueError:
+        return False
+    with closing(_conn()) as c, c:
+        row = c.execute("SELECT * FROM admin_creds WHERE email = ?", (e,)).fetchone()
+        if not row or row["locked_until"] > t:
+            return False
+        _, n, r, p, salt, want = row["pw_hash"].split("$")
+        got = hashlib.scrypt((pw or "").encode(), salt=bytes.fromhex(salt), dklen=32, n=int(n), r=int(r), p=int(p)).hex()
+        if hmac.compare_digest(got, want):
+            c.execute("UPDATE admin_creds SET fails = 0 WHERE email = ?", (e,))
+            return True
+        fails = row["fails"] + 1
+        c.execute("UPDATE admin_creds SET fails = ?, locked_until = ? WHERE email = ?",
+                  (0 if fails >= SIFRE_KILIT_DENEME else fails, t + SIFRE_KILIT_SN if fails >= SIFRE_KILIT_DENEME else 0, e))
+        return False
+
+
+def has_admin_password(email: str) -> bool:
+    with closing(_conn()) as c:
+        return c.execute("SELECT 1 FROM admin_creds WHERE email = ?", (normalize_email(email),)).fetchone() is not None
 
 
 # ------------------------------------------------------------------ yönetim oturumları
