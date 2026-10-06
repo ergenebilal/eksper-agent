@@ -307,10 +307,9 @@ function renderOk(st, tabId) {
 
   { const oc = offerCard(d, false); if (oc) out.push(oc); }
 
-  // 6) Ekspertiz kontrol listesi
-  const k = card('Ekspertiz kontrol listesi');
-  const ul = el('ul', 'checklist'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
-  k.append(ul, el('p', 'disc', d.uyari)); out.push(k);          // yasal uyarı altbilgide (#legal) tek kez
+  // 6) Satıcıya sorulacaklar (öncelik sıralı) + ekspertiz kontrol listesi (araca özel + her araçta)
+  { const sc = questionsCard(d); if (sc) out.push(sc); }
+  out.push(checklistCard(d));
   { const rc = rehberCard(); if (rc) out.push(rc); }
 
   if (!d.beklemede) out.push(feedbackCard(d, st.meta));
@@ -355,6 +354,45 @@ function feedbackCard(d, meta) {
   c.append(btns, sel, note, send, msg,
     el('p', 'disc', 'Gönderdiğin oy, ekspertiz sonucu, not ve ilan numarası ürünü geliştirmek için saklanır. İlan açıklaması gönderilmez; nottaki telefon numaraları maskelenir.'));
   return c;
+}
+
+const KAYNAK = { sema: 'Hasar şeması', bulgu: 'Açıklama', kronik: 'Model bilgisi', bakim: 'Bakım zamanı',
+                 veri: 'Eksik bilgi', piyasa: 'Piyasa' };
+
+function questionsCard(d) {
+  const qs = d.soru_carsafi || [];
+  if (!qs.length) return null;
+  const c = card('Satıcıya sorulacaklar'); c.id = 'questions';
+  c.append(el('p', 'small mute', 'Aramadan önce: önem sırasına göre. Cevaba göre ne yapacağınız her sorunun altında.'));
+  const ol = el('ol', 'qlist');
+  qs.forEach((q) => {
+    const li = el('li', 'q p' + q.oncelik);
+    li.append(el('b', '', q.soru), el('span', 'why', q.neden), el('span', 'then', q.cevap_ise));
+    ol.append(li);
+  });
+  const b = el('button', '', 'Soruları kopyala'); b.id = 'copy-questions';
+  b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(d.soru_metni || qs.map((q, i) => `${i + 1}. ${q.soru}`).join('\n')); b.textContent = 'Kopyalandı'; }
+    catch (_) { b.textContent = 'Kopyalanamadı'; }
+    setTimeout(() => (b.textContent = 'Soruları kopyala'), 2500);
+  });
+  c.append(ol, b, el('p', 'disc', 'Yalnız kopyalanır; göndermeyi siz yaparsınız.'));
+  return c;
+}
+
+function checklistCard(d) {
+  const k = card('Ekspertiz kontrol listesi'); k.id = 'checklist';
+  const e = d.ekspertiz;
+  if (e && e.bu_aracta && e.bu_aracta.length) {
+    k.append(el('h3', 'sub', 'Bu araçta özellikle'));
+    const ul = el('ul', 'checklist special');
+    e.bu_aracta.forEach((x) => { const li = el('li', '', x.madde); li.append(el('span', 'src', KAYNAK[x.kaynak] || x.kaynak)); ul.append(li); });
+    k.append(ul, el('h3', 'sub', 'Her araçta'));
+  }
+  const base = e && e.genel ? e.genel : (d.ekspertiz_kontrol_listesi || []);
+  const ul2 = el('ul', 'checklist'); base.forEach((i) => ul2.append(el('li', '', i)));
+  k.append(ul2, el('p', 'disc', d.uyari));               // yasal uyarı altbilgide (#legal) tek kez
+  return k;
 }
 
 function row(label, value, cls) {

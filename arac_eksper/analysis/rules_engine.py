@@ -3,7 +3,8 @@ from pathlib import Path
 from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, PartState
 from arac_eksper.schemas import MarketStats
 from arac_eksper.analysis.diagram_check import sema_kontrolu, tamami_orijinal
-from arac_eksper.analysis.models_kb import ekspertiz_maddeleri, kronik_arizalar
+from arac_eksper.analysis.checklist import ekspertiz_bolumleri, soru_carsafi
+from arac_eksper.analysis.models_kb import kronik_arizalar
 
 from arac_eksper.config.rules_loader import load_rules  # noqa: F401  (yeniden dışa aktarım)
 
@@ -213,16 +214,16 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
 
     if sema_uyari:
         eksiler.insert(0, sema_uyari)
-    kontrol = ["Şase uçları", "Podyeler", "Direkler", "Airbag modülü", "Motor üfleme testi"]
-    if sema_uyari or beyan_orijinal:
-        kontrol.insert(0, "Tüm panellerde boya kalınlığı (mikron) ölçümü: hasar şemasındaki 'tamamı orijinal' bilgisi "
-                          "satıcı beyanıdır" + (" ve ilan metniyle çelişiyor" if sema_uyari else ""))
-    kontrol += ekspertiz_maddeleri(detail, kb)      # araca özel: tetiklenmiş kronik + bakım zamanı + diğer kronik
+    # Araca özel ekspertiz listesi (şema/bulgu/kronik/bakım kaynaklı, öncelik sıralı) + her araçta bakılacaklar
+    bolumler = ekspertiz_bolumleri(detail, findings, kb, sema_uyari, beyan_orijinal)
+    kontrol = [x["madde"] for x in bolumler["bu_aracta"]] + bolumler["genel"]
+    sorular = soru_carsafi(detail, findings, market, kb, sema_uyari,
+                           sapma if market and market.medyan > 0 else None)
 
     verdict = Verdict(
         ilan_no=detail.ilan_no, etiket=etiket, guven_skoru=round(score, 1), veri_tamlik=round(tamlik, 2),
         hard_fails=hard_fails, piyasa=market, artilar=artilar, eksiler=eksiler,
-        ekspertiz_kontrol_listesi=kontrol, trace=trace,
+        ekspertiz_kontrol_listesi=kontrol, ekspertiz_bolumleri=bolumler, soru_carsafi=sorular, trace=trace,
     )
 
     from arac_eksper.analysis.offer import calculate_offer

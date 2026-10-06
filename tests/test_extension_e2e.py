@@ -180,7 +180,8 @@ def test_side_panel_renders_card_copies_offer_and_shows_disclaimer(browser_ctx, 
     text = panel.text_content("#app")
     for needle in ("Piyasa özeti", "Gizli kusur röntgeni", "Teklif & pazarlık", "Ekspertiz kontrol listesi",
                    "ŞASE UCU işlemi", "Açılış teklifi", "ekspertize götürmeye değer", "Üst sınır (yalnız sana)",
-                   "Piyasa ortalaması", "Tipik aralık", "Makul anlaşma noktası", "Nasıl hesaplandı"):
+                   "Piyasa ortalaması", "Tipik aralık", "Makul anlaşma noktası", "Nasıl hesaplandı",
+                   "Satıcıya sorulacaklar", "Bu araçta özellikle", "Her araçta", "soru gelirse konuşuruz"):
         assert needle in text, needle
     assert panel.text_content("#avg") and "TL" in panel.text_content("#avg")  # piyasa ortalaması kartta
     assert "Piyasa ortalaması (ilan medyanı)" in panel.text_content("#basis")  # hesabın dayanağı açılır kutuda

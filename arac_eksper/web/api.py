@@ -15,7 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
-from arac_eksper.analysis import description_llm, market_calc, offer as offer_calc, rehber, rules_engine
+from arac_eksper.analysis import checklist, description_llm, market_calc, offer as offer_calc, rehber, rules_engine
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.config.settings import settings
 from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
@@ -243,6 +243,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         "teklif": b,
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
+        "ekspertiz": v.ekspertiz_bolumleri, "soru_carsafi": v.soru_carsafi, "soru_metni": checklist.soru_metni(v.soru_carsafi),
         "whatsapp_metni": whatsapp_text(detail, v), "uyari": NOT, "yasal_uyari": DISCLAIMER, "kota": _kota(user),
         "hak_kullanildi": charge,
     }

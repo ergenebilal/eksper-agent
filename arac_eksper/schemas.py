@@ -93,5 +93,7 @@ class Verdict(BaseModel):
     tavsiye_teklif: Optional[int] = None
     ust_sinir: Optional[int] = None
     ekspertiz_kontrol_listesi: List[str] = Field(default_factory=list)
+    ekspertiz_bolumleri: Dict[str, Any] = Field(default_factory=dict)   # {"bu_aracta": [{madde, kaynak}], "genel": [str]}
+    soru_carsafi: List[Dict[str, Any]] = Field(default_factory=list)     # [{soru, neden, cevap_ise, oncelik, kaynak}]
     trace: List[Dict[str, Any]] = Field(default_factory=list)  # karar dökümü: [{kural, puan}]
     beklemede: bool = False  # LLM erişilemedi, analiz bekliyor
