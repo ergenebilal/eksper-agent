@@ -11,8 +11,8 @@ Son güncelleme: 2026-10-07 (R0–R5 yazılım işleri tamam) · Hazırlayan: Cl
 ## 0. Devralan ajan için 5 dakikalık başlangıç
 
 1. `git status`, `git log --oneline -5`. Çalışma dalı: **`feat/f0-eval`** (main'e göre ~50 commit önde, **push edilmedi**, push kullanıcıya ait).
-2. Testler: `uv run pytest -q` (≈4 dk, 450 test; `tests/test_extension_e2e.py` gerçek Chromium ister: `uv run playwright install chromium`).
-3. Canlı sistem: `https://cyberoto.cybergene.co` (sağlık: `/healthz`; eski `otoxray.cybergene.co` geçiş döneminde API'yi sunar). Yayın: `bash deploy/redeploy.sh` (yalnız **commit edilmiş** kodu gönderir).
+2. Testler: `uv run pytest -q` (≈4,5 dk, 457 test; `tests/test_extension_e2e.py` gerçek Chromium ister: `uv run playwright install chromium`).
+3. Canlı sistem: `https://cyberoto.cybergene.co` (sağlık: `/healthz`; eski `otoxray.cybergene.co` yalnız API'yi sunar, tarayıcıyı yönlendirir). Yayın: `bash deploy/redeploy.sh` (yalnız **commit edilmiş** kodu gönderir).
 4. Ayrıntılı altyapı: [deploy/README.md](deploy/README.md) · ürün kararları: [PLAN.md](PLAN.md) · tasarım tokenları: [design/cybergene-dna.json](design/cybergene-dna.json).
 5. Bir sonraki iş: R0–R5 yazılım işleri bitti (2026-10-07). Kalanlar **kullanıcı girdisi** bekliyor → **§7 Açık kararlar**. Girdi gelince ilgili pakete dön.
 6. Ürün adı **CyberOto AI** (eski: otoXray). Alan adı `cyberoto.cybergene.co` (P.7). İç teknik adlar bilerek değişmedi: systemd `otoxray`, `/opt/otoxray`, anahtar öneki `oxr_`.
@@ -208,7 +208,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
 | R5.1 | **F · Tramer yapıştır**: SBM metni parse + ilan beyanıyla çelişki bayrağı | ✅ 6dd51ee (R5.4 ile ortak "Belge röntgeni") · 👤 gerçek sorgu örnekleri: testler sentetik | Gerçek (maskeli) örneklerle parse testi; metin sunucuda saklanmaz | 👤 örnek metinler |
-| R5.2 | **G · Görsel röntgen** araştırması: model seçimi, maliyet, eval seti | ⬜ | Ar-Ge raporu + karar (kullanıcı) | — |
+| R5.2 | **G · Görsel analiz** | ✅ belge fotoğrafı (cb314a5, kullanıcı onayı 2026-10-07): ekspertiz raporu / tramer fotoğrafı veya ekran görüntüsü (en fazla 4) → görüş modeli düz metne çevirir (kişisel alanları boş bırakır + regex maskeleme) → aynı alıntılı çıkarım. Canlı: eğik sentetik fotoğrafta tüm alanlar doğru, kişisel veri sızmadı. · ⬜ ilan fotoğraflarından boya/panel analizi ayrı araştırma (fotoğrafları yeniden indirmek kural 1 açısından değerlendirilmeli) | Gerçek belge fotoğraflarıyla doğrulama | 👤 örnekler |
 | R5.4 | **I · Ekspertiz raporu röntgeni** (kullanıcı onayladı, 2026-10-07): kullanıcının fiziksel ekspertiz raporu (PDF/metin; v1 fotoğraf) → parça durumu sade dil, ilan beyanıyla çelişki listesi, masraf_kb ile onarım aralığı, güncellenmiş teklif, al/alma özeti. Rapor sunucuda saklanmaz; plaka/şasi/ad maskelenir; her bulgu rapordan alıntılı | ⬜ | Farklı firmalardan ≥5 maskeli gerçek rapor fixture'ı; parça okuma %100; tablo dışı sayı yok | ✅ v0 6dd51ee: `POST /api/v1/belge` (metin ya da metin katmanlı PDF, bellekte), kişisel veri maskeleme, alıntısız/uydurma bulgu ve belgede olmayan tutar atılır, ilanla kurallı karşılaştırma, onarım aralığı (onaylı KB), üst sınır önerisi; 1 hak, aynı belge ücretsiz; panel "Belge röntgeni". · 👤 3-5 gerçek rapor (farklı firma): testler sentetik. Fotoğraf/taranmış PDF → R5.2 |
 | R5.3 | **H · Karar sonrası döngü**: havuzda "ekspertize gittim / aldım / almadım" → kalibrasyon raporu | ✅ c1bdce1: havuz kartında sonuç seçimi (yerel + bilerek gönderilen geri bildirim), `/yonetim/kalibrasyon` (etiket × sonuç, yanlış yeşil, kaçan aday). Kural bazında döküm yok: kural izi sunucuda saklanmaz | Yönetimde "hangi kural yanlış 🟢/🔴 üretti" raporu | R3.1 |
 
@@ -221,7 +221,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 | P.4 | Kanıt listesinde aynı bulgunun iki kez görünmesi (olumsuz sinyal + hard-claim) | ✅ c1bdce1 | Küçük UX düzeltmesi, `api.py:_kanitlar` |
 | P.5 | Gmail/Outlook'ta HTML e-posta görünümü kontrolü (koyu mod dönüşümü) | 👤 | Kullanıcı ekran görüntüsü gönderir |
 | P.6 | **CyberOto AI** yeniden adlandırma + logo | ✅ 31e42d3: tüm kullanıcıya görünen adlar, wordmark (Cyber beyaz + Oto #FF9A24), `design/brand/`. Teknik kimlikler değişmedi | — |
-| P.7 | Alan adını `cyberoto.cybergene.co`'ya taşıma | 🔄 kod + sunucu hazır · 👤 DNS A kaydı | Kod: eklenti 0.2.0 (varsayılan adres, yeni adres sağlıklıysa kayıtlı eski adresten otomatik geçiş, anahtar korunur), `PUBLIC_URL`. Sunucu: `PANEL_ALLOWED_HOSTS` iki ad, `PUBLIC_URL` geçişe kadar eski. DNS gelince `bash deploy/alan-adi-gecisi.sh` (DNS yoksa dokunmadan durur; denendi). Eski adres API'yi sunmaya devam eder, tarayıcıyı 301 ile yönlendirir |
+| P.7 | Alan adını `cyberoto.cybergene.co`'ya taşıma | ✅ 2026-10-07 canlı | `deploy/alan-adi-gecisi.sh` çalıştı: yeni site + Let's Encrypt (bitiş 2027-01-04, yenileme provası başarılı), `PUBLIC_URL` yeni adres; eski adres API'yi sunuyor (eski eklentiler), tarayıcıyı 301 ile yönlendiriyor. Eklenti 0.2.0 dağıtılınca kullanıcılar kendiliğinden geçer. Tüm kullanıcılar 0.2.0+ olunca eski site kaldırılabilir |
 
 ## 6. Hak (kredi) ekonomisi — yeni özellikler
 
@@ -237,12 +237,12 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 
 ## 7. Açık kararlar (kullanıcıya sorulacak — tahmin etme)
 
-1. **DNS:** `cyberoto.cybergene.co` A kaydı → `13.140.183.88`. Sonra `bash deploy/alan-adi-gecisi.sh` (ajan ya da kullanıcı çalıştırır) ve eklenti 0.2.0 dağıtımı.
-2. **Gerçek belgeler**: farklı firmaların ekspertiz raporu fotoğrafları + tramer ekran görüntüleri (kullanıcı arıyor). Not: fotoğraf/ekran görüntüsü okumak görsel analiz ister (R5.2); bugünkü belge röntgeni metin ve metin katmanlı PDF okur.
+1. **Eklenti 0.2.0 dağıtımı** (yeni adres + belge fotoğrafı). Alan adı geçişi canlıda tamam.
+2. **Gerçek belgeler**: farklı firmaların ekspertiz raporu fotoğrafları + tramer ekran görüntüleri (kullanıcı arıyor) → R5.1/R5.2/R5.4 gerçek fixture testi. Fotoğraf okuma hazır.
 3. **Yasal metinler** (P.2): `[...]` alanları + avukat (kullanıcıda).
 4. Push, Chrome Web Store "Özel" yayın, e-posta görünüm kontrolü (P.1, P.3, P.5).
 
-Onaylananlar (2026-10-07, sohbette): masraf_kb 42 kalem, likidite_kb 10 kural, R0.3 18 vaka (3 sınırda dahil), rules.yaml %1/%2 açılış indirimi, alan adı taşıma.
+Onaylananlar (2026-10-07, sohbette): masraf_kb 42 kalem, likidite_kb 10 kural, R0.3 18 vaka (3 sınırda dahil), rules.yaml %1/%2 açılış indirimi, alan adı taşıma, görsel analiz.
 
 (7 Ekim 2026 öncesi kararlar → §8.)
 
@@ -289,6 +289,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
+| 2026-10-07 | Claude (5d82b169) | Alan adı ✅, R5.2 belge fotoğrafı ✅ | DNS doğrulandı (yerel + sunucu), geçiş betiği çalıştı; yeni/eski adres, yönetim, e-posta logosu, sertifika ve yenileme provası tek tek doğrulandı. cb314a5 görsel okuma: canlı sunucuda sahip anahtarıyla fotoğraf testi başarılı. 457 test. **Sıradaki:** eklenti 0.2.0 dağıtımı (kullanıcı), gerçek belge örnekleri. |
 | 2026-10-07 | Claude (5d82b169) | Onaylar + alan adı hazırlığı | 7f3e6b4 KB/eval onayları yayında (tutarlar ve piyasa hızı bandı etkin). Alan adı: eklenti 0.2.0 + `deploy/alan-adi-gecisi.sh` + nginx şablonları; sunucu `.env` iki adı kabul eder. Canlı hata bulundu ve düzeltildi: nginx gövde sınırı 256k idi, belge röntgeni PDF'leri 413 alırdı → 8m. **Bekleyen:** DNS A kaydı. |
 | 2026-10-07 | Claude (5d82b169) | R4, R5, R0.3/R0.4, R2.2b, P.2/P.4, yeniden adlandırma ✅ | 1008db6 R4 sinyaller + likidite · 6dd51ee belge röntgeni (pypdf) · c1bdce1 kalibrasyon + kanıt tekrarı · f9c1c3b Python ayrıştırıcı gerçek yapıda · e94011f gerçek vaka taslakları · b618df2 LLM masraf kalemleri · 643d158/6363cb2 saklama temizliği + yasal taslaklar · 31e42d3 CyberOto AI. 450 test, 31e42d3 yayında. Eval (canlı LLM): ana 50 vaka 1,0/1,0; gerçek taslak 18 vaka 1,0/1,0. Not: kullanıcının `rapor.md` dosyası yanlışlıkla bir commit'e girdi; commit'ten ve sunucudan çıkarıldı (yerelde duruyor, izlenmiyor). **Sıradaki:** §7 kullanıcı girdileri. |
 | 2026-10-07 | Claude (5d82b169) | R3 ✅ | Savaş Odası: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
