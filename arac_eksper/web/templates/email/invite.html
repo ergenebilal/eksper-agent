@@ -1,0 +1,54 @@
+{% extends "_base.html" %}
+{% block card %}
+<div style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-size:28px;line-height:32px;font-weight:600;color:#c6a1f2;letter-spacing:-0.8px;margin:0 0 14px;">
+  {% if ad %}{{ ad }}, otoXray kapalı betasına davetlisiniz.{% else %}otoXray kapalı betasına davetlisiniz.{% endif %}
+</div>
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#c2c1cf;margin:0 0 24px;">
+  otoXray, açtığınız araç ilanını ekspertize gitmeden önce eler: açıklamadaki gizli kusurları, piyasa kıyasını ve teklif önerisini tarayıcınızın yan panelinde gösterir.
+</div>
+
+<!-- haklar -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #23263a;border-bottom:1px solid #23263a;margin:0 0 26px;">
+  <tr>
+    {% for etiket, deger in haklar %}
+    <td valign="top" style="padding:14px 8px 14px 0;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;">
+      <div style="font-size:12px;line-height:16px;color:#989ba9;">{{ etiket }}</div>
+      <div style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;line-height:24px;font-weight:600;color:#f4f4f6;">{{ deger }}</div>
+    </td>
+    {% endfor %}
+  </tr>
+</table>
+
+<!-- adımlar -->
+<div style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:22px;font-weight:600;color:#f4f4f6;margin:0 0 12px;">Üç adımda başlayın</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 26px;">
+  {% for baslik, metin in adimlar %}
+  <tr>
+    <td valign="top" width="34" style="padding:0 0 14px;">
+      <div style="width:24px;height:24px;line-height:24px;border-radius:12px;background-color:#1d1733;border:1px solid #5d34d0;text-align:center;font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:#c6a1f2;">{{ loop.index }}</div>
+    </td>
+    <td valign="top" style="padding:2px 0 14px;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14.5px;line-height:22px;color:#c2c1cf;">
+      <span style="color:#f4f4f6;font-weight:600;">{{ baslik }}</span> {{ metin }}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% if store_url %}
+<!-- düğme -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
+  <tr><td align="center" bgcolor="#6d3fd6" style="border-radius:16px;background-color:#6d3fd6;background-image:linear-gradient(120deg,#5d34d0,#7547dc 65%,#3b82f6);">
+    <a href="{{ store_url }}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:16px;">Eklentiyi kurun</a>
+  </td></tr>
+</table>
+{% else %}
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;border-left:2px solid #f5b544;padding:2px 0 2px 12px;margin:0 0 22px;">
+  Eklenti bağlantısı size ayrıca iletilecek.
+</div>
+{% endif %}
+
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;">
+  <span style="color:#10b981;">●</span> “Alınır” etiketi “ekspertize götürmeye değer” demektir, “satın al” değil. İlan açmak hak harcamaz; hak yalnızca yapay zeka röntgenini çalıştırdığınızda düşer.
+</div>
+{% endblock %}
+{% block footer %}Bu daveti beklemiyorsanız e-postayı yok sayabilirsiniz; hesabınız siz giriş yapana kadar kullanılmaz.<br><br>{% endblock %}

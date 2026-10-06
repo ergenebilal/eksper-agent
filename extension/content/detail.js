@@ -32,6 +32,30 @@
     if (tur) badge.setAttribute('data-t', tur); else badge.removeAttribute('data-t');
   }
 
+  async function preview() {
+    // İlan açılınca: ücretsiz ön hesap. Yapay zeka röntgeni (1 hak) yan paneldeki düğmeyle ya da otomatik ayarıyla çalışır.
+    const ex = A.extractDetail(document, location);
+    if (!ex.ok) {
+      setBadge('otoXray AI: sayfa okunamadı', null);
+      await send({ type: 'detail:unreadable', eksik: ex.eksik });
+      return;
+    }
+    const res = await send({ type: 'preview', payload: ex.payload, pagePath: location.pathname });
+    if (!res || !res.ok) { setBadge('otoXray AI: ' + ((res && res.message) || 'hata'), null); return; }
+    if (!res.preview) { showResult(ex, res.data); return; }          // önceden yapılmış tam analiz (önbellek)
+    const elendi = (res.data.elenme_nedenleri || []).length > 0;
+    setBadge(elendi ? '🔴 Ön hesapta elendi · ayrıntı' : 'otoXray AI: ön hesap hazır · röntgen için tıklayın', elendi ? 'ALINMAZ' : null);
+  }
+
+  function showResult(ex, d) {
+    if (d.beklemede) setBadge('⏳ Analiz bekliyor', null);
+    else {
+      const [emo, txt] = LABEL[d.etiket] || ['', d.etiket];
+      setBadge(`${emo} ${txt} · ${d.skor}/10`, d.etiket);
+    }
+    if (ex.descEl && d.vurgu && d.vurgu.length) A.applyHighlights(ex.descEl, d.vurgu);
+  }
+
   async function run(force) {
     const ex = A.extractDetail(document, location);
     if (!ex.ok) {
@@ -45,23 +69,15 @@
       setBadge('otoXray AI: ' + ((res && res.message) || 'hata'), null);
       return;
     }
-    const d = res.data;
-    if (d.beklemede) setBadge('⏳ Analiz bekliyor', null);
-    else {
-      const [emo, txt] = LABEL[d.etiket] || ['', d.etiket];
-      setBadge(`${emo} ${txt} · ${d.skor}/10`, d.etiket);
-    }
-    if (ex.descEl && d.vurgu && d.vurgu.length) A.applyHighlights(ex.descEl, d.vurgu);
+    showResult(ex, res.data);
   }
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
     if (msg.type === 'diagnose') { sendResponse({ ok: true, report: A.diagnose(document, location) }); return; }
     if (msg.type === 'reanalyze') { run(true).then(() => sendResponse({ ok: true })); return true; }
+    if (msg.type === 'analyze-now') { run(false).then(() => sendResponse({ ok: true })); return true; }
   });
 
-  send({ type: 'getSettings' }).then((s) => {
-    if (s && s.autoAnalyze === false) { setBadge('otoXray AI: hazır (elle analiz)', null); return; }
-    run(false);
-  });
+  send({ type: 'getSettings' }).then((s) => (s && s.autoAnalyze === true ? run(false) : preview()));
 })();

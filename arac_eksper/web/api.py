@@ -184,6 +184,7 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
     """LLM'siz ANINDA ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. LLM röntgeni beklenirken gösterilir;
     etiket ÜRETMEZ (açıklama analizi olmadan karar verilmez). LLM bütçesinden düşmez, hiçbir şey saklanmaz."""
     _take(user, "quick", settings.user_daily_batch)
+    tekrar = bool(user["id"]) and accounts.charged_recently(user["id"], accounts.listing_hash(req.ilan_no, req.aciklama))
     detail = _detail(req)
     stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     empty = DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz",
@@ -195,14 +196,19 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
     return {"ilan_no": req.ilan_no, "on_hesap": True, "elenme_nedenleri": hard,
             "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                        "min_emsal": rules["etiket"]["min_emsal"]},
-            "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER}
+            "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER,
+            "kota": _kota(user), "tekrar_ucretsiz": tekrar}
 
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user)):
-    _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
+    # Hak yalnız YENİ analizde düşer: aynı ilan + aynı açıklama 7 gün içinde (yeniden analiz, başka cihaz) ücretsiz
+    h = accounts.listing_hash(req.ilan_no, req.aciklama)
+    charge = bool(user["id"]) and not accounts.charged_recently(user["id"], h)
+    if charge:
+        _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
     if not _llm_budget_ok():
-        if user["id"]:
+        if charge:
             accounts.refund(user["id"])
         raise HTTPException(status_code=429, detail="Sunucunun günlük analiz sınırı doldu")
     detail = _detail(req)
@@ -211,9 +217,11 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama,    # db yok → önbellek yok
                                                       second_pass=settings.xray_second_pass)
     except (LLMUnavailable, ValueError):       # pydantic.ValidationError bir ValueError'dır
-        if user["id"]:
+        if charge:
             accounts.refund(user["id"])         # analiz yapılamadıysa hak yanmaz
         return _pending(req)
+    if charge:
+        accounts.add_charge(user["id"], h)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
     # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
     b = offer_calc.breakdown(detail, findings, v, allow_no_market=True)
@@ -230,6 +238,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
         "whatsapp_metni": whatsapp_text(detail, v), "uyari": NOT, "yasal_uyari": DISCLAIMER, "kota": _kota(user),
+        "hak_kullanildi": charge,
     }
 
 

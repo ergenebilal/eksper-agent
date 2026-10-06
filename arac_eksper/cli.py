@@ -443,7 +443,7 @@ def xray_user_add(email: str = typer.Argument(..., help="Üyenin e-posta adresi 
     say(f"Üye #{mid} eklendi: {m['email']} — {yonetim.haklar_metni(m)}")
     if davet:
         try:
-            mailer.send_invite(m["email"], m["ad"], yonetim.haklar_metni(m))
+            mailer.send_invite(m["email"], m["ad"], yonetim.haklar_metni(m), mailer.haklar_kalemleri(m))
             say("Davet e-postası gönderildi.")
         except mailer.MailUnavailable as e:
             say(f"Davet gönderilemedi: {e}")

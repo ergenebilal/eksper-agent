@@ -55,6 +55,49 @@ function loadingView(st) {
   return out;
 }
 
+function xrayCard(q, tabId) {
+  // Yapay zeka röntgeni: yalnız bu düğmeyle çalışır. Hak bilgisi açıkça yazılır; aynı ilan tekrar ücretsizdir.
+  const c = el('section', 'xray-cta'); c.id = 'xray-cta';
+  c.append(el('h2', '', 'Yapay zeka röntgeni'),
+    el('p', 'small', 'Açıklamadaki gizli kusurları, tramer ve dolandırıcılık işaretlerini arar; karne, kanıtlı bulgular ve kesin teklif çıkarır.'));
+  const k = q.kota;
+  const kalanGun = k ? Math.max(k.limit - k.kullanilan, 0) : null;
+  const kalanAy = k && k.aylik ? Math.max(k.aylik.limit - k.aylik.kullanilan, 0) : null;
+  const bitti = !q.tekrar_ucretsiz && k && (kalanGun === 0 || kalanAy === 0);
+  const btn = el('button', 'pri', 'Röntgeni çalıştır'); btn.id = 'run-xray';
+  btn.disabled = !!bitti;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'Başlatılıyor…';
+    const r = await chrome.runtime.sendMessage({ type: 'panel:analyze', tabId });
+    if (r && r.ok === false) { btn.disabled = false; btn.textContent = 'Röntgeni çalıştır'; note.textContent = r.message || 'Başlatılamadı.'; }
+  });
+  let txt;
+  if (q.tekrar_ucretsiz) txt = 'Bu ilan için hakkınızı zaten kullandınız; tekrar çalıştırmak ücretsiz.';
+  else if (!k) txt = 'Sahip anahtarı: sınırsız.';
+  else if (bitti) txt = kalanAy === 0 ? 'Bu ayki analiz hakkınız doldu.' : 'Bugünkü analiz hakkınız doldu; yarın yenilenir.';
+  else txt = `1 analiz hakkı kullanır. Bugün kalan: ${kalanGun}/${k.limit}` + (kalanAy !== null ? `, bu ay: ${kalanAy}` : '');
+  const note = el('p', 'quota', txt); note.id = 'xray-note';
+  c.append(btn, note);
+  if ((q.elenme_nedenleri || []).length && !q.tekrar_ucretsiz) {
+    c.append(el('p', 'warnbox small', 'Bu ilan ön hesapta zaten eleniyor; röntgen için hak harcamanız gerekmez.'));
+  }
+  return c;
+}
+
+function previewView(st, tabId) {
+  const q = st.quick, out = [];
+  const plate = el('section', 'plate v-WAIT'); plate.id = 'preview';
+  plate.append(carLine(st.meta), el('p', 'small mute', 'Ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. Hak harcanmadı.'));
+  out.push(plate);
+  if (q.elenme_nedenleri && q.elenme_nedenleri.length) {
+    const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri (ön hesap)'));
+    const ul = el('ul'); q.elenme_nedenleri.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
+  }
+  out.push(xrayCard(q, tabId), marketCard(q, st.meta));
+  const oc = offerCard(q, true); if (oc) out.push(oc);
+  return out;
+}
+
 function view(st, tabId) {
   if (!st) {
     const c = el('section', 'empty');
@@ -63,6 +106,7 @@ function view(st, tabId) {
     return [c];
   }
   if (st.status === 'loading') return loadingView(st);
+  if (st.status === 'preview') return previewView(st, tabId);
   if (st.status === 'unreadable') return [unreadable(st, tabId)];
   if (st.status === 'error') return [head(st.meta), errorCard(st)];
   return renderOk(st, tabId);

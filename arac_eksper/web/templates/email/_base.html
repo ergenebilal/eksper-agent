@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#07090e;" bgcolor="#07090e">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#07090e;">{{ preheader }}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#07090e" style="background-color:#07090e;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+      <!-- marka -->
+      <tr><td style="padding:0 4px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td valign="middle" style="padding-right:12px;"><img src="{{ logo_url }}" width="40" height="40" alt="CyberGene" style="display:block;border:0;border-radius:10px;"></td>
+          <td valign="middle" style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;">
+            <div style="font-size:18px;line-height:20px;font-weight:600;color:#f4f4f6;letter-spacing:-0.3px;">otoXray AI</div>
+            <div style="font-size:11px;line-height:16px;color:#989ba9;letter-spacing:0.4px;">CyberGene</div>
+          </td>
+        </tr></table>
+      </td></tr>
+      <!-- kart -->
+      <tr><td bgcolor="#0a0d14" style="background-color:#0a0d14;border:1px solid #23263a;border-radius:22px;padding:32px 28px;">
+        {% block card %}{% endblock %}
+      </td></tr>
+      <!-- altbilgi -->
+      <tr><td style="padding:20px 8px 0;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11.5px;line-height:18px;color:#6b6e80;">
+        {% block footer %}{% endblock %}
+        otoXray AI bir yapay zeka karar destek aracıdır; resmi ekspertiz raporu değildir.<br>
+        Bir <a href="https://cybergene.co" style="color:#989ba9;text-decoration:underline;">CyberGene</a> ürünü.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

@@ -98,3 +98,6 @@ textarea{resize:vertical}
 .line.neg::before{background:var(--think)}.line.pos::before{background:var(--go)}
 .line:first-of-type{margin-top:8px}
 .fb-msg:empty{display:none}
+.xray-cta{border-radius:var(--r-lg);border:1px solid rgba(168,85,247,.35);padding:16px;margin:10px 0 6px;background:radial-gradient(260px 160px at 100% 0%,rgba(168,85,247,.16),transparent 70%),var(--surface)}
+.xray-cta h2{font-size:16px;margin-bottom:4px}.xray-cta p.small{color:var(--text-2);margin:0 0 4px}
+.xray-cta + .sec{border-top:0}

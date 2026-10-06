@@ -23,7 +23,7 @@ def outbox(monkeypatch):
     sent = []
     monkeypatch.setattr(settings, "smtp_host", "smtp.test")
     monkeypatch.setattr(settings, "smtp_from", "otoxray@cybergene.co")
-    monkeypatch.setattr(mailer, "send", lambda to, subject, body: sent.append({"to": to, "subject": subject, "body": body}))
+    monkeypatch.setattr(mailer, "send", lambda to, subject, body, html=None: sent.append({"to": to, "subject": subject, "body": body, "html": html}))
     return sent
 
 
@@ -96,13 +96,13 @@ def test_paused_expired_and_revoked_members(client):
 
 def test_daily_and_monthly_quota(client):
     _, h = member(gunluk_kota=2)
-    for _ in range(2):
-        assert client.post("/api/v1/analyze", json=payload(), headers=h).status_code == 200
-    r = client.post("/api/v1/analyze", json=payload(), headers=h)
+    for i in range(2):
+        assert client.post("/api/v1/analyze", json=payload(ilan_no=f"D{i}"), headers=h).status_code == 200
+    r = client.post("/api/v1/analyze", json=payload(ilan_no="D9"), headers=h)
     assert r.status_code == 429 and "Günlük" in r.json()["detail"]
     _, h2 = member("ay@ornek.com", gunluk_kota=10, aylik_kota=1)
-    assert client.post("/api/v1/analyze", json=payload(), headers=h2).status_code == 200
-    r = client.post("/api/v1/analyze", json=payload(), headers=h2)
+    assert client.post("/api/v1/analyze", json=payload(ilan_no="M1"), headers=h2).status_code == 200
+    r = client.post("/api/v1/analyze", json=payload(ilan_no="M2"), headers=h2)
     assert r.status_code == 429 and "ay" in r.json()["detail"]
 
 
@@ -363,7 +363,7 @@ def test_invites_page_shows_sent_failed_and_joined(client, outbox, monkeypatch):
     client.post("/yonetim/uye", data={"csrf": csrf, "email": "ok@ornek.com", "gunluk": "5", "davet": "on"})
     real_send = mailer.send
 
-    def boom(to, subject, body):
+    def boom(to, subject, body, html=None):
         raise mailer.MailUnavailable("E-posta gönderilemedi (SMTPAuthenticationError).")
     monkeypatch.setattr(mailer, "send", boom)
     r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "kotu@ornek.com", "gunluk": "5", "davet": "on"},
@@ -397,3 +397,93 @@ def test_mail_failure_logs_only_the_error_type(monkeypatch, capsys):
         mailer.send("kisi@ornek.com", "konu", "govde")
     err = capsys.readouterr().err
     assert "SMTPAuthenticationError" in err and "kisi@ornek.com" not in err and "gizli" not in err
+
+
+# ------------------------------------------------------------------ hak: ilan açmak ücretsiz, aynı ilan tekrar ücretsiz
+def test_opening_a_listing_preview_costs_nothing(client):
+    mid, h = member(gunluk_kota=3)
+    for _ in range(5):
+        q = client.post("/api/v1/quick", json=payload(), headers=h).json()
+    assert accounts.used_today(mid) == 0
+    assert q["kota"]["limit"] == 3 and q["kota"]["kullanilan"] == 0 and q["tekrar_ucretsiz"] is False
+
+
+def test_same_listing_is_charged_once_and_changed_text_is_new(client):
+    mid, h = member(gunluk_kota=2)
+    r = client.post("/api/v1/analyze", json=payload(), headers=h).json()
+    assert r["hak_kullanildi"] is True and accounts.used_today(mid) == 1
+    for _ in range(3):                                       # yeniden analiz / başka cihaz: ücretsiz
+        r = client.post("/api/v1/analyze", json=payload(), headers=h).json()
+        assert r["hak_kullanildi"] is False
+    assert accounts.used_today(mid) == 1
+    assert client.post("/api/v1/quick", json=payload(), headers=h).json()["tekrar_ucretsiz"] is True
+    r = client.post("/api/v1/analyze", json=payload(aciklama="Açıklama güncellendi: tramer 5.000 TL."), headers=h).json()
+    assert r["hak_kullanildi"] is True and accounts.used_today(mid) == 2
+
+
+def test_free_repeat_works_even_when_daily_quota_is_full(client):
+    _, h = member(gunluk_kota=1)
+    assert client.post("/api/v1/analyze", json=payload(), headers=h).status_code == 200
+    assert client.post("/api/v1/analyze", json=payload(ilan_no="YENI"), headers=h).status_code == 429
+    assert client.post("/api/v1/analyze", json=payload(), headers=h).status_code == 200   # daha önce ödenmiş ilan
+
+
+def test_failed_analysis_is_not_remembered_as_paid(client):
+    mid, h = member(gunluk_kota=2)
+    xray_app.app.dependency_overrides[api.get_llm] = lambda: DownLLM()
+    client.post("/api/v1/analyze", json=payload(), headers=h)
+    xray_app.app.dependency_overrides[api.get_llm] = lambda: FakeLLM()
+    r = client.post("/api/v1/analyze", json=payload(), headers=h).json()
+    assert r["hak_kullanildi"] is True and accounts.used_today(mid) == 1
+
+
+def test_charge_record_holds_only_a_hash(client):
+    _, h = member()
+    client.post("/api/v1/analyze", json=payload(aciklama="Gizli satıcı metni 12345"), headers=h)
+    dump = str(list(sqlite3.connect(settings.xray_accounts_db).execute("SELECT * FROM charges")))
+    assert "Gizli" not in dump and "1001" not in dump
+
+
+# ------------------------------------------------------------------ HTML e-postalar
+def test_invite_email_is_branded_html_with_plain_text_and_real_rights(client, outbox, monkeypatch):
+    monkeypatch.setattr(settings, "store_url", "https://chromewebstore.google.com/detail/otoxray/abc")
+    csrf = admin_login(client, outbox)
+    client.post("/yonetim/uye", data={"csrf": csrf, "email": "html@ornek.com", "ad": "Ayşe <b>", "gunluk": "12",
+                                      "aylik": "200", "bitis": "2099-01-31", "davet": "on"})
+    m = next(x for x in outbox if x["to"] == "html@ornek.com")
+    assert "günde 12 analiz" in m["body"]                                   # düz metin yedeği
+    h = m["html"]
+    assert "12 analiz" in h and "200 analiz" in h and "31.01.2099 tarihine kadar" in h
+    assert "Ayşe &lt;b&gt;" in h and "<b>," not in h                        # ad kaçışlı
+    assert "https://chromewebstore.google.com/detail/otoxray/abc" in h and "Eklentiyi kurun" in h
+    assert "/yonetim/static/mail-logo.png" in h and "otoXray AI" in h
+
+
+def test_code_email_html_and_logo_is_public(client, outbox):
+    member("kodhtml@ornek.com")
+    client.post("/api/v1/auth/kod", json={"email": "kodhtml@ornek.com"})
+    m = outbox[-1]
+    code = last_code(outbox, "kodhtml@ornek.com")
+    assert code in m["body"] and code in m["html"]
+    r = client.get("/yonetim/static/mail-logo.png")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+
+
+def test_real_smtp_message_is_multipart_alternative(monkeypatch):
+    import smtplib
+    sent = {}
+    monkeypatch.setattr(settings, "smtp_host", "smtp.test")
+    monkeypatch.setattr(settings, "smtp_from", "otoxray@cybergene.co")
+    monkeypatch.setattr(settings, "smtp_port", 465)
+    monkeypatch.setattr(settings, "smtp_user", "")
+
+    class Fake:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def send_message(self, msg): sent["msg"] = msg
+    monkeypatch.setattr(smtplib, "SMTP_SSL", Fake)
+    mailer.send_code("a@ornek.com", "123456")
+    msg = sent["msg"]
+    assert msg.get_content_type() == "multipart/alternative"
+    assert [p.get_content_type() for p in msg.iter_parts()] == ["text/plain", "text/html"]

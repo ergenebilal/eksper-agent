@@ -4,7 +4,8 @@
  * Desteklenen siteye HİÇBİR istek atılmaz; yalnızca kullanıcının açtığı sayfadan okunan veri yerel API'ye gider. */
 importScripts('../lib/site.js');
 
-const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: true, autoBatch: true };
+// autoAnalyze varsayılan KAPALI: ilan açmak hak harcamaz; yapay zeka röntgeni paneldeki düğmeyle çalışır
+const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
 const TIMEOUT_MS = 120000;                    // LLM çözümlemesi uzun sürebilir
 const KEY = (tabId) => `r:${tabId}`;
 const MK = 'mk';                              // yerel piyasa deposu (emsaller): yalnız sayısal nitelikler
@@ -184,6 +185,24 @@ async function handle(msg, sender) {
       }
       return res;
     }
+    case 'preview': {            // ilan açılınca: yalnız LLM'siz ön hesap (hak harcamaz); önceki tam sonuç varsa o
+      if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
+      const tabId = sender.tab.id, p = msg.payload || {};
+      const meta = { ilan_no: p.ilan_no, baslik: p.baslik, fiyat: p.fiyat, yil: p.yil, km: p.km };
+      const s = await getSettings();
+      const mk = await loadMk();
+      const group = mk.idx[p.ilan_no] || groupOfDetail(p);
+      const hit = (await chrome.storage.local.get(cacheKey(p)))[cacheKey(p)];
+      if (hit && hit.h === cacheHash(p, s.maxButce) && Date.now() - hit.t < CACHE_TTL) {
+        await setResult(tabId, { status: 'ok', meta, data: hit.data });
+        return { ok: true, data: hit.data, cached: true };
+      }
+      const emsal = group && mk.groups[group] ? nearby(toComps(mk.groups[group]), p.yil, p.km) : [];
+      const q = await api('/api/v1/quick', { body: { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) } });
+      await setResult(tabId, q.ok ? { status: 'preview', meta, quick: q.data }
+                                  : { status: 'error', meta, code: q.code, message: q.message });
+      return q.ok ? { ok: true, preview: true, data: q.data } : q;
+    }
     case 'batch': {
       if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
       const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km, seri }) => (seri ? { ilan_no, fiyat, yil, km, seri: String(seri).slice(0, 60) } : { ilan_no, fiyat, yil, km })).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
@@ -236,8 +255,10 @@ async function handle(msg, sender) {
       return { ok: true };
     }
     case 'panel:diagnose':
+    case 'panel:analyze':
     case 'panel:reanalyze': {
-      try { return await chrome.tabs.sendMessage(msg.tabId, { type: msg.type === 'panel:diagnose' ? 'diagnose' : 'reanalyze' }); }
+      const type = { 'panel:diagnose': 'diagnose', 'panel:analyze': 'analyze-now', 'panel:reanalyze': 'reanalyze' }[msg.type];
+      try { return await chrome.tabs.sendMessage(msg.tabId, { type }); }
       catch (_) { return { ok: false, code: 'no_page', message: 'Bu sekmede içerik betiği çalışmıyor.' }; }
     }
     default: return { ok: false, code: 'unknown' };

@@ -452,7 +452,7 @@ def test_email_code_login_and_logout_on_options_page(browser_ctx, monkeypatch):
     sent = []
     monkeypatch.setattr(settings, "smtp_host", "smtp.test")
     monkeypatch.setattr(settings, "smtp_from", "otoxray@cybergene.co")
-    monkeypatch.setattr(mailer, "send", lambda to, subject, body: sent.append(subject))
+    monkeypatch.setattr(mailer, "send", lambda to, subject, body, html=None: sent.append(subject))
     accounts.create_member("giris@ornek.com", gunluk_kota=9, aylik_kota=90, bitis="2099-12-31")
     sw.evaluate("() => chrome.storage.local.remove(['token', 'email'])")
     try:
@@ -478,3 +478,34 @@ def test_email_code_login_and_logout_on_options_page(browser_ctx, monkeypatch):
         page.close()
     finally:
         sw.evaluate("t => chrome.storage.local.set({token: t, email: ''})", TOKEN)
+
+
+def test_opening_a_listing_spends_nothing_until_the_xray_button(browser_ctx):
+    from arac_eksper.web import accounts
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    uid = accounts.create_member("onizleme@ornek.com", gunluk_kota=5)
+    key = accounts.issue_key(uid)
+    sw.evaluate("""async (k) => { const all = await chrome.storage.local.get(null);
+        await chrome.storage.local.remove(Object.keys(all).filter(x => x.startsWith('ac:')));
+        await chrome.storage.local.set({token: k, autoAnalyze: false}); }""", key)
+    try:
+        calls = ScriptedLLM.calls
+        page = ctx.new_page()
+        page.goto(DETAIL_URL + "?onizleme=1")
+        page.wait_for_function(
+            "document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('ön hesap')",
+            timeout=30000)
+        assert ScriptedLLM.calls == calls and accounts.used_today(uid) == 0          # ilan açmak: LLM yok, hak yok
+        k = next(x for x, v in session_state(sw).items() if x.startswith("r:") and v.get("status") == "preview")
+        panel = ctx.new_page()
+        panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={k[2:]}")
+        panel.wait_for_selector("#xray-cta", timeout=15000)
+        assert "1 analiz hakkı kullanır. Bugün kalan: 5/5" in panel.text_content("#xray-note")
+        assert panel.is_visible("#market")
+        panel.click("#run-xray")
+        panel.wait_for_selector("#verdict", timeout=60000)
+        assert ScriptedLLM.calls > calls and accounts.used_today(uid) == 1
+        panel.close()
+        page.close()
+    finally:
+        sw.evaluate("t => chrome.storage.local.set({token: t, autoAnalyze: true})", TOKEN)

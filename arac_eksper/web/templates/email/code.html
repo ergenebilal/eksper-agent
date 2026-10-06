@@ -1,0 +1,18 @@
+{% extends "_base.html" %}
+{% block card %}
+<div style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:28px;font-weight:600;color:#f4f4f6;letter-spacing:-0.5px;margin:0 0 8px;">
+  {{ yer }} giriş kodunuz
+</div>
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14.5px;line-height:22px;color:#c2c1cf;margin:0 0 22px;">
+  Kodu açık olan otoXray sayfasına girin.
+</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
+  <tr><td align="center" bgcolor="#0f131d" style="background-color:#0f131d;border:1px solid #3a2a6b;border-radius:16px;padding:20px 12px;">
+    <div style="font-family:'Space Grotesk','Segoe UI',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;font-size:36px;line-height:40px;font-weight:600;letter-spacing:12px;color:#f4f4f6;">{{ code }}</div>
+  </td></tr>
+</table>
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;">
+  Kod 10 dakika geçerlidir ve yalnızca bir kez kullanılabilir.
+</div>
+{% endblock %}
+{% block footer %}Bu kodu siz istemediyseniz e-postayı yok sayın; kod olmadan hesabınıza giriş yapılamaz.<br><br>{% endblock %}

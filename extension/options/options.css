@@ -36,3 +36,4 @@ code{font-size:12px;color:var(--text-2)}
 .legal{font-size:11.5px;color:var(--faint)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:480px){h1{font-size:28px}.inline{flex-direction:column}}
+.hint{display:block;color:var(--faint);font-size:12px;margin:6px 0 0 28px;max-width:56ch}

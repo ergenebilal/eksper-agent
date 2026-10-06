@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""                # ör. otoxray@cybergene.co
     store_url: str = ""                # davet e-postasındaki Chrome Web Store bağlantısı
+    public_url: str = "https://otoxray.cybergene.co"   # e-postalardaki logo vb. için genel adres
     # Yönetim sayfası (/yonetim): yalnız bu adreslere giriş kodu gönderilir
     admin_emails: list[str] = []
     admin_cookie_secure: bool = True   # https arkasında True (yerel http denemede False)

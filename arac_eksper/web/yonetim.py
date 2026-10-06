@@ -89,7 +89,7 @@ def _reject(sess: dict | None) -> RedirectResponse:
 
 def _send_invite(m: dict) -> bool:
     try:
-        mailer.send_invite(m["email"], m["ad"], haklar_metni(m))
+        mailer.send_invite(m["email"], m["ad"], haklar_metni(m), mailer.haklar_kalemleri(m))
     except mailer.MailUnavailable as e:
         accounts.record_invite(m["id"], False, str(e))
         return False
@@ -106,7 +106,7 @@ def haklar_metni(m: dict) -> str:
 
 
 # ------------------------------------------------------------------ giriş
-STATIC = {"yonetim.css": "text/css", "cg.svg": "image/svg+xml", "favicon-32.png": "image/png",
+STATIC = {"yonetim.css": "text/css", "cg.svg": "image/svg+xml", "favicon-32.png": "image/png", "mail-logo.png": "image/png",
           "fonts/inter-latin.woff2": "font/woff2", "fonts/inter-latin-ext.woff2": "font/woff2",
           "fonts/space-grotesk-latin.woff2": "font/woff2", "fonts/space-grotesk-latin-ext.woff2": "font/woff2"}
 

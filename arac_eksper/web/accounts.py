@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS usage (
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, created_at TEXT NOT NULL, ilan_no TEXT NOT NULL,
     etiket TEXT, skor REAL, oy TEXT, sonuc TEXT, notu TEXT);
+CREATE TABLE IF NOT EXISTS charges (member_id INTEGER NOT NULL, h TEXT NOT NULL, ts REAL NOT NULL,
+    PRIMARY KEY (member_id, h));
 CREATE TABLE IF NOT EXISTS invites (
     id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, sent_at TEXT NOT NULL, ok INTEGER NOT NULL, hata TEXT);
 CREATE TABLE IF NOT EXISTS admin_sessions (
@@ -359,3 +361,24 @@ def list_invites() -> list[dict]:
             FROM members m JOIN invites i ON i.id = (SELECT MAX(id) FROM invites WHERE member_id = m.id)
             ORDER BY i.id DESC""").fetchall()
     return [dict(r) for r in rows]
+
+
+# ------------------------------------------------------------------ analiz ücreti (aynı ilan ikinci kez hak yemez)
+FREE_REPEAT_DAYS = 7
+
+
+def listing_hash(ilan_no: str, aciklama: str) -> str:
+    """İlan no + açıklamanın tek yönlü özeti: metin saklanmaz; açıklama değişirse yeni analiz sayılır."""
+    return _sha(f"{ilan_no}|{' '.join((aciklama or '').split())}")
+
+
+def charged_recently(member_id: int, h: str, days: int = FREE_REPEAT_DAYS) -> bool:
+    with closing(_conn()) as c:
+        return c.execute("SELECT 1 FROM charges WHERE member_id = ? AND h = ? AND ts > ?",
+                         (member_id, h, time.time() - days * 86400)).fetchone() is not None
+
+
+def add_charge(member_id: int, h: str) -> None:
+    with closing(_conn()) as c, c:
+        c.execute("DELETE FROM charges WHERE ts < ?", (time.time() - FREE_REPEAT_DAYS * 86400,))
+        c.execute("INSERT OR REPLACE INTO charges (member_id, h, ts) VALUES (?,?,?)", (member_id, h, time.time()))
