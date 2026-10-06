@@ -322,3 +322,17 @@ def test_batch_uses_series_and_rejects_nothing_extra(client):
     got = {s["ilan_no"]: s for s in client.post("/api/v1/batch-evaluate", headers=H, json={"items": items, "emsal": emsal}).json()["sonuclar"]}
     assert got["X1"]["rozet"] == "piyasada" and got["X2"]["rozet"] == "piyasada"        # Clio, Megane ile kıyaslanmadı
     assert got["X3"]["rozet"] == "emsal_yetersiz"
+
+
+def test_serve_explains_a_busy_port_instead_of_a_raw_socket_error(monkeypatch, capsys):
+    import socket
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        s.listen(1)
+        monkeypatch.setattr(settings, "extension_token", EXT)
+        monkeypatch.setattr(settings, "xray_host", "127.0.0.1")
+        monkeypatch.setattr(settings, "xray_port", s.getsockname()[1])
+        with pytest.raises(SystemExit) as e:
+            xray_app.serve()
+    assert e.value.code == 4
+    assert "kullanılıyor" in capsys.readouterr().err

@@ -32,6 +32,28 @@ def healthz():
     return {"ok": True}
 
 
+def _fail_if_port_busy() -> None:
+    """Port doluysa ham 'Errno 10048' yerine ne olduğunu söyle (çoğu zaman sunucu zaten çalışıyordur)."""
+    import socket
+    import sys
+    import urllib.request
+    with socket.socket() as s:
+        if s.connect_ex((settings.xray_host, settings.xray_port)) != 0:
+            return
+    url = f"http://{settings.xray_host}:{settings.xray_port}/healthz"
+    try:
+        ok = b'"ok":true' in urllib.request.urlopen(url, timeout=2).read()
+    except Exception:  # noqa: BLE001
+        ok = False
+    if ok:
+        print(f"otoXray sunucusu ZATEN çalışıyor ({url} sağlıklı). Yeniden başlatmak için çalıştığı pencerede Ctrl+C "
+              "yapın ya da otoxray-yeniden-baslat.cmd dosyasını çalıştırın.", file=sys.stderr)
+    else:
+        print(f"{settings.xray_port} portu başka bir program tarafından kullanılıyor (otoXray değil). "
+              "XRAY_PORT ile başka bir port seçin.", file=sys.stderr)
+    raise SystemExit(4)
+
+
 def serve() -> None:
     import sys
     import uvicorn
@@ -42,6 +64,7 @@ def serve() -> None:
     if settings.xray_host not in ("127.0.0.1", "localhost", "::1"):
         print(f"UYARI: API {settings.xray_host} adresinde dinliyor. Yalnızca yerel ağ/Tailscale için; internete açmayın.",
               file=sys.stderr)
+    _fail_if_port_busy()
     # access_log kapalı: istek yolları bile kaydedilmez
     uvicorn.run("arac_eksper.web.xray_app:app", host=settings.xray_host, port=settings.xray_port,
                 log_level="warning", access_log=False)
