@@ -122,3 +122,31 @@ h3.sub{font-size:12.5px;color:var(--text-2);margin:12px 0 2px;letter-spacing:0}
 .costs .tag{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--think)}
 #cost-total .big{background:var(--ink-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
 .costs .num{white-space:nowrap;flex:none;font-size:13px}
+
+/* Savaş Odası */
+.tabs{display:flex;gap:6px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.tabs .tab{flex:1;border:0;border-radius:10px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.tabs .tab.on{background:var(--layer);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.pool-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.pool-row button{padding:9px 14px}
+.pool-row button.pooled{border-color:rgba(16,185,129,.5);color:var(--emerald)}
+.havuz-item{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.havuz-item input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--purple)}
+.havuz-item b{display:block;font-weight:500;font-size:13.5px;line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--text-2)}
+.chip.v-ALINIR,.chip.good{color:var(--go);border-color:color-mix(in srgb,var(--go) 45%,transparent)}
+.chip.v-DUSUNULEBILIR,.chip.warn{color:var(--think);border-color:color-mix(in srgb,var(--think) 45%,transparent)}
+.chip.v-ALINMAZ{color:var(--stop);border-color:color-mix(in srgb,var(--stop) 45%,transparent)}
+.hacts{display:flex;flex-direction:column;gap:6px}
+button.mini{padding:6px 10px;font-size:12px;border-radius:10px}
+.verdict-card{border:1px solid var(--line-2);border-radius:14px;padding:12px;margin:8px 0;background:var(--surface)}
+.verdict-card.good{border-color:color-mix(in srgb,var(--go) 45%,transparent)}
+.verdict-card.bad{border-color:color-mix(in srgb,var(--stop) 45%,transparent)}
+.verdict-card.warn{border-color:color-mix(in srgb,var(--think) 45%,transparent)}
+.verdict-card .k{display:block;font-size:11.5px;color:var(--muted)}
+.verdict-card b{display:block;font:500 14px/1.3 var(--display);margin:2px 0 4px}
+.verdict-card p{margin:0;color:var(--text-2)}
+.order{padding-left:20px}.order li::marker{font:600 13px var(--display);color:var(--purple)}
+.cmp-row{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px dashed var(--line)}
+.cmp-row b{font-weight:500;font-size:13px}

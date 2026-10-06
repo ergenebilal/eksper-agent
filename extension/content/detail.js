@@ -40,7 +40,7 @@
       await send({ type: 'detail:unreadable', eksik: ex.eksik });
       return;
     }
-    const res = await send({ type: 'preview', payload: ex.payload, pagePath: location.pathname });
+    const res = await send({ type: 'preview', payload: ex.payload, pagePath: location.pathname, pageUrl: location.href });
     if (!res || !res.ok) { setBadge('otoXray AI: ' + ((res && res.message) || 'hata'), null); return; }
     if (!res.preview) { showResult(ex, res.data); return; }          // önceden yapılmış tam analiz (önbellek)
     const elendi = (res.data.elenme_nedenleri || []).length > 0;
@@ -64,7 +64,7 @@
       return;
     }
     setBadge('otoXray AI: analiz ediliyor…', null);
-    const res = await send({ type: 'analyze', payload: ex.payload, pagePath: location.pathname, force: !!force });
+    const res = await send({ type: 'analyze', payload: ex.payload, pagePath: location.pathname, pageUrl: location.href, force: !!force });
     if (!res || !res.ok) {
       setBadge('otoXray AI: ' + ((res && res.message) || 'hata'), null);
       return;

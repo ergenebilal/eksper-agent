@@ -387,3 +387,85 @@ def giris(req: GirisRequest, request: Request):
     key = accounts.issue_key(m["id"], req.cihaz)
     m = accounts.find_by_key(key)
     return {"ok": True, "anahtar": key, "email": m["email"], "ad": m["ad"], "kota": _kota(m)}
+
+
+# ------------------------------------------------------------------ Savaş Odası: karşılaştır ve karar ver (R3.3)
+class CompareSonuc(BaseModel):
+    """İstemcinin tarayıcısında duran, önceden yapılmış röntgen sonucunun özeti (sunucu saklamaz)."""
+    etiket: Literal["ALINIR", "DUSUNULEBILIR", "ALINMAZ"]
+    skor: float = Field(ge=0, le=10)
+    veri_tamlik: float | None = Field(None, ge=0, le=1)
+    hard_fails: list[str] = Field(default_factory=list, max_length=10)
+    eksiler: list[str] = Field(default_factory=list, max_length=20)
+    artilar: list[str] = Field(default_factory=list, max_length=20)
+    sapma_yuzde: float | None = Field(None, ge=-100, le=500)
+
+    @field_validator("hard_fails", "eksiler", "artilar")
+    @classmethod
+    def _kisa(cls, v):
+        return [mask_phones(str(x))[:200] for x in v]
+
+
+class CompareItem(BaseModel):
+    ilan_no: str = Field(pattern=ID_RE)
+    baslik: str = Field("", max_length=200)
+    fiyat: int = Field(ge=1, le=500_000_000)
+    yil: int = Field(ge=1950, le=2100)
+    km: int = Field(ge=0, le=3_000_000)
+    marka: str | None = Field(None, max_length=60)
+    seri: str | None = Field(None, max_length=80)
+    paket: str | None = Field(None, max_length=80)
+    vites: str | None = Field(None, max_length=40)
+    yakit: str | None = Field(None, max_length=40)
+    aciklama: str = Field("", max_length=8000)
+    ilan_tarihi: date | None = None
+    fiyat_degisti: bool | None = None
+    gorulen_fiyatlar: list[int] = Field(default_factory=list, max_length=30)
+    sonuc: CompareSonuc
+
+
+class CompareRequest(BaseModel):
+    ilanlar: list[CompareItem] = Field(min_length=2, max_length=5)
+
+
+@router.post("/compare")
+def compare(req: CompareRequest, llm=Depends(get_llm), user=Depends(current_user)):
+    """2-5 ilanı karşılaştırır. Kararlar kodda; LLM yalnız doğrulanmış gerekçe yazar (yoksa şablon). 1 hak; her ilanın
+    tekil röntgeni bu üye tarafından son 7 gün içinde çekilmiş olmalı; aynı küme tekrar ücretsiz. Hiçbir şey saklanmaz
+    (yalnız küme özeti hash'i)."""
+    from arac_eksper.analysis import compare as cmp
+    ids = [i.ilan_no for i in req.ilanlar]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=422, detail="Aynı ilan birden fazla kez seçilmiş.")
+    hashes = [accounts.listing_hash(i.ilan_no, mask_phones(i.aciklama)) for i in req.ilanlar]
+    if user["id"]:
+        for n, (i, h) in enumerate(zip(req.ilanlar, hashes), 1):
+            if not accounts.charged_recently(user["id"], h):
+                raise HTTPException(status_code=409, detail=f"Önce {n} numaralı ilanın röntgenini çekin (son 7 gün içinde).")
+    import hashlib
+    kume = "cmp:" + hashlib.sha256("|".join(sorted(hashes)).encode()).hexdigest()
+    charge = bool(user["id"]) and not accounts.charged_recently(user["id"], kume)
+    if charge:
+        _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
+    bugun = date.today()
+    items = []
+    for i in req.ilanlar:
+        d = ListingDetail(ilan_no=i.ilan_no, url="", baslik=mask_phones(i.baslik), fiyat=i.fiyat, yil=i.yil, km=i.km,
+                          il="", ilan_tarihi=bugun, marka=i.marka or "", model=i.seri or "", seri=i.seri, paket=i.paket,
+                          vites=i.vites, yakit=i.yakit, aciklama=mask_phones(i.aciklama), fetched_at=datetime.now(timezone.utc))
+        items.append(dict(i.model_dump(), baslik=d.baslik, gercek_maliyet=masraf.gercek_maliyet(d),
+                          sonuc=i.sonuc.model_dump()))
+    tablo = [cmp.satir(n, it, bugun) for n, it in enumerate(items, 1)]
+    sec = cmp.secimler(tablo)
+    anlatim, llm_ok = None, False
+    if _llm_budget_ok():
+        try:
+            anlatim = cmp.llm_anlatim(llm, tablo, sec, settings.llm_model_fast)
+            llm_ok = anlatim is not None
+        except Exception:                      # gerekçe opsiyoneldir: her hata şablona düşer, kararlar koddadır
+            anlatim = None
+    anlatim = anlatim or cmp.sablon_anlatim(tablo, sec)
+    if charge:
+        accounts.add_charge(user["id"], kume)
+    return {"tablo": tablo, **sec, "anlatim": anlatim, "llm": llm_ok, "hak_kullanildi": charge, "kota": _kota(user),
+            "uyari": "Karşılaştırma ilan verisine dayanır; karar ekspertiz sonrası verilmelidir.", "yasal_uyari": DISCLAIMER}

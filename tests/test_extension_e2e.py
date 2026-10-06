@@ -564,3 +564,42 @@ def test_bar_comes_back_after_back_forward_cache(browser_ctx):
     page.wait_for_function(BAR + " && " + BAR + ".isConnected", timeout=15000)
     page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=30000)
     page.close()
+
+
+def test_war_room_pool_and_compare(browser_ctx):
+    """R3: iki ilan havuza eklenir, seçilir, karşılaştırılır; havuz yalnız yerel depoda, en fazla 10 ilan."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    sw.evaluate("() => chrome.storage.local.remove('havuz')")
+    panels = []
+    for url in (DETAIL_URL + "?havuz=1", REAL_URL + "?havuz=1"):
+        page = ctx.new_page()
+        page.goto(url)
+        page.wait_for_selector("#aracx-badge-host", state="attached", timeout=90000)
+        page.wait_for_function("document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('/10')", timeout=90000)
+        no = "1234567890" if url.startswith(DETAIL_URL) else "1343960581"
+        tab_id = next(k[2:] for k, v in session_state(sw).items()
+                      if k.startswith("r:") and (v.get("meta") or {}).get("ilan_no") == no and v.get("status") == "ok")
+        panel = ctx.new_page()
+        panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={tab_id}")
+        panel.wait_for_selector("#havuz-add", timeout=15000)
+        panel.click("#havuz-add")
+        panel.wait_for_selector("#havuz-add.pooled", timeout=15000)
+        panels.append((page, panel))
+    havuz = sw.evaluate("async () => (await chrome.storage.local.get('havuz')).havuz")
+    assert len(havuz["items"]) == 2 and all(it["sonuc"] for it in havuz["items"].values())
+    assert all(it["url"].startswith("https://") for it in havuz["items"].values())
+    panel = panels[-1][1]
+    panel.click("#tab-havuz")
+    panel.wait_for_selector("#havuz-list .havuz-item", timeout=15000)
+    for i in range(2):                                   # her işaretlemede panel yeniden çizilir: locator yeniden bulur
+        panel.locator(".havuz-item input[type=checkbox]").nth(i).check()
+    assert panel.is_enabled("#compare-btn")
+    panel.click("#compare-btn")
+    panel.wait_for_selector("#compare-result", timeout=60000)
+    txt = panel.text_content("#compare-result")
+    assert "Fiyat/performans galibi" in txt and "En riskli" in txt and "Pazarlık şansı en yüksek" in txt
+    son = sw.evaluate("async () => (await chrome.storage.local.get('havuz')).havuz.son")
+    assert len(son["ids"]) == 2 and son["data"]["galip"] in son["ids"]
+    for page, p in panels:
+        p.close(); page.close()
+    sw.evaluate("() => chrome.storage.local.remove('havuz')")

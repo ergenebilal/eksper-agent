@@ -36,10 +36,133 @@ function rehberCard() {
   return d;
 }
 
+// ------------------------------------------------------------------ Savaş Odası (havuz yalnız bu tarayıcıda)
+let VIEW = 'ilan';
+let HV = null, HV_MAX = 10;
+const SEL = new Set();
+let COMPARE_MSG = '';
+async function loadPool() {
+  const r = await chrome.runtime.sendMessage({ type: 'havuz:get' }).catch(() => null);
+  if (r && r.ok) { HV = r.data; HV_MAX = r.max || 10; for (const id of [...SEL]) if (!HV.items[id]) SEL.delete(id); }
+}
+
+function tabsEl() {
+  const n = HV ? Object.keys(HV.items).length : 0;
+  const t = el('nav', 'tabs');
+  const a = el('button', VIEW === 'ilan' ? 'tab on' : 'tab', 'Bu ilan'); a.id = 'tab-ilan';
+  const b = el('button', VIEW === 'havuz' ? 'tab on' : 'tab', `Havuz (${n}/${HV_MAX})`); b.id = 'tab-havuz';
+  a.addEventListener('click', () => { VIEW = 'ilan'; render(); });
+  b.addEventListener('click', () => { VIEW = 'havuz'; render(); });
+  t.append(a, b);
+  return t;
+}
+
+function poolBtn(meta, tabId) {
+  const inPool = HV && meta && HV.items[meta.ilan_no];
+  const wrap = el('div', 'pool-row');
+  const b = el('button', inPool ? 'pooled' : '', inPool ? 'Havuzda ✓ · çıkar' : '📌 Havuza ekle'); b.id = 'havuz-add';
+  const m = el('span', 'small mute');
+  b.addEventListener('click', async () => {
+    const r = await chrome.runtime.sendMessage(inPool ? { type: 'havuz:remove', ilan_no: meta.ilan_no } : { type: 'havuz:add', tabId });
+    if (r && r.ok) { HV = r.data; render(); } else m.textContent = (r && r.message) || 'Eklenemedi.';
+  });
+  wrap.append(b, m);
+  if (!inPool) wrap.append(el('span', 'small mute', 'Adayları karşılaştırmak için havuzda toplayın.'));
+  return wrap;
+}
+
+const gunOnce = (iso) => { if (!iso) return null; const d = Math.round((Date.now() - new Date(iso + 'T00:00:00').getTime()) / 86400000); return d >= 0 ? d : null; };
+
+function havuzView(tabId) {
+  const items = HV ? Object.values(HV.items).sort((a, b) => b.eklendi - a.eklendi) : [];
+  if (!items.length) {
+    const c = el('section', 'empty');
+    c.append(el('h2', '', 'Havuz boş'), el('p', 'mute', 'Beğendiğiniz ilanların panelinde “Havuza ekle”ye basın. 2-5 ilanı seçip yan yana karşılaştırabilirsiniz.'));
+    return [c];
+  }
+  const out = [];
+  const list = el('section', 'sec'); list.id = 'havuz-list';
+  list.append(el('h2', '', 'Adaylar'), el('p', 'small mute', 'Karşılaştırmak için 2-5 ilan seçin. Her ilanın önce röntgeni çekilmiş olmalı.'));
+  items.forEach((it) => {
+    const card = el('div', 'havuz-item');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = SEL.has(it.ilan_no);
+    cb.setAttribute('aria-label', 'Karşılaştırmaya ekle: ' + (it.meta.baslik || it.ilan_no));
+    cb.addEventListener('change', () => { cb.checked ? SEL.add(it.ilan_no) : SEL.delete(it.ilan_no); render(); });
+    const body = el('div', 'hb');
+    body.append(el('b', '', it.meta.baslik || it.ilan_no));
+    body.append(el('div', 'small mute', `${tl(it.meta.fiyat)} · ${it.meta.yil || ''} · ${(it.meta.km || 0).toLocaleString('tr-TR')} km`));
+    const chips = el('div', 'chips');
+    if (it.sonuc) { const c = el('span', 'chip v-' + it.sonuc.etiket, `${VERDICT[it.sonuc.etiket][1]} · ${it.sonuc.skor}/10`); chips.append(c); }
+    else chips.append(el('span', 'chip warn', 'Röntgen yok'));
+    const g = gunOnce(it.ilan_tarihi); if (g !== null) chips.append(el('span', 'chip', `${g} gündür yayında`));
+    if (it.fiyat_degisti) chips.append(el('span', 'chip', 'Fiyatı değişmiş'));
+    const f = (it.gorulen || []).map((x) => x.f);
+    if (f.length > 1 && Math.max(...f) > it.meta.fiyat) chips.append(el('span', 'chip good', `Sizin gördüğünüzden ${tl(Math.max(...f) - it.meta.fiyat)} düştü`));
+    body.append(chips);
+    const acts = el('div', 'hacts');
+    const open = el('button', 'mini', 'Aç'); open.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'havuz:open', ilan_no: it.ilan_no }));
+    const rm = el('button', 'mini', 'Çıkar');
+    rm.addEventListener('click', async () => { const r = await chrome.runtime.sendMessage({ type: 'havuz:remove', ilan_no: it.ilan_no }); if (r && r.ok) { HV = r.data; SEL.delete(it.ilan_no); render(); } });
+    acts.append(open, rm);
+    card.append(cb, body, acts);
+    list.append(card);
+  });
+  out.push(list);
+
+  const n = SEL.size;
+  const cmp = el('section', 'xray-cta'); cmp.id = 'compare-box';
+  const btn = el('button', 'pri', n >= 2 ? `${n} ilanı karşılaştır ve karar ver` : 'Karşılaştır ve karar ver'); btn.id = 'compare-btn';
+  btn.disabled = n < 2 || n > 5;
+  const msg = el('p', 'quota', COMPARE_MSG || (n > 5 ? 'En fazla 5 ilan seçebilirsiniz.' : '1 analiz hakkı kullanır; aynı seçimi tekrar karşılaştırmak ücretsiz.'));
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'Karşılaştırılıyor…';
+    const r = await chrome.runtime.sendMessage({ type: 'havuz:compare', ids: [...SEL] });
+    COMPARE_MSG = r && r.ok ? '' : ((r && r.message) || 'Karşılaştırılamadı.');
+    if (r && r.ok) await loadPool();
+    render();
+  });
+  cmp.append(el('h2', '', 'Karşılaştır ve karar ver'), btn, msg);
+  out.push(cmp);
+  if (HV && HV.son && HV.son.ids.every((id) => HV.items[id])) out.push(...compareResult(HV.son.data));
+  return out;
+}
+
+function compareResult(d) {
+  const by = Object.fromEntries(d.tablo.map((r) => [r.ilan_no, r]));
+  const name = (id) => `${by[id].no}. ${by[id].baslik || id}`;
+  const out = [];
+  const box = el('section', 'sec'); box.id = 'compare-result';
+  box.append(el('h2', '', 'Sonuç'));
+  [['Fiyat/performans galibi', d.galip, d.anlatim.galip, 'good'], ['En riskli', d.en_riskli, d.anlatim.en_riskli, 'bad'],
+   ['Pazarlık şansı en yüksek', d.pazarlik, d.anlatim.pazarlik, 'warn']].forEach(([t, id, txt, cls]) => {
+    const c = el('div', 'verdict-card ' + cls);
+    c.append(el('span', 'k', t), el('b', '', name(id)), el('p', 'small', txt));
+    box.append(c);
+  });
+  if (d.ekspertiz_sirasi && d.ekspertiz_sirasi.length) {
+    box.append(el('h3', 'sub', 'Ekspertize gitme sırası'));
+    const ol = el('ol', 'order'); d.ekspertiz_sirasi.forEach((id) => ol.append(el('li', '', by[id].baslik || id))); box.append(ol);
+  }
+  const tbl = el('div', 'cmp-table');
+  d.tablo.forEach((r) => {
+    const row = el('div', 'cmp-row');
+    row.append(el('b', '', `${r.no}. ${r.baslik || r.ilan_no}`));
+    row.append(el('span', 'small', `${tl(r.fiyat)} · tahmini toplam ${tl(r.maliyet_alt)}${r.maliyet_ust !== r.maliyet_alt ? '–' + tl(r.maliyet_ust) : ''}`));
+    row.append(el('span', 'small mute', `${VERDICT[r.etiket][1]} · ${r.skor}/10${r.ilan_gun !== null && r.ilan_gun !== undefined ? ` · ${r.ilan_gun} gün` : ''}${r.hard_fails.length ? ' · ' + r.hard_fails[0] : ''}`));
+    tbl.append(row);
+  });
+  box.append(el('h3', 'sub', 'Tablo'), tbl,
+    el('p', 'disc', (d.llm ? 'Gerekçe metnini yapay zeka yazdı; kararlar ve sayılar kurallarla hesaplandı. ' : 'Kararlar ve sayılar kurallarla hesaplandı. ') + d.uyari));
+  out.push(box);
+  return out;
+}
+
 async function render() {
+  if (!HV) await loadPool();
+  if (VIEW === 'havuz') { app.replaceChildren(tabsEl(), ...havuzView()); return; }
   const tabId = await activeTabId();
   const st = tabId == null ? null : (await chrome.storage.session.get(KEY(tabId)))[KEY(tabId)];
-  app.replaceChildren(...view(st, tabId));
+  app.replaceChildren(tabsEl(), ...view(st, tabId));
 }
 
 const VERDICT = {
@@ -104,7 +227,7 @@ function previewView(st, tabId) {
   const q = st.quick, out = [];
   const plate = el('section', 'plate v-WAIT'); plate.id = 'preview';
   plate.append(carLine(st.meta), el('p', 'small mute', 'Ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. Hak harcanmadı.'));
-  out.push(plate);
+  out.push(plate, poolBtn(st.meta, tabId));
   if (q.sema_uyarisi) { const w = el('section', 'alert'); w.id = 'sema-uyari'; w.append(el('b', '', 'Hasar şeması güvenilir değil'), el('p', 'small', q.sema_uyarisi)); out.push(w); }
   if (q.elenme_nedenleri && q.elenme_nedenleri.length) {
     const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri (ön hesap)'));
@@ -341,6 +464,7 @@ function renderOk(st, tabId) {
   if (!d.beklemede) out.push(feedbackCard(d, st.meta));
   if (d.kota) out.push(el('p', 'quota', `Bugünkü analiz hakkın: ${Math.max(d.kota.limit - d.kota.kullanilan, 0)}/${d.kota.limit}`));
 
+  out.push(poolBtn(st.meta, tabId));
   // 7) Eylemler
   const act = el('div', 'actions');
   const re = el('button', '', '↻ Yeniden analiz et');
@@ -425,7 +549,10 @@ function row(label, value, cls) {
   const r = el('div', 'row'); r.append(el('span', 'mute', label), el('span', cls || '', value)); return r;
 }
 
-chrome.storage.onChanged.addListener((_c, area) => { if (area === 'session') render(); });
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area === 'local' && c.havuz) { HV = c.havuz.newValue || { items: {}, son: null }; render(); }
+  if (area === 'session') render();
+});
 setInterval(() => { if (document.getElementById('waiting')) render(); }, 1000);   // bekleme sayacı
 chrome.tabs.onActivated.addListener(render);
 chrome.tabs.onUpdated.addListener((_id, ch) => { if (ch.status) render(); });

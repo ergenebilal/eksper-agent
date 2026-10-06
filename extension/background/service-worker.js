@@ -134,6 +134,30 @@ async function pruneCache() {
   await chrome.storage.local.remove([...dead, ...live.slice(CACHE_MAX).map(([k]) => k)]);
 }
 
+// ------------------------------------------------------------------ Savaş Odası havuzu (YALNIZ bu tarayıcıda)
+const HAVUZ = 'havuz', HAVUZ_MAX = 10;
+const fromPanel = (sender) => String(sender.url || '').startsWith(chrome.runtime.getURL('sidepanel/'));
+async function loadHavuz() { return (await chrome.storage.local.get(HAVUZ))[HAVUZ] || { items: {}, son: null }; }
+const saveHavuz = (h) => chrome.storage.local.set({ [HAVUZ]: h });
+/** Röntgen sonucunun karşılaştırma için gereken özeti (ilan metni değil) */
+const ozet = (d) => (d && !d.beklemede && d.etiket ? {
+  etiket: d.etiket, skor: d.skor, veri_tamlik: d.veri_tamlik, hard_fails: (d.hard_fails || []).slice(0, 10),
+  eksiler: (d.eksiler || []).slice(0, 20), artilar: (d.artilar || []).slice(0, 20),
+  sapma_yuzde: typeof d.sapma_yuzde === 'number' ? d.sapma_yuzde : null } : null);
+const siteUrl = (u) => { try { const h = new URL(u).hostname; return (h === OTOXRAY_SITE_SUFFIX || h.endsWith('.' + OTOXRAY_SITE_SUFFIX)) ? u : null; } catch (_) { return null; } };
+
+/** İlan açıldığında: sekmenin son yükü (panel "havuza ekle" için) + havuzdaysa görülen fiyat ve bilgi güncellemesi */
+async function noteListing(tabId, p, pageUrl, data) {
+  await chrome.storage.session.set({ ['p:' + tabId]: { p, url: siteUrl(pageUrl) } });
+  const h = await loadHavuz(), it = h.items[p.ilan_no];
+  if (!it) return;
+  const son = it.gorulen[it.gorulen.length - 1];
+  if (!son || son.f !== p.fiyat || Date.now() - son.t > 86400000) it.gorulen = [...it.gorulen, { t: Date.now(), f: p.fiyat }].slice(-30);
+  Object.assign(it, { p, meta: { ...it.meta, fiyat: p.fiyat }, fiyat_degisti: p.fiyat_degisti, ilan_tarihi: p.ilan_tarihi });
+  if (data && ozet(data)) it.sonuc = ozet(data);
+  await saveHavuz(h);
+}
+
 // ------------------------------------------------------------------ mesajlar
 async function handle(msg, sender) {
   if (sender.id !== chrome.runtime.id) return { ok: false, code: 'forbidden' };
@@ -153,6 +177,7 @@ async function handle(msg, sender) {
       const hash = cacheHash(p, s.maxButce);
       const hit = msg.force ? null : (await chrome.storage.local.get(cacheKey(p)))[cacheKey(p)];
       if (hit && hit.h === hash && Date.now() - hit.t < CACHE_TTL) {
+        await noteListing(tabId, p, msg.pageUrl, hit.data);
         await setResult(tabId, { status: 'ok', meta, data: hit.data });
         return { ok: true, data: hit.data, cached: true };
       }
@@ -169,6 +194,7 @@ async function handle(msg, sender) {
       });
       const res = await api('/api/v1/analyze', { body });
       finished = true;
+      await noteListing(tabId, p, msg.pageUrl, res.ok ? res.data : null);
       await setResult(tabId, res.ok ? { status: 'ok', meta, data: res.data }
                                     : { status: 'error', meta, code: res.code, message: res.message });
       if (res.ok) {
@@ -194,9 +220,11 @@ async function handle(msg, sender) {
       const group = mk.idx[p.ilan_no] || groupOfDetail(p);
       const hit = (await chrome.storage.local.get(cacheKey(p)))[cacheKey(p)];
       if (hit && hit.h === cacheHash(p, s.maxButce) && Date.now() - hit.t < CACHE_TTL) {
+        await noteListing(tabId, p, msg.pageUrl, hit.data);
         await setResult(tabId, { status: 'ok', meta, data: hit.data });
         return { ok: true, data: hit.data, cached: true };
       }
+      await noteListing(tabId, p, msg.pageUrl, hit && hit.data);
       const emsal = group && mk.groups[group] ? nearby(toComps(mk.groups[group]), p.yil, p.km) : [];
       const q = await api('/api/v1/quick', { body: { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) } });
       await setResult(tabId, q.ok ? { status: 'preview', meta, quick: q.data }
@@ -233,6 +261,53 @@ async function handle(msg, sender) {
       catch (_) { return { ok: false, code: 'gesture', message: 'Eklenti simgesine tıklayın.' }; }
     }
     case 'ping': return api('/api/v1/ping', { method: 'GET' });
+    case 'havuz:get':
+    case 'havuz:add':
+    case 'havuz:remove':
+    case 'havuz:open':
+    case 'havuz:compare': {
+      if (!fromPanel(sender)) return { ok: false, code: 'forbidden' };
+      const h = await loadHavuz();
+      if (msg.type === 'havuz:get') return { ok: true, data: h, max: HAVUZ_MAX };
+      if (msg.type === 'havuz:add') {
+        const cur = (await chrome.storage.session.get('p:' + msg.tabId))['p:' + msg.tabId];
+        if (!cur || !cur.p || !cur.p.ilan_no) return { ok: false, message: 'Önce bir ilan sayfası açın.' };
+        const p = cur.p;
+        if (!h.items[p.ilan_no] && Object.keys(h.items).length >= HAVUZ_MAX)
+          return { ok: false, message: `Havuz dolu (${HAVUZ_MAX}/${HAVUZ_MAX}). Önce bir ilanı çıkarın.` };
+        const hit = (await chrome.storage.local.get(cacheKey(p)))[cacheKey(p)];
+        h.items[p.ilan_no] = h.items[p.ilan_no] || {
+          ilan_no: p.ilan_no, url: cur.url, eklendi: Date.now(), gorulen: [{ t: Date.now(), f: p.fiyat }],
+          meta: { baslik: p.baslik, fiyat: p.fiyat, yil: p.yil, km: p.km, marka: p.marka, seri: p.seri, paket: p.paket } };
+        Object.assign(h.items[p.ilan_no], { p, ilan_tarihi: p.ilan_tarihi, fiyat_degisti: p.fiyat_degisti,
+          sonuc: (hit && ozet(hit.data)) || h.items[p.ilan_no].sonuc || null });
+        await saveHavuz(h);
+        return { ok: true, data: h };
+      }
+      if (msg.type === 'havuz:remove') { delete h.items[msg.ilan_no]; await saveHavuz(h); return { ok: true, data: h }; }
+      if (msg.type === 'havuz:open') {
+        const it = h.items[msg.ilan_no], url = it && siteUrl(it.url);
+        if (!url) return { ok: false, message: 'İlan adresi kayıtlı değil.' };
+        await chrome.tabs.create({ url });                 // kullanıcının tıklamasıyla açılır; arka planda istek yok
+        return { ok: true };
+      }
+      // havuz:compare — 2-5 ilan, her birinin röntgeni olmalı
+      const secili = (msg.ids || []).map((id) => h.items[id]).filter(Boolean);
+      if (secili.length < 2 || secili.length > 5) return { ok: false, message: '2 ile 5 arasında ilan seçin.' };
+      const eksik = secili.filter((it) => !it.sonuc);
+      if (eksik.length) return { ok: false, code: 'no_xray', message: 'Önce şu ilanların röntgenini çekin: ' + eksik.map((it) => it.meta.baslik).join(', ') };
+      const ilanlar = secili.map((it) => {
+        const p = it.p || {};
+        return Object.assign({ ilan_no: it.ilan_no, baslik: (p.baslik || it.meta.baslik || '').slice(0, 200), fiyat: p.fiyat || it.meta.fiyat,
+          yil: p.yil || it.meta.yil, km: p.km ?? it.meta.km, aciklama: (p.aciklama || '').slice(0, 8000),
+          gorulen_fiyatlar: it.gorulen.map((g) => g.f).slice(-30), sonuc: it.sonuc },
+          ...['marka', 'seri', 'paket', 'vites', 'yakit'].filter((k) => p[k]).map((k) => ({ [k]: String(p[k]).slice(0, 60) })),
+          it.ilan_tarihi ? { ilan_tarihi: it.ilan_tarihi } : {}, typeof it.fiyat_degisti === 'boolean' ? { fiyat_degisti: it.fiyat_degisti } : {});
+      });
+      const r = await api('/api/v1/compare', { body: { ilanlar } });
+      if (r.ok) { h.son = { t: Date.now(), ids: secili.map((it) => it.ilan_no), data: r.data }; await saveHavuz(h); }
+      return r;
+    }
     case 'rehber': {              // statik rehber (alım günü listesi): oturum boyunca bir kez çekilir
       const c = (await chrome.storage.session.get('rehber')).rehber;
       if (c && Date.now() - c.t < 3600000) return { ok: true, data: c.data };
@@ -264,7 +339,7 @@ async function handle(msg, sender) {
     }
     case 'clearLocalData': {         // kullanıcı kendi yerel verisini silebilir
       const all = await chrome.storage.local.get(null);
-      await chrome.storage.local.remove(Object.keys(all).filter((k) => k === MK || k.startsWith('ac:')));
+      await chrome.storage.local.remove(Object.keys(all).filter((k) => k === MK || k === HAVUZ || k.startsWith('ac:')));
       return { ok: true };
     }
     case 'panel:diagnose':
