@@ -1,5 +1,6 @@
-"""otoXray AI uç noktaları (/api/v1). DURUMSUZ: ilan metni, başlık, bağlantı ya da karar sunucuda SAKLANMAZ.
-Veritabanı, dosya, önbellek, günlük kaydı yoktur; her istek bellekte işlenir ve yanıt dönünce kapsam biter.
+"""otoXray AI uç noktaları (/api/v1). İLAN VERİSİ AÇISINDAN DURUMSUZ: ilan metni, başlık, bağlantı ya da karar sunucuda
+SAKLANMAZ; ilan önbelleği ve günlük kaydı yoktur, her istek bellekte işlenir. Tek kalıcı kayıt davetli kullanıcı hesabıdır
+(web/accounts.py: anahtar özeti, günlük sayaç, kullanıcının bilerek gönderdiği geri bildirim); sahip anahtarı ona da dokunmaz.
 Piyasa emsalleri kullanıcının kendi tarayıcısında tutulur, istekle birlikte geçici gelir.
 Yetki: yalnızca Bearer EXTENSION_TOKEN (çerez yok, CORS yok). İstemci verisi güvensizdir: sınırlar, beyaz listeler,
 telefon maskeleme. Karar mantığı değişmedi: description_llm + rules_engine + offer."""
@@ -8,8 +9,9 @@ import threading
 import time
 from collections import deque
 from datetime import date, datetime, timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from arac_eksper.analysis import description_llm, market_calc, offer as offer_calc, rules_engine
@@ -20,7 +22,7 @@ from arac_eksper.privacy import mask_phones
 from arac_eksper.report.legal import DISCLAIMER
 from arac_eksper.report.offer_text import whatsapp_text
 from arac_eksper.schemas import DescriptionFindings, ListingDetail, MarketStats, PartState, Verdict
-from arac_eksper.web import security
+from arac_eksper.web import accounts, security
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(security.require_extension_auth)])
 
@@ -106,6 +108,22 @@ def _llm_budget_ok() -> bool:
         return True
 
 
+def current_user(request: Request) -> dict:
+    return request.state.user
+
+
+def _take(user: dict, tur: str, limit: int | None) -> None:
+    """Davetli kullanıcının günlük hakkından düşer; sahip (id 0) hesap deposuna hiç dokunmaz."""
+    if user["id"] and not accounts.consume(user["id"], limit, tur):
+        raise HTTPException(status_code=429, detail=f"Günlük hakkınız doldu ({limit}). Yarın yenilenir.")
+
+
+def _kota(user: dict) -> dict | None:
+    if not user["id"]:
+        return None
+    return {"limit": user["gunluk_kota"], "kullanilan": accounts.used_today(user["id"])}
+
+
 def _kanitlar(findings) -> tuple[list[dict], list[dict]]:
     """(kanıt listesi, vurgu listesi): yalnız sunucunun açıklamada DOĞRULADIĞI alıntılar."""
     if not findings:
@@ -149,14 +167,16 @@ def _pending(req: AnalyzeRequest) -> dict:
 
 # ------------------------------------------------------------------ uç noktalar
 @router.get("/ping")
-def ping():
-    return {"ok": True, "surum": 2, "durumsuz": True, "yasal_uyari": DISCLAIMER}
+def ping(user=Depends(current_user)):
+    return {"ok": True, "surum": 3, "durumsuz": True, "kullanici": user["ad"], "kota": _kota(user),
+            "yasal_uyari": DISCLAIMER}
 
 
 @router.post("/quick")
-def quick(req: AnalyzeRequest):
+def quick(req: AnalyzeRequest, user=Depends(current_user)):
     """LLM'siz ANINDA ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. LLM röntgeni beklenirken gösterilir;
     etiket ÜRETMEZ (açıklama analizi olmadan karar verilmez). LLM bütçesinden düşmez, hiçbir şey saklanmaz."""
+    _take(user, "quick", settings.user_daily_batch)
     detail = _detail(req)
     stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     empty = DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz",
@@ -172,15 +192,20 @@ def quick(req: AnalyzeRequest):
 
 
 @router.post("/analyze")
-def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
+def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user)):
+    _take(user, "analyze", user["gunluk_kota"])
     if not _llm_budget_ok():
-        raise HTTPException(status_code=429, detail="Günlük analiz sınırı doldu")
+        if user["id"]:
+            accounts.refund(user["id"])
+        raise HTTPException(status_code=429, detail="Sunucunun günlük analiz sınırı doldu")
     detail = _detail(req)
     stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     try:
         findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama,    # db yok → önbellek yok
                                                       second_pass=settings.xray_second_pass)
     except (LLMUnavailable, ValueError):       # pydantic.ValidationError bir ValueError'dır
+        if user["id"]:
+            accounts.refund(user["id"])         # analiz yapılamadıysa hak yanmaz
         return _pending(req)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
     # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
@@ -191,13 +216,13 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
     return {
         "ilan_no": req.ilan_no, "beklemede": False, "etiket": v.etiket, "skor": v.guven_skoru,
         "veri_tamlik": v.veri_tamlik, "hard_fails": v.hard_fails, "artilar": v.artilar, "eksiler": v.eksiler,
-        "trace": v.trace,
+        "trace": v.trace if not user["id"] else [],     # kural ağırlıkları yalnız sahibe: davetliden kopyalanamasın
         "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                    "min_emsal": load_rules()["etiket"]["min_emsal"]},
         "teklif": b,
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
-        "whatsapp_metni": whatsapp_text(detail, v), "uyari": NOT, "yasal_uyari": DISCLAIMER,
+        "whatsapp_metni": whatsapp_text(detail, v), "uyari": NOT, "yasal_uyari": DISCLAIMER, "kota": _kota(user),
     }
 
 
@@ -217,7 +242,8 @@ def rozet(sapma: float | None, n: int, rules: dict) -> tuple[str, str]:
 
 
 @router.post("/batch-evaluate")
-def batch_evaluate(req: BatchRequest):
+def batch_evaluate(req: BatchRequest, user=Depends(current_user)):
+    _take(user, "batch", settings.user_daily_batch)
     rules = load_rules()
     comps = _comps(req.emsal)
     now_year = datetime.now(timezone.utc).year
@@ -231,3 +257,26 @@ def batch_evaluate(req: BatchRequest):
                       "emsal_n": st.n, "emsal_medyan": st.medyan or None, "yillik_km": yillik,
                       "km_uyari": yillik > rules["hard_fails"]["max_yillik_km"]})
     return {"sonuclar": sonuc, "uyari": "Rozetler yalnız fiyata dairdir; karar değildir.", "yasal_uyari": DISCLAIMER}
+
+
+# ------------------------------------------------------------------ geri bildirim (davetli kullanım)
+class FeedbackRequest(BaseModel):
+    """Kullanıcının BİLEREK gönderdiği geri bildirim. Açıklama/başlık/fiyat alınmaz; not kısa ve telefonu maskelenir."""
+    ilan_no: str = Field(pattern=ID_RE)
+    etiket: Literal["ALINIR", "DUSUNULEBILIR", "ALINMAZ"] | None = None
+    skor: float | None = Field(None, ge=0, le=10)
+    oy: Literal["pos", "neg"] | None = None
+    sonuc: Literal[accounts.SONUCLAR] | None = None
+    notu: str | None = Field(None, max_length=500)
+
+
+@router.post("/feedback")
+def feedback(req: FeedbackRequest, user=Depends(current_user)):
+    if not (req.oy or req.sonuc or (req.notu or "").strip()):
+        raise HTTPException(status_code=422, detail="Oy, ekspertiz sonucu ya da not gerekli")
+    if not user["id"]:
+        return {"ok": True, "kaydedildi": False, "neden": "sahip anahtarı: geri bildirim saklanmaz"}
+    _take(user, "feedback", settings.feedback_daily_limit)
+    notu = mask_phones(req.notu.strip())[:500] if req.notu and req.notu.strip() else None
+    fid = accounts.add_feedback(user["id"], req.ilan_no, req.etiket, req.skor, req.oy, req.sonuc, notu)
+    return {"ok": True, "kaydedildi": True, "id": fid}

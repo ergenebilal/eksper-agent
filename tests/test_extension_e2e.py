@@ -405,7 +405,40 @@ def test_wrong_token_is_reported_not_crashing(browser_ctx):
     page = ctx.new_page()
     page.goto(DETAIL_URL + "?x=1")
     page.wait_for_function(
-        "document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('Jeton')",
+        "document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('reddedildi')",
         timeout=30000)
     page.close()
     sw.evaluate("t => chrome.storage.local.set({token: t})", TOKEN)
+
+
+def test_invited_user_sees_quota_and_sends_feedback_without_description(browser_ctx):
+    from arac_eksper.web import accounts
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    uid, key = accounts.create_user("e2e-davetli", 7)
+    sw.evaluate("""async (k) => { const all = await chrome.storage.local.get(null);
+        await chrome.storage.local.remove(Object.keys(all).filter(x => x.startsWith('ac:')));
+        await chrome.storage.local.set({token: k}); }""", key)
+    try:
+        page = ctx.new_page()
+        page.goto(DETAIL_URL + "?fb=1")
+        page.wait_for_selector("mark[data-aracx]", timeout=90000)
+        k = next(x for x, v in session_state(sw).items() if x.startswith("r:") and v.get("status") == "ok"
+                 and v["data"].get("kota"))
+        panel = ctx.new_page()
+        panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={k[2:]}")
+        panel.wait_for_selector("#feedback", timeout=15000)
+        assert "Bugünkü analiz hakkın: 6/7" in panel.text_content("#app")
+        panel.click("#fb-send")                                          # boş gönderim reddedilir
+        assert "Önce" in panel.text_content("#feedback")
+        panel.click("#feedback button:has-text('👍')")
+        panel.select_option("#fb-sonuc", "ekspertiz_temiz")
+        panel.fill("#fb-not", "Doğru çıktı, satıcı 0532 111 22 33")
+        panel.click("#fb-send")
+        panel.wait_for_selector("#feedback >> text=Teşekkürler", timeout=15000)
+        fb = accounts.list_feedback()[0]
+        assert fb["user_id"] == uid and fb["oy"] == "pos" and fb["sonuc"] == "ekspertiz_temiz"
+        assert fb["ilan_no"] == "1234567890" and "0532" not in fb["notu"]
+        panel.close()
+        page.close()
+    finally:
+        sw.evaluate("t => chrome.storage.local.set({token: t})", TOKEN)

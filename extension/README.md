@@ -24,7 +24,7 @@ Sunucu hiçbir şey saklamaz (DB/dosya/önbellek/erişim günlüğü yok). Telef
 1. `chrome://extensions` → sağ üstten **Geliştirici modu**'nu aç.
 2. **Paketlenmemiş öğe yükle** → bu deponun `extension/` klasörünü seç.
 3. İlk kurulumda **Ayarlar** açılır: sunucu adresi (`http://127.0.0.1:8991`) ve `EXTENSION_TOKEN` değerini girip
-   **Kaydet** → **Bağlantıyı test et** (“✓ Bağlantı ve jeton doğru”).
+   **Kaydet** → **Bağlantıyı test et** (“✓ Bağlantı ve anahtar doğru”).
 4. Desteklenen ilan sitesinde bir ilan açın: açıklamada vurgular + sağ altta rozet çıkar; eklenti simgesine tıklayınca
    yan panelde karne açılır. Arama sonuçları sayfasında fiyat rozetleri ve “🚀 Bu sayfayı eksperle” düğmesi çıkar.
 

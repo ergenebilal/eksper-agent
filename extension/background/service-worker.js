@@ -31,7 +31,7 @@ function validBase(base) {
 
 async function api(path, { method = 'POST', body } = {}) {
   const s = await getSettings();
-  if (!s.token) return { ok: false, code: 'no_token', message: 'Ayarlardan erişim jetonunu girin.' };
+  if (!s.token) return { ok: false, code: 'no_token', message: 'Ayarlardan erişim anahtarını girin.' };
   const base = validBase(s.apiBase);
   if (!base) return { ok: false, code: 'bad_base', message: 'Sunucu adresi geçersiz.' };
   const ctl = new AbortController();
@@ -42,10 +42,14 @@ async function api(path, { method = 'POST', body } = {}) {
       headers: { Authorization: 'Bearer ' + s.token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined
     });
-    if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Jeton reddedildi (EXTENSION_TOKEN).' };
+    if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Erişim anahtarı reddedildi (yanlış ya da iptal edilmiş).' };
     if (r.status === 503) return { ok: false, code: 'disabled', message: 'Sunucuda EXTENSION_TOKEN ayarlı değil.' };
     if (r.status === 404) return { ok: false, code: 'outdated', message: 'Sunucu eski sürüm (bu özellik yok). otoxray-yeniden-baslat.cmd ile yeniden başlatın.' };
-    if (r.status === 429) return { ok: false, code: 'rate_limited', message: 'Günlük analiz sınırı doldu ya da çok fazla deneme.' };
+    if (r.status === 429) {          // sunucunun kendi açıklaması (kota/deneme) kısa ve güvenli bir metindir
+      let why = '';
+      try { const j = await r.json(); why = typeof j.detail === 'string' ? j.detail.slice(0, 120) : ''; } catch (_) { /* yok */ }
+      return { ok: false, code: 'rate_limited', message: why || 'Günlük hakkınız doldu ya da çok fazla deneme.' };
+    }
     if (r.status === 422) {          // yalnız ALAN ADI ve kural mesajı gösterilir; girdi değeri (ilan metni) asla
       let why = '';
       try {
@@ -198,6 +202,13 @@ async function handle(msg, sender) {
       catch (_) { return { ok: false, code: 'gesture', message: 'Eklenti simgesine tıklayın.' }; }
     }
     case 'ping': return api('/api/v1/ping', { method: 'GET' });
+    case 'feedback': {             // yalnız yan panelden; kullanıcının BİLEREK gönderdiği oy/sonuç/not
+      if (!String(sender.url || '').startsWith(chrome.runtime.getURL('sidepanel/'))) return { ok: false, code: 'forbidden' };
+      const f = msg.feedback || {};
+      const body = { ilan_no: String(f.ilan_no || ''), etiket: f.etiket || null, skor: typeof f.skor === 'number' ? f.skor : null,
+                     oy: f.oy || null, sonuc: f.sonuc || null, notu: f.notu ? String(f.notu).slice(0, 500) : null };
+      return api('/api/v1/feedback', { body });
+    }
     case 'clearLocalData': {         // kullanıcı kendi yerel verisini silebilir
       const all = await chrome.storage.local.get(null);
       await chrome.storage.local.remove(Object.keys(all).filter((k) => k === MK || k.startsWith('ac:')));

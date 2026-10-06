@@ -32,3 +32,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 .warnbox{border:1px solid var(--warn);border-radius:8px;padding:6px 8px;color:var(--fg)}
 details summary{cursor:pointer;color:var(--acc)}
+button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 15%,transparent)}
+#feedback{display:flex;flex-direction:column;gap:8px}
+#feedback select,#feedback textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card);color:var(--fg)}
+button:disabled{opacity:.6;cursor:default}

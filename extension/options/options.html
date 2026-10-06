@@ -14,9 +14,9 @@
       <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8991">
       <small>Yalnızca yerel/Tailscale (http) ya da https. Varsayılan: <code>arac xray serve</code> adresi.</small>
     </label>
-    <label>Erişim jetonu (EXTENSION_TOKEN)
+    <label>Erişim anahtarı
       <input id="token" type="password" required minlength="16" autocomplete="off">
-      <small>Sunucudaki <code>.env</code> içindeki <code>EXTENSION_TOKEN</code> ile aynı olmalı. Yalnızca bu tarayıcı profilinde saklanır.</small>
+      <small>Size verilen kişisel anahtar (<code>oxr_</code> ile başlar). Kimseyle paylaşmayın; yalnızca bu tarayıcı profilinde saklanır.</small>
     </label>
     <label>En yüksek bütçem (TL, isteğe bağlı)
       <input id="maxButce" type="number" min="0" step="1000">
@@ -33,7 +33,8 @@
   </form>
   <p class="note"><b>Gizlilik:</b> Eklenti siteye hiçbir istek atmaz; yalnızca açtığınız sayfadaki aracın teknik verisini
     (fiyat, km, yıl, hasar tablosu, açıklama) okur. Satıcı adı, telefonu ve profili okunmaz; açıklamadaki telefon
-    numaraları gönderilmeden maskelenir. Sunucu hiçbir şey saklamaz. Emsal fiyatlar ve önceki sonuçlar yalnızca bu
+    numaraları gönderilmeden maskelenir. Sunucu ilan verisini saklamaz; yalnızca günlük kullanım sayınızı ve
+    sizin bilerek gönderdiğiniz geri bildirimi (ilan no, oy, ekspertiz sonucu, not) tutar. Emsal fiyatlar ve önceki sonuçlar yalnızca bu
     tarayıcıda tutulur (“Yerel verileri sil” ile silinir). Açıklama metni, yapay zeka analizi için yapılandırdığınız
     LLM sağlayıcısına gönderilir.</p>
   <p class="note" id="legal"></p>

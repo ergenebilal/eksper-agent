@@ -411,6 +411,67 @@ def xray_serve():
     xray_app.serve()
 
 
+xray_user_app = typer.Typer(help="Davetli kullanıcılar: kişi başı erişim anahtarı ve günlük kota")
+xray_app_cli.add_typer(xray_user_app, name="user")
+
+
+@xray_user_app.command("add")
+def xray_user_add(ad: str = typer.Argument(..., help="Kişinin adı/takma adı (yalnız senin için)"),
+                  kota: Optional[int] = typer.Option(None, help="Günlük analiz sınırı (varsayılan USER_DAILY_QUOTA)")):
+    """Yeni davetli anahtarı üretir. Anahtar YALNIZ BİR KEZ gösterilir; sunucuda yalnız özeti saklanır."""
+    from arac_eksper.web import accounts
+    uid, key = accounts.create_user(ad, kota)
+    say(f"Kullanıcı #{uid} ({ad}) eklendi. Erişim anahtarı (bir daha gösterilmez, kişiye güvenli kanaldan ilet):")
+    say(key)
+
+
+@xray_user_app.command("list")
+def xray_user_list(json_out: bool = typer.Option(False, "--json")):
+    from arac_eksper.web import accounts
+    users = accounts.list_users()
+    if json_out:
+        emit_json(users)
+        return
+    if not users:
+        say("Henüz davetli kullanıcı yok. Eklemek için: arac xray user add <ad>")
+    for u in users:
+        say(f"#{u['id']:<3} {u['ad']:<20} {u['key_prefix']}…  {'aktif' if u['aktif'] else 'İPTAL'}  "
+            f"bugün {u['bugun']}/{u['gunluk_kota']}  toplam {u['toplam']}  geri bildirim {u['geri_bildirim']}")
+
+
+@xray_user_app.command("revoke")
+def xray_user_revoke(user_id: int = typer.Argument(...)):
+    """Anahtarı kalıcı olarak iptal eder (sızan anahtar için)."""
+    from arac_eksper.web import accounts
+    if not accounts.revoke(user_id):
+        say(f"#{user_id} bulunamadı ya da zaten iptal.")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    say(f"#{user_id} iptal edildi.")
+
+
+@xray_user_app.command("quota")
+def xray_user_quota(user_id: int = typer.Argument(...), kota: int = typer.Argument(..., min=0)):
+    from arac_eksper.web import accounts
+    if not accounts.set_quota(user_id, kota):
+        say(f"#{user_id} bulunamadı.")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    say(f"#{user_id} günlük kota: {kota}")
+
+
+@xray_app_cli.command("feedback")
+def xray_feedback(limit: int = typer.Option(50), json_out: bool = typer.Option(False, "--json")):
+    """Davetli kullanıcıların gönderdiği geri bildirimler (en yeni önce)."""
+    from arac_eksper.web import accounts
+    rows = accounts.list_feedback(limit)
+    if json_out:
+        emit_json(rows)
+        return
+    for f in rows:
+        oy = {"pos": "👍", "neg": "👎"}.get(f["oy"] or "", "  ")
+        say(f"{f['created_at'][:16]} {oy} #{f['user_id']} {f['ad'] or '?'}: ilan {f['ilan_no']} "
+            f"[{f['etiket'] or '-'} {f['skor'] if f['skor'] is not None else ''}] {f['sonuc'] or ''} {f['notu'] or ''}")
+
+
 @app.command("eval")
 def eval_cmd(
     dataset: Optional[Path] = typer.Option(None, help="JSONL veri seti (varsayılan: tests/data/aciklamalar.jsonl)"),

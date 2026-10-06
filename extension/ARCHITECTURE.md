@@ -10,6 +10,7 @@ API'ye çözümletir ve sonucu sayfanın yanında gösterir. Bir bot/crawler de�
 | Merkezi kazıma/botlama yok | Sunucu uygulaması (`xray_app`) toplayıcı, zamanlayıcı, ayrıştırıcı, DB kodlarını **içe aktarmaz**. Eklenti siteye hiç istek atmaz; yalnız açık sayfayı okur. | `test_api_app_imports_no_scraper_database_or_panel_code`, `test_extension_never_requests_the_site_by_itself` |
 | Kişisel veri (KVKK) yok | Satıcı alanları için seçici tanımlı değil; ad/telefon/profil okunmaz. Açıklamadaki telefon numaraları **iki uçta** maskelenir. İstek şemasında bağlantı (URL), konum, satıcı türü alanı yok. | `test_phone_numbers_masked_before_reaching_the_llm`, `test_url_and_personal_fields_are_ignored_not_processed`, e2e KVKK testi |
 | Durumsuz API | Veritabanı, dosya, önbellek, günlük yok (`access_log=False`). Günlük LLM sınırı yalnız zaman damgası sayar. | `test_nothing_is_written_to_disk_or_db` |
+| Davetli hesapları | Kişi başı anahtar (yalnız SHA-256 özeti saklanır), günlük kota, iptal; kullanıcının bilerek gönderdiği geri bildirim. İlan açıklaması/başlığı/fiyatı saklanmaz. Sahip anahtarı hesap deposuna hiç dokunmaz. Kural ağırlıkları (`trace`) yalnız sahibe döner. | `tests/test_xray_accounts.py` |
 | Marka ihlali yok | Ürün adı **otoXray AI**. Site adı yalnızca manifest eşleşmesinde ve tek sabit dosyada (`lib/site.js`) alan adı olarak geçer (teknik zorunluluk); arayüz, ad, simge, metin ve kodun geri kalanında yok. | `test_no_brand_name_in_product_code` |
 | Yasal uyarı | Yan panel altbilgisi, ayarlar, arama çubuğu ve **API'nin döndürdüğü her rapor** (`yasal_uyari`). Tek kaynak: `report/legal.py` ↔ `lib/legal.js`. | `test_disclaimer_text_is_exact`, `test_disclaimer_in_every_report`, e2e |
 | Engel aşma yok | CAPTCHA/parmak izi/proxy kodu yok; tarayıcı otomasyonu yok. | (kod incelemesi) |
@@ -53,5 +54,5 @@ ilan sayfası ──(DOM okuma)──► içerik betiği ──runtime.sendMessa
 - **LLM sağlayıcısı üçüncü taraftır:** açıklama metni (telefonlar maskeli) yapılandırılan LLM havuzuna gider; sunucu saklamasa da bu bir aktarımdır.
 - DOM seçicileri gerçek sayfayla **doğrulanmadı**; testler sentetik fixture ile koşar.
 - `chrome.sidePanel.open` yalnız kullanıcı hareketiyle çalışır; rozetten panel açma gerçek Chrome'da elle denenmedi.
-- Çok kullanıcılı/herkese açık sunucu ayrı bir üründür (hesap, kota, KVKK, şartlar). Bu sürüm tek kullanıcı, yerel/Tailscale içindir.
+- Davetli (kapalı beta) kullanım desteklenir: kişi başı anahtar, kota, geri bildirim, HTTPS barındırma (`deploy/`). Herkese açık kayıt, ödeme ve KVKK aydınlatma metni henüz yok (bkz. `PLAN.md`).
 - Kişisel kullanım aracındaki (`arac search/watch`) toplayıcı bu ürünün **parçası değildir** ve dağıtılmamalıdır.

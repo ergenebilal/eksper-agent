@@ -66,5 +66,7 @@ def serve() -> None:
               file=sys.stderr)
     _fail_if_port_busy()
     # access_log kapalı: istek yolları bile kaydedilmez
+    # Ters vekil (Caddy) arkasında gerçek istemci IP'si yalnız güvenilen vekilden alınır (deneme sınırı kişiye özel kalsın)
     uvicorn.run("arac_eksper.web.xray_app:app", host=settings.xray_host, port=settings.xray_port,
-                log_level="warning", access_log=False)
+                log_level="warning", access_log=False, proxy_headers=True,
+                forwarded_allow_ips=settings.xray_forwarded_allow_ips)

@@ -38,12 +38,18 @@ class Settings(BaseSettings):
     panel_allowed_hosts: list[str] = ["127.0.0.1", "localhost", "::1"]   # Host başlığı beyaz listesi (DNS rebinding)
     xray_host: str = "127.0.0.1"      # otoXray API (arac xray serve)
     xray_port: int = 8991
+    xray_forwarded_allow_ips: str = "127.0.0.1"   # X-Forwarded-For'a güvenilecek ters vekil (Caddy) adresleri
     panel_cookie_secure: bool = False   # https (Tailscale Serve vb.) arkasında True yap
 
     # Chrome eklentisi API'si (/api/v1): ayrı token; boşsa/16 karakterden kısaysa API KAPALI
     extension_token: str = ""
     xray_second_pass: str = "hard"     # all | hard | off: güçlü modelle ikinci geçiş (her geçiş ~15-25 sn). hard = yalnız 🔴 nedeni olabilecek iddialarda
     analyze_daily_limit: int = 300      # 24 saatte en fazla bu kadar YENİ LLM çözümlemesi (önbellek isabeti sayılmaz)
+    # Davetli kullanıcılar (arac xray user add): kişi başı anahtar + günlük kota. EXTENSION_TOKEN = sahip, kotasız.
+    xray_accounts_db: str = "data/xray_accounts.db"
+    user_daily_quota: int = 30          # davetli kullanıcı başına günlük analiz (LLM) sınırı
+    user_daily_batch: int = 400         # davetli başına günlük arama sayfası rozeti isteği (toplu kopyalamaya karşı)
+    feedback_daily_limit: int = 50
 
     # Toplama güvenliği (CLAUDE.md kural 1-2)
     block_backoff_minutes: list[int] = [30, 120, 360]

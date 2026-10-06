@@ -36,7 +36,9 @@ $('test').addEventListener('click', async () => {
   if (!(await save())) return;
   say('Test ediliyor…');
   const r = await chrome.runtime.sendMessage({ type: 'ping' });
-  say(r && r.ok ? '✓ Bağlantı ve jeton doğru.' : (r && r.message) || 'Başarısız.', r && r.ok ? 'ok' : 'err');
+  const k = r && r.ok && r.data && r.data.kota;
+  say(r && r.ok ? '✓ Bağlantı ve anahtar doğru.' + (k ? ` Bugünkü hakkınız: ${k.limit - k.kullanilan}/${k.limit}` : '')
+                : (r && r.message) || 'Başarısız.', r && r.ok ? 'ok' : 'err');
 });
 $('wipe').addEventListener('click', async () => {
   const r = await chrome.runtime.sendMessage({ type: 'clearLocalData' });

@@ -39,18 +39,30 @@ def extension_problem() -> str | None:
     return None
 
 
-def require_extension_auth(request: Request) -> None:
-    """/api/v1: yalnızca Bearer EXTENSION_TOKEN. Çerez kabul edilmez (tarayıcıdan CSRF imkânı olmasın)."""
+OWNER = {"id": 0, "ad": "sahip", "gunluk_kota": None}
+
+
+def require_extension_auth(request: Request) -> dict:
+    """/api/v1: Bearer EXTENSION_TOKEN (sahip, kotasız) ya da davetli kullanıcının kişisel anahtarı (oxr_…, kotalı,
+    iptal edilebilir). Çerez kabul edilmez (tarayıcıdan CSRF imkânı olmasın). Kimlik request.state.user'a yazılır."""
     if extension_problem():
         raise HTTPException(status_code=503, detail="Eklenti API'si kapalı (EXTENSION_TOKEN ayarlı değil)")
     h = request.headers.get("authorization", "")
     cand = h[7:].strip() if h[:7].lower() == "bearer " else ""
-    if not cand or not hmac.compare_digest(cand.encode(), settings.extension_token.encode()):
+    user = None
+    if cand and hmac.compare_digest(cand.encode(), settings.extension_token.encode()):
+        user = OWNER
+    elif cand:
+        from arac_eksper.web import accounts
+        user = accounts.find_by_key(cand)
+    if not user:          # geçerli anahtar her zaman geçer; deneme sınırı yalnız başarısız isteklere uygulanır
         ip = client_ip(request)
         if login_blocked(ip):
             raise HTTPException(status_code=429, detail="Çok fazla deneme")
         record_fail(ip)
         raise HTTPException(status_code=401, detail="Yetkisiz", headers={"WWW-Authenticate": "Bearer"})
+    request.state.user = user
+    return user
 
 
 def host_allowed(request: Request) -> bool:

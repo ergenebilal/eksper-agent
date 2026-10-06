@@ -1,0 +1,20 @@
+# /etc/systemd/system/otoxray.service — otoXray API'si (yalnız 127.0.0.1'de dinler, dışarıya Caddy açar)
+[Unit]
+Description=otoXray AI API
+After=network-online.target
+
+[Service]
+User=otoxray
+WorkingDirectory=/opt/otoxray
+ExecStart=/opt/otoxray/.venv/bin/arac xray serve
+Restart=on-failure
+RestartSec=5
+# Sertleştirme: yalnız proje dizinine yazabilir
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/otoxray/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

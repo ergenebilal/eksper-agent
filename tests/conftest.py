@@ -10,6 +10,7 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "notify_mode", "off")
     monkeypatch.setattr(settings, "panel_allowed_hosts", ["127.0.0.1", "localhost", "testserver", "panel.test"])
     monkeypatch.setattr(settings, "telegram_bot_token", "")
+    monkeypatch.setattr(settings, "xray_accounts_db", str(tmp_path.parent / f"{tmp_path.name}_accounts.db"))
     monkeypatch.setattr(settings, "telegram_chat_id", "")
 
 

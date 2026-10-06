@@ -208,6 +208,9 @@ function renderOk(st, tabId) {
   const ul = el('ul'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
   k.append(ul, el('p', 'disc', d.uyari), el('p', 'disc', d.yasal_uyari || globalThis.OTOXRAY_DISCLAIMER)); out.push(k);
 
+  if (!d.beklemede) out.push(feedbackCard(d, st.meta));
+  if (d.kota) out.push(el('p', 'small mute', `Bugünkü analiz hakkın: ${Math.max(d.kota.limit - d.kota.kullanilan, 0)}/${d.kota.limit}`));
+
   // 7) Eylemler
   const act = el('div', 'actions');
   const re = el('button', '', '↻ Yeniden analiz et');
@@ -215,6 +218,37 @@ function renderOk(st, tabId) {
   act.append(re, settingsBtn(), diagBtn(tabId));
   out.push(act);
   return out;
+}
+
+const SONUC = [['', 'Ekspertiz sonucu (varsa)'], ['ekspertiz_temiz', 'Ekspertiz temiz çıktı'],
+  ['ekspertiz_kucuk_kusur', 'Küçük kusur çıktı'], ['ekspertiz_agir_kusur', 'Ağır kusur çıktı'], ['gitmedim', 'Ekspertize gitmedim']];
+
+function feedbackCard(d, meta) {
+  // Geri bildirim: kullanıcının bilerek gönderdiği oy/sonuç/not. Açıklama metni GÖNDERİLMEZ.
+  const c = card('Bu analiz işine yaradı mı?'); c.id = 'feedback';
+  let oy = null;
+  const up = el('button', '', '👍'), down = el('button', '', '👎');
+  const mark = () => { up.className = oy === 'pos' ? 'on' : ''; down.className = oy === 'neg' ? 'on' : ''; };
+  up.addEventListener('click', () => { oy = 'pos'; mark(); });
+  down.addEventListener('click', () => { oy = 'neg'; mark(); });
+  const btns = el('div', 'actions'); btns.append(up, down);
+  const sel = document.createElement('select'); sel.id = 'fb-sonuc';
+  SONUC.forEach(([v, t]) => { const o = el('option', '', t); o.value = v; sel.append(o); });
+  const note = document.createElement('textarea'); note.id = 'fb-not'; note.maxLength = 500; note.rows = 2;
+  note.placeholder = 'Not (isteğe bağlı): neyi yanlış/doğru buldu?';
+  const send = el('button', 'pri', 'Gönder'); send.id = 'fb-send';
+  const msg = el('p', 'small mute');
+  send.addEventListener('click', async () => {
+    if (!oy && !sel.value && !note.value.trim()) { msg.textContent = 'Önce 👍/👎, sonuç ya da not seç.'; return; }
+    send.disabled = true;
+    const r = await chrome.runtime.sendMessage({ type: 'feedback', feedback: {
+      ilan_no: meta && meta.ilan_no, etiket: d.etiket, skor: d.skor, oy, sonuc: sel.value || null, notu: note.value.trim() || null } });
+    msg.textContent = r && r.ok ? '✓ Teşekkürler, iletildi.' : (r && r.message) || 'Gönderilemedi.';
+    send.disabled = !!(r && r.ok);
+  });
+  c.append(btns, sel, note, send, msg,
+    el('p', 'disc', 'Gönderdiğin oy, ekspertiz sonucu, not ve ilan numarası ürünü geliştirmek için saklanır. İlan açıklaması gönderilmez; nottaki telefon numaraları maskelenir.'));
+  return c;
 }
 
 function row(label, value, cls) {
