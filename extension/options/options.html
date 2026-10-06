@@ -9,10 +9,11 @@
 <body>
 <main>
   <h1>otoXray AI · Ayarlar</h1>
+  <p class="note">Bir <a href="https://cybergene.co" target="_blank" rel="noopener">CyberGene</a> ürünü.</p>
   <form id="f" autocomplete="off">
     <label>Sunucu adresi
-      <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8991">
-      <small>Yalnızca yerel/Tailscale (http) ya da https. Varsayılan: <code>arac xray serve</code> adresi.</small>
+      <input id="apiBase" type="url" required placeholder="https://otoxray.cybergene.co">
+      <small>Varsayılan: <code>https://otoxray.cybergene.co</code>. Kendi sunucunuz için yerel/Tailscale (http) ya da https.</small>
     </label>
     <label>Erişim anahtarı
       <input id="token" type="password" required minlength="16" autocomplete="off">

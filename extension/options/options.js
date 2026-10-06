@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const DEFAULTS = { apiBase: 'http://127.0.0.1:8991', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
+const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
 
 function say(text, kind) { const m = $('msg'); m.textContent = text; m.className = kind || ''; }
 

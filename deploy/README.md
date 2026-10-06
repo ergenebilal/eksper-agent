@@ -1,5 +1,28 @@
 # otoXray — davetli kullanım için barındırma
 
+## Canlı kurulum: Hermes (CyberGene) — 6 Ekim 2026
+| | |
+|---|---|
+| Adres | `https://otoxray.cybergene.co` (DNS kaydı + sertifika: aşağıdaki "Kalan adımlar") |
+| Sunucu | `hermes` (genel IP 13.140.183.88, Tailscale 100.80.122.74), Ubuntu 24.04 |
+| Uygulama | `/opt/otoxray`, sistem kullanıcısı `otoxray` (Jeff dosyalarını okuyamaz), systemd `otoxray.service`, 127.0.0.1:8991 |
+| Ters vekil | Mevcut **nginx** (Caddy değil): `/etc/nginx/sites-available/otoxray.cybergene.co` = [nginx-otoxray.conf](nginx-otoxray.conf) |
+| Gizli ayarlar | `/opt/otoxray/.env` (600, yalnız `otoxray`); sahip anahtarı orada üretildi |
+| Hesaplar | `/opt/otoxray/data/xray_accounts.db` |
+| Güncelleme | `bash deploy/redeploy.sh` (son commit'i gönderir, `.env` ve `data/` korunur) |
+
+Kalan adımlar (sende):
+1. **DNS:** `otoxray.cybergene.co` için `A` kaydı → `13.140.183.88`.
+2. **HTTPS:** DNS yayılınca sunucuda `sudo certbot --nginx -d otoxray.cybergene.co`.
+3. **LLM ayarları:** `sudo -u otoxray nano /opt/otoxray/.env` ile yerel `.env` dosyandaki `LLM_BASE_URL`,
+   `LLM_API_KEY`, `LLM_MODEL_FAST` ve `LLM_MODEL_STRONG` satırlarını ekle, sonra `sudo systemctl restart otoxray`.
+4. **Sahip anahtarın** (kendi eklentin için): `sudo grep EXTENSION_TOKEN /opt/otoxray/.env`.
+
+Sunucuda yönetim komutları (`arac xray user ...`) şu biçimde çalıştırılır:
+`cd /opt/otoxray && sudo -u otoxray .venv/bin/arac xray user list`.
+
+---
+
 Amaç: davetli kullanıcılar **yalnızca eklentiyi** alır. Analiz beyni (prompt, jargon sözlüğü, kurallar, bilgi tabanı,
 ölçüm seti) **yalnızca bu sunucuda** durur. Kullanıcıya sunucu kodu, `.env` ya da `arac xray serve` verilmez.
 

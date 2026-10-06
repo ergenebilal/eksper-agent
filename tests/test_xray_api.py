@@ -389,3 +389,12 @@ def test_analyze_honours_second_pass_setting(client, monkeypatch):
     monkeypatch.setattr(settings, "xray_second_pass", "all")
     client.post("/api/v1/analyze", json=payload(), headers=H)
     assert Soft.calls == 2
+
+
+def test_manifest_is_store_ready_and_points_to_hosted_api():
+    import json
+    import pathlib
+    m = json.loads((pathlib.Path(__file__).resolve().parent.parent / "extension/manifest.json").read_text("utf-8"))
+    assert len(m["description"]) <= 132                       # Chrome Web Store sınırı
+    assert "https://otoxray.cybergene.co/*" in m["host_permissions"]
+    assert not any(p.startswith(("http://*", "https://*", "<all_urls>")) for p in m["host_permissions"])

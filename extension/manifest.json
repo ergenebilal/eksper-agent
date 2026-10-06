@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "otoXray AI",
   "version": "0.1.0",
-  "description": "Araç ilanlarını ekspertiz öncesi eler: gizli kusur röntgeni, piyasa kıyası ve teklif önerisi. Yapay zeka karar destek aracıdır; resmi ekspertiz raporu değildir.",
+  "description": "CyberGene · Araç ilanını ekspertiz öncesi eler: kusur röntgeni, piyasa kıyası, teklif. Karar destek aracıdır, ekspertiz değildir.",
   "minimum_chrome_version": "116",
   "permissions": [
     "sidePanel",
     "storage"
   ],
   "host_permissions": [
+    "https://otoxray.cybergene.co/*",
     "http://127.0.0.1/*",
     "http://localhost/*"
   ],
@@ -65,5 +66,6 @@
       ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "homepage_url": "https://cybergene.co"
 }

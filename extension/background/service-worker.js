@@ -4,7 +4,7 @@
  * Desteklenen siteye HİÇBİR istek atılmaz; yalnızca kullanıcının açtığı sayfadan okunan veri yerel API'ye gider. */
 importScripts('../lib/site.js');
 
-const DEFAULTS = { apiBase: 'http://127.0.0.1:8991', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
+const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
 const TIMEOUT_MS = 120000;                    // LLM çözümlemesi uzun sürebilir
 const KEY = (tabId) => `r:${tabId}`;
 const MK = 'mk';                              // yerel piyasa deposu (emsaller): yalnız sayısal nitelikler
