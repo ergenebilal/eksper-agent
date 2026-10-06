@@ -39,3 +39,22 @@ def test_normalize_tr():
     assert normalize_tr(" İ  ı I i ") == "i ı ı i"
     assert normalize_tr("AİRBAG") == "ai̇rbag" or normalize_tr("AİRBAG") == "airbag" # i̇ vs i depending on replace
 
+
+
+@pytest.mark.parametrize("value,text", [
+    (23450, "tramer kaydı 23.450,00 TL"), (18500, "tramer 18,5 bin"), (18000, "18bin tramer"),
+    (18000, "Tramer 18 BİN"), (1250, "Tramer 1.250 TL"), (23450, "23 450 TL tramer"),
+    (12000, "12.000TL tramer, 2018"), (1250000, "hasar 1.250.000 TL"), (85000, "Tramer 85.000 TL."),
+])
+def test_tramer_amount_formats_are_verified(value, text):
+    from arac_eksper.analysis.description_llm import _tramer_supported
+    assert _tramer_supported(value, text)
+
+
+@pytest.mark.parametrize("value,text", [
+    (18000, "tramer 1.800 TL"), (2018, "tramer yok"), (90000, "triger seti 90 binde yapıldı"),
+    (18201, "tramer 18 2018 model"),
+])
+def test_tramer_amount_not_invented(value, text):
+    from arac_eksper.analysis.description_llm import _tramer_supported
+    assert not _tramer_supported(value, text)

@@ -54,15 +54,26 @@ def _in_text(quote: str | None, norm_key: str) -> bool:
     return bool(q) and q in norm_key
 
 
+# Türkçe tutar: binlik ayraç nokta/boşluk, ondalık virgül ("23.450,00", "23 450", "18,5 bin", "18bin")
+_AMOUNT = re.compile(r"(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+(?!\d)|\d+)(?:,(\d{1,3}))?(\s*bin\b)?")
+
+
+def _amounts(text: str) -> set[int]:
+    out = set()
+    for whole, frac, bin_ in _AMOUNT.findall(normalize_tr(text)):
+        n = int(re.sub(r"[.\s]", "", whole))
+        if bin_:
+            out.add(n * 1000 + (int(frac.ljust(3, "0")) if frac else 0))
+        else:
+            out.add(n)          # ",00" kuruş yok sayılır
+    return out
+
+
 def _tramer_supported(value: int | None, aciklama: str) -> bool:
-    """LLM'in verdiği tramer tutarı açıklamada gerçekten geçiyor mu? ('18.000', '18000', '18 bin')."""
+    """LLM'in verdiği tramer tutarı açıklamada gerçekten geçiyor mu? ('18.000', '23.450,00', '18 bin', '18,5 bin')."""
     if value is None:
         return True
-    text = aciklama.lower()
-    digits = {re.sub(r"[.\s,]", "", m) for m in re.findall(r"\d[\d.,\s]*\d|\d", text)}
-    if str(value) in digits:
-        return True
-    return any(value == int(m) * 1000 for m in re.findall(r"(\d{1,4})\s*bin", text))
+    return value in _amounts(aciklama)
 
 
 def _run_pass(client: LLMClient, baslik: str, aciklama: str, model_name: str, db=None, ilan_no=None) -> DescriptionFindings:
