@@ -1,3 +1,4 @@
+import sys
 """Radar zamanlayıcı. SCHEDULER_MODE=internal: bu süreç APScheduler çalıştırır.
 external: `arac watch run --once` dışarıdan (cron/Jeff/n8n) tetiklenir; bu modül başlatılmaz."""
 import asyncio
@@ -22,7 +23,7 @@ def run_watch_once(watch_id: int, force: bool = False):
             return None
         if not force and not runner.in_active_hours(datetime.now(), w.active_hours):
             return None
-        print(f"[{datetime.now():%Y-%m-%d %H:%M}] Radar çalışıyor: {w.name}")
+        print(f"[{datetime.now():%Y-%m-%d %H:%M}] Radar çalışıyor: {w.name}", file=sys.stderr)
         return asyncio.run(runner.run_watch(db, w, PlaywrightCollector(db), OpenAIClient()))
     finally:
         db.close()
@@ -49,7 +50,7 @@ def run_scheduler():
     finally:
         db.close()
     scheduler.add_job(send_daily_summary, "cron", hour=21, minute=30, id="daily-summary")
-    print(f"Radar zamanlayıcısı başlatıldı ({len(watches)} radar). Durdurmak için Ctrl+C.")
+    print(f"Radar zamanlayıcısı başlatıldı ({len(watches)} radar). Durdurmak için Ctrl+C.", file=sys.stderr)
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):

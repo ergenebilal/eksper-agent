@@ -1,3 +1,4 @@
+import sys
 import os
 from pathlib import Path
 from typing import List
@@ -31,6 +32,6 @@ def import_from_path(db: Session, path: str) -> List[str]:
             repo.create_or_update_listing(db, detail)
             imported_ids.append(detail.ilan_no)
         except Exception as e:
-            print(f"Hata: {html_file.name} parse edilemedi. ({str(e)})")
+            print(f"Hata: {html_file.name} parse edilemedi. ({str(e)})", file=sys.stderr)
             
     return imported_ids

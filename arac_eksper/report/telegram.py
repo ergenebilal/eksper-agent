@@ -1,3 +1,4 @@
+import sys
 import requests
 from arac_eksper.config.settings import settings
 
@@ -10,7 +11,7 @@ def send_telegram_message(text: str, ilan_no: str | None = None) -> bool:
     """Düz metin gönderir (parse_mode yok: ilan başlıklarındaki _ * karakterleri Markdown'ı bozmasın).
     ilan_no verilirse 👍/👎 geri bildirim butonları eklenir. Başarıyı döner; anahtar loglanmaz."""
     if not telegram_configured():
-        print("Telegram bot_token veya chat_id ayarlanmamış (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).")
+        print("Telegram bot_token veya chat_id ayarlanmamış (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).", file=sys.stderr)
         return False
 
     payload = {
@@ -29,5 +30,5 @@ def send_telegram_message(text: str, ilan_no: str | None = None) -> bool:
         r.raise_for_status()
         return True
     except Exception as e:  # noqa: BLE001  (URL token içerir; yalnızca hata türünü yaz)
-        print(f"Telegram gönderim hatası: {type(e).__name__}")
+        print(f"Telegram gönderim hatası: {type(e).__name__}", file=sys.stderr)
         return False
