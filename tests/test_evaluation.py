@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from arac_eksper import cli
 from arac_eksper.analysis import evaluation
-from arac_eksper.analysis.description_llm import _amounts, load_jargon
+from arac_eksper.analysis.description_llm import _amounts, _strip_tags, load_jargon
 from arac_eksper.llm import client as llm_client
 from arac_eksper.llm.client import LLMUnavailable
 from arac_eksper.schemas import DescriptionFindings, Evidence
@@ -19,7 +19,7 @@ CASES = evaluation.load_dataset()
 class OracleLLM:
     """Veri setindeki etiketleri birebir bilen sahte model: her iddiayı açıklamadan gerçek alıntıyla kurar."""
     def __init__(self, cases, drop: set[str] = frozenset()):
-        self.by_text = {c.aciklama: c for c in cases}
+        self.by_text = {_strip_tags(c.aciklama): c for c in cases}
         self.drop = drop      # bu bayrakları "kaçır" (recall düşüşünü sınamak için)
 
     def parse_structured(self, system_prompt, user_prompt, response_model, model_name=None):
