@@ -12,7 +12,7 @@ from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
-from arac_eksper.analysis import description_llm, market_calc, rules_engine
+from arac_eksper.analysis import description_llm, market_calc, offer as offer_calc, rules_engine
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.config.settings import settings
 from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
@@ -164,11 +164,18 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
     except (LLMUnavailable, ValueError):       # pydantic.ValidationError bir ValueError'dır
         return _pending(req)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
+    # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
+    b = offer_calc.breakdown(detail, findings, v, allow_no_market=True)
+    if b:
+        v.tavsiye_teklif, v.ust_sinir = b["acilis"], b["ust_sinir"]
     kanitlar, vurgu = _kanitlar(findings)
     return {
         "ilan_no": req.ilan_no, "beklemede": False, "etiket": v.etiket, "skor": v.guven_skoru,
         "veri_tamlik": v.veri_tamlik, "hard_fails": v.hard_fails, "artilar": v.artilar, "eksiler": v.eksiler,
-        "trace": v.trace, "piyasa": {"n": stats.n, "medyan": stats.medyan, "guven": stats.guven},
+        "trace": v.trace,
+        "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
+                   "min_emsal": load_rules()["etiket"]["min_emsal"]},
+        "teklif": b,
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
         "whatsapp_metni": whatsapp_text(detail, v), "uyari": NOT, "yasal_uyari": DISCLAIMER,

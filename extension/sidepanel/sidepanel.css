@@ -29,3 +29,6 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 .top{padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px}
 .legal{padding:10px 12px 16px;font-size:11px;line-height:1.4;color:var(--mute);border-top:1px solid var(--line)}
+
+.warnbox{border:1px solid var(--warn);border-radius:8px;padding:6px 8px;color:var(--fg)}
+details summary{cursor:pointer;color:var(--acc)}

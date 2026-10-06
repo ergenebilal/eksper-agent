@@ -80,3 +80,51 @@ def test_offer_taban_fiyat():
 def test_offer_alinmaz():
     verdict = Verdict(ilan_no="1", etiket="ALINMAZ", guven_skoru=2.0, veri_tamlik=1.0)
     assert calculate_offer(None, None, verdict) is None
+
+
+
+def _detail(**kw):
+    base = dict(ilan_no="1", url="", baslik="", marka="", model="", fiyat=1_000_000, yil=2022, km=40000, il="",
+                ilan_tarihi=date.today(), parts={}, aciklama="", fetched_at=datetime(2026, 10, 6, tzinfo=timezone.utc))
+    base.update(kw)
+    return ListingDetail(**base)
+
+
+MKT = MarketStats(n=10, medyan=1_000_000, p25=950000, p75=1050000, guven="yuksek")
+
+
+def test_breakdown_gives_same_numbers_as_calculate_offer_and_explains_every_item():
+    from arac_eksper.analysis.offer import breakdown
+    from arac_eksper.schemas import PartState
+    d = _detail(parts={"tavan": PartState.ORIGINAL, "sag_arka_camurluk": PartState.REPLACED, "kaput": PartState.PAINTED,
+                       "on_tampon": PartState.PAINTED}, km=150000)
+    f = get_base_findings()
+    f.tramer_tutari = 30000
+    v = Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=6.5, veri_tamlik=1.0, piyasa=MKT)
+    b = breakdown(d, f, v)
+    assert (b["acilis"], b["ust_sinir"]) == calculate_offer(d, f, v) and b["kaynak"] == "piyasa"
+    text = " | ".join(b["dayanak"])
+    for needle in ("Piyasa ortalaması", "1 değişen parça", "1 boyalı parça", "Tramer 30.000 TL", "Yıllık km", "Pazarlık payı"):
+        assert needle in text, needle
+    assert "tampon" not in text.lower()                          # tampon kozmetik: indirim yok
+    assert b["acilis"] <= b["hedef"] <= b["ust_sinir"] <= d.fiyat
+
+
+def test_no_market_gives_a_labelled_offer_from_listing_price_only():
+    from arac_eksper.analysis.offer import breakdown
+    from arac_eksper.schemas import PartState
+    d = _detail(parts={"sol_kapi": PartState.REPLACED})
+    v = Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=8.0, veri_tamlik=0.3)
+    assert calculate_offer(d, get_base_findings(), v) is None                   # eski davranış korunur
+    b = breakdown(d, get_base_findings(), v, allow_no_market=True)
+    assert b["kaynak"] == "ilan" and "Piyasa verisi yok" in b["dayanak"][0]
+    assert b["baz"] == 1_000_000 and b["acilis"] < b["hedef"] <= b["ust_sinir"] <= 1_000_000
+    assert not any("Taban" in x for x in b["dayanak"])                          # piyasa yokken taban uygulanmaz
+
+
+def test_no_offer_for_red_or_pending_even_without_market():
+    from arac_eksper.analysis.offer import breakdown
+    d = _detail()
+    assert breakdown(d, get_base_findings(), Verdict(ilan_no="1", etiket="ALINMAZ", guven_skoru=2, veri_tamlik=1), True) is None
+    assert breakdown(d, get_base_findings(), Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=0, veri_tamlik=0,
+                                                     beklemede=True), True) is None

@@ -36,7 +36,8 @@ def stats_from_comparables(target_id: str, yil: int, km: int, comps: list[Compar
         others = [c for c in others if len(c) > 4 and norm_seri(c[4]) == want]
 
     def pick(dy: int, share: float) -> list[int]:
-        lo, hi = max(0, km - km * share), km + km * share
+        pay = max(km * share, pz["min_km_bandi"])        # km=0/düşük km'de bant sıfıra düşmesin
+        lo, hi = max(0, km - pay), km + pay
         return [c[3] for c in others if abs(c[1] - yil) <= dy and lo <= c[2] <= hi]
 
     prices, guven = pick(1, pz["dar_km_payi"]), "yuksek"

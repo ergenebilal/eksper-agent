@@ -47,7 +47,7 @@ def test_moved_thresholds_keep_their_original_values():
                             "yillik_km_yuksek": 35000, "yillik_km_suphe_alt": 4000, "yillik_km_suphe_min_yas": 5,
                             "sapma_bonus_alt": -0.15, "sapma_bonus_ust": -0.05, "sapma_ucuz_uyari": -0.20}
     assert r["tamlik"] == {"parca_yok": 0.3, "tramer_bilinmiyor": 0.1, "piyasa_yetersiz": 0.3}
-    assert r["piyasa"] == {"gun": 30, "dar_km_payi": 0.30, "genis_km_payi": 0.50, "dar_min_n": 8}
+    assert r["piyasa"] == {"gun": 30, "dar_km_payi": 0.30, "genis_km_payi": 0.50, "dar_min_n": 8, "min_km_bandi": 10000}
     assert r["radar"]["fiyat_dusus_orani"] == 0.03
     assert r["teklif"]["lokal_boyali"] == 0.01 and r["teklif"]["degisen"] == 0.04 and r["teklif"]["max_indirim"] == 0.15
 

@@ -172,8 +172,11 @@ def test_side_panel_renders_card_copies_offer_and_shows_disclaimer(browser_ctx, 
     panel.wait_for_selector("#verdict", timeout=15000)
     text = panel.text_content("#app")
     for needle in ("Piyasa özeti", "Gizli kusur röntgeni", "Teklif & pazarlık", "Ekspertiz kontrol listesi",
-                   "ŞASE UCU işlemi", "Açılış teklifi", "ekspertize götürmeye değer", "Üst sınır (yalnız sana)"):
+                   "ŞASE UCU işlemi", "Açılış teklifi", "ekspertize götürmeye değer", "Üst sınır (yalnız sana)",
+                   "Piyasa ortalaması", "Tipik aralık", "Makul anlaşma noktası", "Nasıl hesaplandı"):
         assert needle in text, needle
+    assert panel.text_content("#avg") and "TL" in panel.text_content("#avg")  # piyasa ortalaması kartta
+    assert "Piyasa ortalaması (ilan medyanı)" in panel.text_content("#basis")  # hesabın dayanağı açılır kutuda
     assert panel.text_content("#legal").strip() == DISCLAIMER                # altbilgide AYNEN
     assert "otoXray AI" in panel.text_content(".top")
     panel.evaluate("""() => { window.__copied = null; navigator.clipboard.writeText = async (t) => { window.__copied = t; }; }""")
@@ -316,6 +319,27 @@ def test_rejected_input_names_the_field_but_never_echoes_the_value(browser_ctx):
                       {"ilan_no": "1", "baslik": secret, "fiyat": -5, "yil": 2022, "km": 1})
     assert res["ok"] is False and res["code"] == "invalid"
     assert "fiyat" in res["message"] and "GIZLI" not in res["message"]
+
+
+def test_no_market_card_is_honest_and_still_offers_a_labelled_price(browser_ctx):
+    """Emsal yokken piyasa fiyatı UYDURULMAZ; teklif yalnız ilan fiyatından, uyarıyla gösterilir."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    sw.evaluate("""async () => { const all = await chrome.storage.local.get(null);
+        await chrome.storage.local.remove(Object.keys(all).filter(k => k === 'mk' || k.startsWith('ac:'))); }""")
+    page = ctx.new_page()
+    page.goto(REAL_URL)
+    page.wait_for_selector("mark[data-aracx]", timeout=60000)
+    st = session_state(sw)
+    key = next(k for k, v in st.items() if v.get("meta", {}).get("ilan_no") == "1343960581")
+    panel = ctx.new_page()
+    panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={key[2:]}")
+    panel.wait_for_selector("#offer", timeout=15000)
+    assert panel.locator("#no-market").count() == 1 and panel.locator("#avg").count() == 0
+    assert "tahmin edilmez" in panel.text_content("#no-market")
+    offer = panel.text_content("#offer")
+    assert "Açılış teklifi" in offer and "yalnızca ilan fiyatı" in offer
+    panel.close()
+    page.close()
 
 
 def test_extension_never_requests_the_site_by_itself(browser_ctx):

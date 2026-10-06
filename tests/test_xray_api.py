@@ -144,9 +144,30 @@ def test_analyze_returns_full_card_with_local_comparables(client):
     assert "ekspertize götürmeye değer" in d["uyari"]
 
 
-def test_no_comparables_means_no_green(client):
+def test_no_comparables_means_no_green_but_still_an_honest_offer(client):
     d = client.post("/api/v1/analyze", json=payload(emsal=[]), headers=H).json()
-    assert d["etiket"] != "ALINIR" and d["piyasa"]["n"] == 0
+    assert d["etiket"] != "ALINIR" and d["piyasa"]["n"] == 0 and d["piyasa"]["medyan"] == 0
+    t = d["teklif"]
+    assert t["kaynak"] == "ilan" and "Piyasa verisi yok" in t["dayanak"][0]               # piyasa fiyatı UYDURULMADI
+    assert d["tavsiye_teklif"] == t["acilis"] and t["acilis"] <= t["hedef"] <= t["ust_sinir"] <= 820_000
+    assert d["whatsapp_metni"] and "TL teklif" in d["whatsapp_metni"]
+
+
+def test_card_carries_market_average_range_and_offer_basis(client):
+    d = client.post("/api/v1/analyze", json=payload(), headers=H).json()
+    p = d["piyasa"]
+    assert p["medyan"] > 0 and p["p25"] <= p["medyan"] <= p["p75"] and p["min_emsal"] == 5 and p["n"] >= 5
+    t = d["teklif"]
+    assert t["kaynak"] == "piyasa" and any("Piyasa ortalaması" in x for x in t["dayanak"])
+    assert t["acilis"] <= t["hedef"] <= t["ust_sinir"] and d["ust_sinir"] == t["ust_sinir"]
+
+
+def test_zero_km_car_still_finds_comparables(client):
+    """km=0'da bant sıfıra düşüyordu ('Henüz emsal yok'): en az ±10.000 km bandı uygulanır."""
+    e = [dict(id=f"N{i}", yil=2025, km=500 * i, fiyat=4_000_000 + i * 10_000, seri="Vito") for i in range(6)]
+    d = client.post("/api/v1/analyze", json=payload(yil=2025, km=0, fiyat=4_200_000, seri="Vito", emsal=e, max_butce=None),
+                    headers=H).json()
+    assert d["piyasa"]["n"] >= 5
 
 
 def test_own_id_is_excluded_from_comparables(client):

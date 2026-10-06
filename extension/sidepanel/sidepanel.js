@@ -102,20 +102,26 @@ function renderOk(st, tabId) {
     const ul = el('ul'); d.hard_fails.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
   }
 
-  // 3) Piyasa
+  // 3) Piyasa: ortalama (ilan medyanı), tipik aralık, sapma ve emsal sayısı
   const m = card('Piyasa özeti');
+  m.id = 'market';
   const p = d.piyasa;
   m.append(row('İlan fiyatı', tl(st.meta.fiyat), 'big'));
   if (p && p.medyan > 0) {
-    m.append(row(`Piyasa ilan medyanı (n=${p.n}, güven: ${p.guven})`, tl(p.medyan)));
+    const avg = row('Piyasa ortalaması (ilan medyanı)', tl(p.medyan), 'big'); avg.id = 'avg'; m.append(avg);
+    if (p.p25 && p.p75) m.append(row('Tipik aralık', `${tl(p.p25)} – ${tl(p.p75)}`));
     if (d.sapma_yuzde != null) {
-      const s = d.sapma_yuzde;
-      const pill = el('span', 'pill ' + (s < -20 ? 'warn' : s <= -5 ? 'good' : s > 5 ? 'bad' : ''),
-        s < -20 ? `⚠ %${Math.abs(s)} ucuz: önce nedenini sor` : s <= -5 ? `%${Math.abs(s)} avantajlı` : s > 5 ? `%${s} pahalı` : 'piyasa değerinde');
-      const r = el('div', 'row'); r.append(el('span', 'mute', 'Sapma'), pill); m.append(r);
+      const sp = d.sapma_yuzde;
+      const pill = el('span', 'pill ' + (sp < -20 ? 'warn' : sp <= -5 ? 'good' : sp > 5 ? 'bad' : ''),
+        sp < -20 ? `⚠ %${Math.abs(sp)} ucuz: önce nedenini sor` : sp <= -5 ? `%${Math.abs(sp)} avantajlı` : sp > 5 ? `%${sp} pahalı` : 'piyasa değerinde');
+      const r = el('div', 'row'); r.append(el('span', 'mute', 'İlan / piyasa'), pill); m.append(r);
     }
-    if (p.n < 5) m.append(el('p', 'small mute', 'Emsal sayısı az: karşılaştırma güvenilir değil. Arama sayfalarını gezdikçe iyileşir.'));
-  } else m.append(el('p', 'small mute', 'Henüz emsal yok. Aynı model için arama sayfalarını gezdikçe tarayıcınızda birikir.'));
+    m.append(el('p', 'small mute', `${p.n} emsal (aynı seri) · güven: ${p.guven === 'yuksek' ? 'yüksek' : 'düşük'}`));
+    if (p.n < (p.min_emsal || 5)) m.append(el('p', 'small mute', `Emsal az (en az ${p.min_emsal || 5} gerekir): ortalama güvenilir değil.`));
+  } else {
+    const none = el('p', 'small mute', `Henüz piyasa verisi yok (emsal: ${p ? p.n : 0}/${(p && p.min_emsal) || 5}). Bu aracın SERİSİ için bir arama sonuçları sayfası açın; sayfadaki ilanlar tarayıcınızda emsal olarak birikir ve ortalama burada görünür. Piyasa fiyatı tahmin edilmez.`);
+    none.id = 'no-market'; m.append(none);
+  }
   m.append(el('p', 'disc', 'Bunlar talep (ilan) fiyatlarıdır; gerçek satış fiyatı değildir.'));
   out.push(m);
 
@@ -132,11 +138,24 @@ function renderOk(st, tabId) {
   [['⚠️', d.eksiler], ['✅', d.artilar]].forEach(([ic, list]) => (list || []).forEach((s) => x.append(el('div', 'small', `${ic} ${s}${ic === '✅' ? ' (beyan)' : ''}`))));
   out.push(x);
 
-  // 5) Teklif kutusu
-  if (d.tavsiye_teklif) {
+  // 5) Teklif kutusu: açılış, hedef anlaşma, üst sınır + hesabın dayanağı
+  const tk = d.teklif;
+  if (tk || d.tavsiye_teklif) {
     const o = card('Teklif & pazarlık'); o.id = 'offer';
     const w = el('div', 'offer');
-    w.append(row('Açılış teklifi', tl(d.tavsiye_teklif), 'big'), row('Üst sınır (yalnız sana)', tl(d.ust_sinir)));
+    const acilis = tk ? tk.acilis : d.tavsiye_teklif, ust = tk ? tk.ust_sinir : d.ust_sinir;
+    w.append(row('Açılış teklifi', tl(acilis), 'big'));
+    if (tk && tk.hedef) w.append(row('Makul anlaşma noktası', tl(tk.hedef)));
+    w.append(row('Üst sınır (yalnız sana)', tl(ust)));
+    if (tk && tk.kaynak === 'ilan') {
+      w.append(el('p', 'small warnbox', 'Piyasa verisi olmadığı için bu teklif yalnızca ilan fiyatı ve ilandaki kusurlara göre hesaplandı. Emsal bulununca daha güvenilir olur.'));
+    }
+    if (tk && tk.dayanak && tk.dayanak.length) {
+      const det = document.createElement('details'); det.id = 'basis';
+      det.append(el('summary', 'small', 'Nasıl hesaplandı?'));
+      const ul2 = el('ul', 'small'); tk.dayanak.forEach((x) => ul2.append(el('li', '', x))); det.append(ul2);
+      w.append(det);
+    }
     if (d.whatsapp_metni) {
       const b = el('button', 'pri', '📋 WhatsApp teklif metnini kopyala');
       b.id = 'copy';
