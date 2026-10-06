@@ -1,7 +1,7 @@
 import yaml
 from pathlib import Path
 from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, PartState
-from arac_eksper.analysis.market import MarketStats
+from arac_eksper.schemas import MarketStats
 from arac_eksper.analysis.models_kb import kronik_arizalar
 
 from arac_eksper.config.rules_loader import load_rules  # noqa: F401  (yeniden dışa aktarım)

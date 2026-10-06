@@ -136,17 +136,13 @@ def test_state_changing_api_with_cookie_needs_csrf_header(client):
     assert security.require_api_auth(Request(scope)) is None
 
 
-def test_no_write_routes_exist_outside_extension_api():
-    """Panel (HTML ve /v1) salt okunur. Yazma yalnız /login, /logout ve eklenti API'sinde (ayrı token) vardır.
-    Not: yeni FastAPI dahil edilen router'ları sarar; bu yüzden iki kaynağı da gezeriz ve boş taramayı reddederiz."""
-    from arac_eksper.web import api as ext_api
+def test_panel_has_no_write_routes_and_no_extension_api():
+    """Panel (HTML ve /v1) salt okunur; yazma yalnız /login ve /logout. Eklenti API'si ayrı uygulamadadır."""
     seen = [r for r in webapp.app.routes if hasattr(r, "path") and hasattr(r, "methods")]
     assert len(seen) > 8, "rota taraması boş kaldı"
+    assert all(not r.path.startswith("/api/") for r in seen)
     methods = {m for r in seen if r.path not in ("/login", "/logout") for m in r.methods}
     assert methods <= {"GET", "HEAD"}
-    api_posts = {r.path for r in ext_api.router.routes if "POST" in r.methods}
-    assert api_posts == {"/api/v1/analyze", "/api/v1/batch-evaluate"}
-    assert all(r.dependant.dependencies for r in ext_api.router.routes)    # her API rotası yetki bağımlılığı taşır
 
 
 # ------------------------------------------------------------------ ekranlar / başlıklar / XSS

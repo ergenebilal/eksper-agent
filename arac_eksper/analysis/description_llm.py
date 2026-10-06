@@ -22,10 +22,10 @@ def normalize_tr(text: str) -> str:
 import hashlib
 import re
 from arac_eksper.config.settings import settings
-from arac_eksper.storage.models import LLMCache
 
 def get_cached_findings(db, ilan_no, aciklama, model_name):
     if not db or not ilan_no: return None
+    from arac_eksper.storage.models import LLMCache   # tembel: durumsuz API DB modellerini yüklemez
     aciklama_hash = hashlib.sha256(aciklama.encode("utf-8")).hexdigest()
     cache = db.query(LLMCache).filter_by(ilan_no=ilan_no, aciklama_hash=aciklama_hash, model_name=model_name).first()
     if cache:
@@ -34,6 +34,7 @@ def get_cached_findings(db, ilan_no, aciklama, model_name):
 
 def set_cached_findings(db, ilan_no, aciklama, model_name, findings):
     if not db or not ilan_no: return
+    from arac_eksper.storage.models import LLMCache
     aciklama_hash = hashlib.sha256(aciklama.encode("utf-8")).hexdigest()
     cache = LLMCache(ilan_no=ilan_no, aciklama_hash=aciklama_hash, model_name=model_name, findings=findings.model_dump(mode='json'))
     db.add(cache)

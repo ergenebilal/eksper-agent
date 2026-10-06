@@ -1,5 +1,5 @@
-/* İlan detay sayfası: veriyi okur → service worker'a yollar (ağa YALNIZ o çıkar) → vurgular ve küçük rozet gösterir.
- * Bu betik sahibinden'e ek istek ATMAZ; yalnızca kullanıcının açtığı sayfayı okur. Token'a erişimi yoktur. */
+/* İlan detay sayfası: teknik veriyi okur → service worker'a yollar (ağa YALNIZ o çıkar) → vurgular, küçük rozet gösterir.
+ * Bu betik siteye ek istek ATMAZ; yalnızca kullanıcının zaten açtığı sayfayı okur. Token'a erişimi yoktur. */
 (function () {
   const A = globalThis.AracX;
   if (!A || A._detailLoaded) return;
@@ -32,20 +32,17 @@
     if (tur) badge.setAttribute('data-t', tur); else badge.removeAttribute('data-t');
   }
 
-  let current = null;     // son okunan {payload, descEl}
-
-  async function run() {
+  async function run(force) {
     const ex = A.extractDetail(document, location);
     if (!ex.ok) {
-      setBadge('Araç Eksper: sayfa okunamadı', null);
+      setBadge('otoXray AI: sayfa okunamadı', null);
       await send({ type: 'detail:unreadable', eksik: ex.eksik });
       return;
     }
-    current = ex;
-    setBadge('Araç Eksper: analiz ediliyor…', null);
-    const res = await send({ type: 'analyze', payload: ex.payload, pagePath: location.pathname });
+    setBadge('otoXray AI: analiz ediliyor…', null);
+    const res = await send({ type: 'analyze', payload: ex.payload, pagePath: location.pathname, force: !!force });
     if (!res || !res.ok) {
-      setBadge('Araç Eksper: ' + ((res && res.message) || 'hata'), null);
+      setBadge('otoXray AI: ' + ((res && res.message) || 'hata'), null);
       return;
     }
     const d = res.data;
@@ -59,20 +56,11 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
-    if (msg.type === 'reanalyze') { run().then(() => sendResponse({ ok: true })); return true; }
-    if (msg.type === 'dumpPage') { sendResponse({ ok: true, html: dumpSanitized() }); return; }
+    if (msg.type === 'reanalyze') { run(true).then(() => sendResponse({ ok: true })); return true; }
   });
 
-  /** Gerçek fixture üretmek için: betikleri çıkarır, telefonları maskeler. Satıcı adı seçicisi bilinmediğinden
-   *  dosya paylaşılmadan önce kullanıcı tarafından GÖZDEN GEÇİRİLMELİDİR. */
-  function dumpSanitized() {
-    const clone = document.documentElement.cloneNode(true);
-    clone.querySelectorAll('script,noscript,iframe,#aracx-badge-host,link[rel=preload],link[rel=prefetch]').forEach((e) => e.remove());
-    return A.maskPhones('<!doctype html>\n' + clone.outerHTML);
-  }
-
   send({ type: 'getSettings' }).then((s) => {
-    if (s && s.autoAnalyze === false) { setBadge('Araç Eksper: hazır (elle analiz)', null); return; }
-    run();
+    if (s && s.autoAnalyze === false) { setBadge('otoXray AI: hazır (elle analiz)', null); return; }
+    run(false);
   });
 })();

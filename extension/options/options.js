@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const DEFAULTS = { apiBase: 'http://127.0.0.1:8990', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
+const DEFAULTS = { apiBase: 'http://127.0.0.1:8991', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
 
 function say(text, kind) { const m = $('msg'); m.textContent = text; m.className = kind || ''; }
 
@@ -38,4 +38,9 @@ $('test').addEventListener('click', async () => {
   const r = await chrome.runtime.sendMessage({ type: 'ping' });
   say(r && r.ok ? '✓ Bağlantı ve jeton doğru.' : (r && r.message) || 'Başarısız.', r && r.ok ? 'ok' : 'err');
 });
+$('wipe').addEventListener('click', async () => {
+  const r = await chrome.runtime.sendMessage({ type: 'clearLocalData' });
+  say(r && r.ok ? 'Yerel emsal ve sonuç verileri silindi.' : 'Silinemedi.', r && r.ok ? 'ok' : 'err');
+});
+document.getElementById('legal').textContent = globalThis.OTOXRAY_DISCLAIMER;
 load();

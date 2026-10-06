@@ -1,6 +1,7 @@
-/* Yan panel: yalnızca GÖSTERİR. Etiket üretmez; sunucudan geleni çizer. Tüm metinler textContent ile basılır
+/* otoXray AI yan panel: yalnızca GÖSTERİR. Etiket üretmez; sunucudan geleni çizer. Tüm metinler textContent ile basılır
  * (innerHTML yok): sunucu yanıtındaki alıntılar satıcı metnidir ve güvensizdir. Durum chrome.storage.session'dan okunur. */
 const app = document.getElementById('app');
+document.getElementById('legal').textContent = globalThis.OTOXRAY_DISCLAIMER;
 const params = new URLSearchParams(location.search);       // ?tabId=... yalnız hata ayıklama/test için
 const KEY = (id) => `r:${id}`;
 
@@ -33,7 +34,7 @@ const VERDICT = {
 function view(st, tabId) {
   if (!st) {
     const c = card();
-    c.append(el('p', 'mute', 'Bir sahibinden ilan sayfası açın; analiz burada görünür.'), settingsBtn());
+    c.append(el('p', 'mute', 'Bir araç ilanı sayfası açın; analiz burada görünür.'), settingsBtn());
     return [c];
   }
   if (st.status === 'loading') return [head(st.meta), (() => { const c = card(); c.append(el('p', '', '⏳ Analiz ediliyor… (açıklama röntgeni birkaç saniye sürebilir)')); return c; })()];
@@ -66,22 +67,8 @@ function unreadable(st, tabId) {
   const c = el('section', 'alert');
   c.append(el('b', '', 'Sayfa okunamadı'),
     el('p', '', `Okunamayan alanlar: ${(st.eksik || []).join(', ')}. Eksik veri “iyi” sayılmaz; bu ilan için karar üretilmedi.`),
-    el('p', 'small mute', 'Seçiciler gerçek sahibinden sayfasıyla doğrulanmadı. Sayfa yapısını indirip fixture olarak kaydedebilirsiniz.'));
-  c.append(dumpBtn(tabId));
+    el('p', 'small mute', 'Okuma kuralları gerçek sayfayla doğrulanmadı. Sayfa düzeni değişmiş olabilir.'));
   return c;
-}
-
-function dumpBtn(tabId) {
-  const b = el('button', '', 'Sayfa yapısını indir (telefonlar maskeli)');
-  b.addEventListener('click', async () => {
-    const r = await chrome.runtime.sendMessage({ type: 'panel:dump', tabId });
-    if (!r || !r.ok) { b.textContent = r && r.message ? r.message : 'İndirilemedi'; return; }
-    const url = URL.createObjectURL(new Blob([r.html], { type: 'text/html' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `sahibinden-sayfa-${Date.now()}.html`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  });
-  return b;
 }
 
 function renderOk(st, tabId) {
@@ -116,7 +103,7 @@ function renderOk(st, tabId) {
       const r = el('div', 'row'); r.append(el('span', 'mute', 'Sapma'), pill); m.append(r);
     }
     if (p.n < 5) m.append(el('p', 'small mute', 'Emsal sayısı az: karşılaştırma güvenilir değil. Arama sayfalarını gezdikçe iyileşir.'));
-  } else m.append(el('p', 'small mute', 'Henüz emsal yok. Aynı model için arama sayfalarını gezin.'));
+  } else m.append(el('p', 'small mute', 'Henüz emsal yok. Aynı model için arama sayfalarını gezdikçe tarayıcınızda birikir.'));
   m.append(el('p', 'disc', 'Bunlar talep (ilan) fiyatlarıdır; gerçek satış fiyatı değildir.'));
   out.push(m);
 
@@ -154,13 +141,13 @@ function renderOk(st, tabId) {
   // 6) Ekspertiz kontrol listesi
   const k = card('Ekspertiz kontrol listesi');
   const ul = el('ul'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
-  k.append(ul, el('p', 'disc', d.uyari)); out.push(k);
+  k.append(ul, el('p', 'disc', d.uyari), el('p', 'disc', d.yasal_uyari || globalThis.OTOXRAY_DISCLAIMER)); out.push(k);
 
   // 7) Eylemler
   const act = el('div', 'actions');
   const re = el('button', '', '↻ Yeniden analiz et');
   re.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'panel:reanalyze', tabId }));
-  act.append(re, settingsBtn(), dumpBtn(tabId));
+  act.append(re, settingsBtn());
   out.push(act);
   return out;
 }

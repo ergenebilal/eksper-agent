@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Araç Eksper · Ayarlar</title>
+<title>otoXray AI · Ayarlar</title>
 <link rel="stylesheet" href="options.css">
 </head>
 <body>
 <main>
-  <h1>Araç Eksper · Ayarlar</h1>
+  <h1>otoXray AI · Ayarlar</h1>
   <form id="f" autocomplete="off">
     <label>Sunucu adresi
-      <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8990">
-      <small>Yalnızca yerel/Tailscale (http) ya da https. Varsayılan: <code>arac panel serve</code> adresi.</small>
+      <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8991">
+      <small>Yalnızca yerel/Tailscale (http) ya da https. Varsayılan: <code>arac xray serve</code> adresi.</small>
     </label>
     <label>Erişim jetonu (EXTENSION_TOKEN)
       <input id="token" type="password" required minlength="16" autocomplete="off">
@@ -27,12 +27,18 @@
     <div class="actions">
       <button type="submit" class="pri">Kaydet</button>
       <button type="button" id="test">Bağlantıyı test et</button>
+      <button type="button" id="wipe">Yerel verileri sil</button>
     </div>
     <p id="msg" role="status"></p>
   </form>
-  <p class="note">Eklenti sahibinden’e hiçbir istek atmaz; yalnızca açtığınız sayfayı okur. Satıcı adı ve telefonu okunmaz.
-    🟢 = “ekspertize götürmeye değer”, “al” değil.</p>
+  <p class="note"><b>Gizlilik:</b> Eklenti siteye hiçbir istek atmaz; yalnızca açtığınız sayfadaki aracın teknik verisini
+    (fiyat, km, yıl, hasar tablosu, açıklama) okur. Satıcı adı, telefonu ve profili okunmaz; açıklamadaki telefon
+    numaraları gönderilmeden maskelenir. Sunucu hiçbir şey saklamaz. Emsal fiyatlar ve önceki sonuçlar yalnızca bu
+    tarayıcıda tutulur (“Yerel verileri sil” ile silinir). Açıklama metni, yapay zeka analizi için yapılandırdığınız
+    LLM sağlayıcısına gönderilir.</p>
+  <p class="note" id="legal"></p>
 </main>
+<script src="../lib/legal.js"></script>
 <script src="options.js"></script>
 </body>
 </html>

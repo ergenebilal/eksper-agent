@@ -1,5 +1,5 @@
-/* Arama sonuçları: sayfada ZATEN görünen satırları okur, rozet ekler. Sahibinden'e ek istek atmaz, başka sayfaya
- * gitmez, ilan açmaz. Satır imzası yoksa (ilan listesi değilse) hemen çıkar. */
+/* Arama sonuçları: sayfada ZATEN görünen satırları okur, fiyat rozeti ekler. Siteye ek istek atmaz, başka sayfaya
+ * gitmez, ilan açmaz. Satır imzası yoksa (ilan listesi değilse) hemen çıkar. Başlık/bağlantı/konum okunup gönderilmez. */
 (function () {
   const A = globalThis.AracX;
   if (!A || A._searchLoaded) return;
@@ -18,8 +18,12 @@
   const status = document.createElement('span');
   status.className = 'aracx-status';
   bar.append(btn, status);
+  const legal = document.createElement('div');
+  legal.className = 'aracx-legal';
+  legal.textContent = 'otoXray AI · ' + globalThis.OTOXRAY_DISCLAIMER;
   const table = found.rows[0].rowEl.closest('table') || found.rows[0].rowEl.parentElement;
-  table.parentElement.insertBefore(bar, table);
+  table.parentElement.insertBefore(legal, table);
+  table.parentElement.insertBefore(bar, legal);
 
   function clearBadges() {
     document.querySelectorAll('.aracx-badge').forEach((e) => e.remove());

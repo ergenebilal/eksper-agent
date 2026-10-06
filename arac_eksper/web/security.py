@@ -142,3 +142,21 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
 }
+
+
+def harden(app) -> None:
+    """Host beyaz listesi (DNS rebinding) + güvenlik başlıkları. Panel ve otoXray API ortak kullanır."""
+    from fastapi.responses import JSONResponse
+
+    @app.middleware("http")
+    async def host_guard(request: Request, call_next):
+        if not host_allowed(request):
+            return JSONResponse({"detail": "Geçersiz Host"}, status_code=421)
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for k, v in SECURITY_HEADERS.items():
+            response.headers.setdefault(k, v)
+        return response

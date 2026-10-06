@@ -400,6 +400,17 @@ def panel_serve():
     web.serve()
 
 
+xray_app_cli = typer.Typer(help="otoXray AI (Chrome eklentisi) API'si")
+app.add_typer(xray_app_cli, name="xray")
+
+
+@xray_app_cli.command("serve")
+def xray_serve():
+    """Durumsuz eklenti API'sini başlatır (XRAY_HOST/XRAY_PORT; varsayılan 127.0.0.1:8991). EXTENSION_TOKEN zorunlu."""
+    from arac_eksper.web import xray_app
+    xray_app.serve()
+
+
 telegram_app = typer.Typer(help="Telegram")
 app.add_typer(telegram_app, name="telegram")
 

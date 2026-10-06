@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     panel_port: int = 8990
     panel_session_hours: int = 12
     panel_allowed_hosts: list[str] = ["127.0.0.1", "localhost", "::1"]   # Host başlığı beyaz listesi (DNS rebinding)
+    xray_host: str = "127.0.0.1"      # otoXray API (arac xray serve)
+    xray_port: int = 8991
     panel_cookie_secure: bool = False   # https (Tailscale Serve vb.) arkasında True yap
 
     # Chrome eklentisi API'si (/api/v1): ayrı token; boşsa/16 karakterden kısaysa API KAPALI

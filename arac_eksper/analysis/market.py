@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from arac_eksper.storage.models import Listing
 from arac_eksper.schemas import MarketStats, ListingDetail
 from arac_eksper.config.rules_loader import load_rules
+from arac_eksper.analysis.market_calc import summarize_prices
 
 def _tolerant_eq(column, value):
     """Değer biliniyorsa eşleşme ya da bilinmeyen (NULL) kayıt kabul edilir.
@@ -77,20 +78,4 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
     if not prices:
         return MarketStats(n=0, medyan=0, p25=0, p75=0, guven="yok")
         
-    # Aykırı değerleri temizle (IQR)
-    q1 = np.percentile(prices, 25)
-    q3 = np.percentile(prices, 75)
-    iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
-    
-    valid_prices = [p for p in prices if lower_bound <= p <= upper_bound]
-    if not valid_prices:
-        valid_prices = prices # eğer hepsi atıldıysa geri al
-        
-    n = len(valid_prices)
-    medyan = int(np.median(valid_prices))
-    p25 = int(np.percentile(valid_prices, 25))
-    p75 = int(np.percentile(valid_prices, 75))
-    
-    return MarketStats(n=n, medyan=medyan, p25=p25, p75=p75, guven=confidence)
+    return summarize_prices(prices, confidence)
