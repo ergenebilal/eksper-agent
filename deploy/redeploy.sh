@@ -21,7 +21,8 @@ echo $REV | sudo tee /opt/otoxray/DEPLOYED >/dev/null
 sudo chown -R otoxray:otoxray /opt/otoxray
 cd /opt/otoxray && sudo -u otoxray env HOME=/var/lib/otoxray UV_PYTHON_DOWNLOADS=never \
   /usr/local/bin/uv sync --frozen --no-dev --python /usr/bin/python3.12 -q
-sudo systemctl restart otoxray && sleep 3 && systemctl is-active otoxray
-curl -sf -m 5 -H 'Host: 127.0.0.1' http://127.0.0.1:8991/healthz"
+sudo systemctl restart otoxray
+for i in \$(seq 30); do curl -sf -m 2 -H 'Host: 127.0.0.1' http://127.0.0.1:8991/healthz && exit 0; sleep 1; done
+echo 'Servis 30 sn içinde sağlıklı yanıt vermedi: sudo journalctl -u otoxray -n 50' >&2; exit 1"
 echo
 echo "Yayında: $REV"
