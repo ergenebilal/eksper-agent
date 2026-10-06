@@ -57,6 +57,11 @@ class Evidence(BaseModel):
     etiket: str
     alinti: str
 
+class MasrafEvidence(BaseModel):
+    kod: str             # masraf_kb.yaml kalem kodu
+    alinti: str          # açıklamadan birebir
+
+
 class DescriptionFindings(BaseModel):
     tramer_tutari: Optional[int] = None
     sase_direk_podye_islem: Literal["yok_beyan", "var", "belirsiz"]
@@ -73,6 +78,7 @@ class DescriptionFindings(BaseModel):
     olumsuz_sinyaller: List[Evidence] = Field(default_factory=list)
     dolandiricilik_sinyalleri: List[Evidence] = Field(default_factory=list)
     belirsiz_ifadeler: List[Evidence] = Field(default_factory=list)
+    masraf_kalemleri: List[MasrafEvidence] = Field(default_factory=list)   # R2.2b: YAPILACAK işler (tutar KB'den)
 
 class MarketStats(BaseModel):
     n: int

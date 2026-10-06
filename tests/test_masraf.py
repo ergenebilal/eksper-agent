@@ -80,3 +80,17 @@ def test_offer_reduced_by_declared_costs_only_and_order_kept():
     assert r["acilis"] <= r["anlasma"] <= r["ust_sinir"] and "23.500 TL" in r["dayanak"][-1]
     assert masraf.teklife_uygula(dict(b, dayanak=[]), {"beyan_alt": 0, "kalemler": []})["acilis"] == 650_000
     assert masraf.teklife_uygula(None, gm) is None
+
+
+# ------------------------------------------------------------------ R2.2b: LLM kalemleri
+def test_llm_cost_items_are_validated_and_merged():
+    from arac_eksper.analysis.description_llm import _masraf_dogrula, _match_key
+    from arac_eksper.schemas import MasrafEvidence
+    text = "Klimanın gazı bitti, doldurulması lazım. Triger seti yapıldı. Ön fren balataları da yakında."
+    key = _match_key(text)
+    items = [MasrafEvidence(kod="klima_gaz", alinti="Klimanın gazı bitti"),          # geçerli
+             MasrafEvidence(kod="triger_seti", alinti="Triger seti yapıldı"),        # yapılmış: atılır
+             MasrafEvidence(kod="uydurma_kod", alinti="Ön fren balataları"),         # KB'de yok: atılır
+             MasrafEvidence(kod="fren_on", alinti="ön balatalar bitik")]             # metinde yok: atılır
+    out = _masraf_dogrula(items, key)
+    assert [m.kod for m in out] == ["klima_gaz"]

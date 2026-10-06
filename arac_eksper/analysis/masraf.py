@@ -93,7 +93,7 @@ def _done_in_text(text: str, kalem: dict) -> bool:
 
 
 def gercek_maliyet(detail: ListingDetail, kb_kalem: dict[str, dict] | None = None, tum_kalem: dict[str, dict] | None = None,
-                   model_kb: list[dict] | None = None, seg: str | None = None) -> dict | None:
+                   model_kb: list[dict] | None = None, seg: str | None = None, llm_kalemler=None) -> dict | None:
     """Tahmini gerçek maliyet. Kalem yoksa None. Onaysız kalem listelenir ama tutarı yoktur (aralik None).
     kesinlik: 'beyan' = ilan metni söylüyor; 'olasi' = km'si gelmiş bakım, yapıldığı belirtilmemiş."""
     onayli = masraf_kb.kalemler() if kb_kalem is None else kb_kalem
@@ -101,6 +101,10 @@ def gercek_maliyet(detail: ListingDetail, kb_kalem: dict[str, dict] | None = Non
     seg = seg or masraf_kb.segment(detail.marka, detail.seri or detail.model)
     text = f"{detail.baslik}\n{detail.aciklama}"
     kalemler = [dict(x, kesinlik="beyan") for x in metinden_masraflar(text, tum)]
+    # R2.2b: LLM'in alıntıyla bulduğu (description_llm'de doğrulanmış) kalemler; kural tabanlı bulduysa tekrar eklenmez
+    for m in llm_kalemler or []:
+        if m.kod in tum and m.kod not in {k["kod"] for k in kalemler}:
+            kalemler.append({"kod": m.kod, "ad": tum[m.kod]["ad"], "alinti": m.alinti, "kesinlik": "beyan", "kaynak": "llm"})
     for b in bakim_kalemleri(detail, model_kb):
         kod = b.get("masraf")
         if kod and kod in tum and kod not in {k["kod"] for k in kalemler} and not _done_in_text(text, tum[kod]):

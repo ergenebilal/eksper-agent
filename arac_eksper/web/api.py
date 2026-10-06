@@ -253,7 +253,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         accounts.add_charge(user["id"], h)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
     # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
-    gm = masraf.gercek_maliyet(detail)
+    gm = masraf.gercek_maliyet(detail, llm_kalemler=findings.masraf_kalemleri)
     sg = _sinyaller(req, detail)
     b = sinyaller.teklife_uygula(masraf.teklife_uygula(offer_calc.breakdown(detail, findings, v, allow_no_market=True), gm),
                                  sg["satis"])
