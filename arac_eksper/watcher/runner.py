@@ -92,7 +92,7 @@ async def run_watch(db: Session, watch: Watch, collector, llm) -> pipeline.RunRe
                     out, problem = await pipeline.fetch_and_evaluate(db, collector, llm, s, criteria.marka,
                                                                      criteria.model, criteria.max_butce)
                 except Exception as e:  # noqa: BLE001
-                    result.errors.append(f"{s.ilan_no}: {type(e).__name__}: {e}")
+                    result.errors.append(f"{s.ilan_no}: {type(e).__name__}")
                     continue
                 if problem is not None:
                     result.pages_fetched += 1

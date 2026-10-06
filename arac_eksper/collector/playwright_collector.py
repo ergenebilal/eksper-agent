@@ -90,7 +90,7 @@ class PlaywrightCollector(Collector):
             status_code, html = await self._navigate(url, is_detail)
         except Exception as e:  # noqa: BLE001
             self._log_fetch(url, "ERROR")
-            return FetchResult(status="ERROR", final_url=url, note=f"tarayıcı hatası: {e}")
+            return FetchResult(status="ERROR", final_url=url, note=f"tarayıcı hatası: {type(e).__name__}")
 
         if status_code == 404:
             self._log_fetch(url, "NOT_FOUND")

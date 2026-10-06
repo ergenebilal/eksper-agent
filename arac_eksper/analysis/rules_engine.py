@@ -60,7 +60,8 @@ def evaluate_hard_fails(detail: ListingDetail, findings: DescriptionFindings, ma
         fails.append(f"Fiyat bütçenin üstünde ({detail.fiyat:,} > {max_butce:,} TL)".replace(",", "."))
 
     sapma = _sapma(detail, market)
-    if sapma > hf["max_sapma"]:
+    emsal_yeterli = bool(market) and market.n >= rules["etiket"]["min_emsal"]
+    if emsal_yeterli and sapma > hf["max_sapma"]:   # az emsalle "pahalı" diye elenmez (eksiler'de uyarı var)
         fails.append(f"Fiyat piyasanın %{sapma*100:.0f} üzerinde")
 
     yillik_km = _yillik_km(detail)

@@ -29,12 +29,17 @@ def parse(html: str, url: str = "") -> ListingDetail:
     ilan_tarihi = parse_date(tarih_str)
     
     yil_str = info_dict.get("Yıl", "0")
-    yil = int(yil_str) if yil_str.isdigit() else 0
+    if not yil_str.isdigit():
+        raise ValueError("yıl okunamadı")   # 0'a düşmesin: yıl=0 araç yaşını ve piyasa kümesini bozar
+    yil = int(yil_str)
     
     km_str = info_dict.get("Kilometre", "0").replace(".", "")
-    km = int(km_str) if km_str.isdigit() else 0
+    if not km_str.isdigit():
+        raise ValueError("km okunamadı")    # km=0 "neredeyse sıfır araç" gibi görünürdü
+    km = int(km_str)
     
-    hasar = info_dict.get("Ağır Hasar Kayıtlı", "Hayır").lower() == "evet"
+    hasar_raw = info_dict.get("Ağır Hasar Kayıtlı")
+    hasar = None if hasar_raw is None else hasar_raw.strip().lower() == "evet"   # alan yoksa bilinmiyor, "hayır" değil
     
     parts = parse_damage(html)
     

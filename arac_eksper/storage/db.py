@@ -14,6 +14,17 @@ _ensure_sqlite_dir(settings.database_url)
 engine = create_engine(
     settings.database_url, connect_args={"check_same_thread": False}
 )
+if engine.dialect.name == "sqlite":
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _):
+        # Radar ve CLI aynı DB'yi kullanır: WAL okuyucuları yazıcıdan ayırır, busy_timeout 'database is locked'ı bekletir
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=30000")
+        cur.close()
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
