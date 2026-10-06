@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from arac_eksper import cli
 from arac_eksper.analysis import evaluation
-from arac_eksper.analysis.description_llm import load_jargon
+from arac_eksper.analysis.description_llm import _amounts, load_jargon
 from arac_eksper.llm import client as llm_client
 from arac_eksper.llm.client import LLMUnavailable
 from arac_eksper.schemas import DescriptionFindings, Evidence
@@ -50,8 +50,7 @@ def test_expected_tramer_amounts_appear_in_text():
     for c in CASES:
         t = c.beklenen.tramer_tutari
         if t:
-            digits = {re.sub(r"[.\s]", "", m) for m in re.findall(r"\d[\d.]*", c.aciklama)}
-            assert str(t) in digits or f"{t // 1000} bin" in c.aciklama, c.id
+            assert t in _amounts(c.aciklama), c.id
 
 
 def test_no_personal_data_in_dataset():
