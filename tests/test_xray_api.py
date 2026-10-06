@@ -409,3 +409,12 @@ def test_evidence_list_has_no_duplicate_quotes():
                             olumsuz_sinyaller=[Evidence(etiket="Şase işlemi", alinti="şase ucu işlemli")])
     kanit, vurgu = api._kanitlar(f)
     assert len(kanit) == 1 and kanit[0]["etiket"] == "Şase/podye/direk işlemi" and len(vurgu) == 1
+
+
+def test_root_landing_page_is_public_static_and_noindex(monkeypatch):
+    monkeypatch.setattr(settings, "extension_token", EXT)
+    with TestClient(xray_app.app, base_url="http://panel.test") as c:
+        r = c.get("/")
+    assert r.status_code == 200 and "CyberOto" in r.text and "kapalı beta" in r.text
+    assert 'name="robots" content="noindex' in r.text and "<form" not in r.text and "<script" not in r.text
+    assert DISCLAIMER in r.text and "default-src 'none'" in r.headers["content-security-policy"]

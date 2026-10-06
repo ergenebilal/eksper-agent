@@ -47,6 +47,13 @@ def healthz():
     return {"ok": True}
 
 
+@app.get("/", include_in_schema=False)
+def acilis(request: Request):
+    """Ana adresin tek sayfalık tanıtımı (kapalı beta; arama motorlarına kapalı, form yok)."""
+    from arac_eksper.report.legal import DISCLAIMER
+    return yonetim.templates.TemplateResponse(request, "acilis.html", {"yasal": DISCLAIMER})
+
+
 def _fail_if_port_busy() -> None:
     """Port doluysa ham 'Errno 10048' yerine ne olduğunu söyle (çoğu zaman sunucu zaten çalışıyordur)."""
     import socket
