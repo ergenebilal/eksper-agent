@@ -85,7 +85,7 @@ async function loadMk() {
 function pruneMk(mk) {
   const now = Date.now();
   for (const [g, rows] of Object.entries(mk.groups)) {
-    let list = Object.entries(rows).filter(([, r]) => now - r.t < MK_TTL).sort((a, b) => b[1].t - a[1].t).slice(0, MK_PER_GROUP);
+    let list = Object.entries(rows).filter(([id, r]) => validRow(id, r) && now - r.t < MK_TTL).sort((a, b) => b[1].t - a[1].t).slice(0, MK_PER_GROUP);
     if (!list.length) delete mk.groups[g]; else mk.groups[g] = Object.fromEntries(list);
   }
   const keep = Object.entries(mk.groups).sort((a, b) => Math.max(...Object.values(b[1]).map((r) => r.t)) - Math.max(...Object.values(a[1]).map((r) => r.t))).slice(0, MK_GROUPS);
@@ -97,7 +97,9 @@ function pruneMk(mk) {
 /** Arama sayfası grubu: adresin ilk yol parçası (kategori). Alan adı ya da kimlik içermez. */
 const groupOfPath = (p) => { const seg = String(p || '').split('?')[0].split('/').filter(Boolean)[0]; return seg ? 'p:' + seg.toLowerCase() : null; };
 const groupOfDetail = (pl) => (pl.marka && pl.seri ? 'm:' + fold(pl.marka + ' ' + pl.seri) : null);
-const toComps = (rows) => Object.entries(rows).map(([id, r]) => ({ id, yil: r.y, km: r.k, fiyat: r.f }));
+const validRow = (id, r) => /^[A-Za-z0-9_-]{1,20}$/.test(id) && r && Number.isInteger(r.y) && r.y >= 1950 && r.y <= 2100
+  && Number.isInteger(r.k) && r.k >= 0 && r.k <= 3000000 && Number.isInteger(r.f) && r.f >= 1 && r.f <= 500000000;
+const toComps = (rows) => Object.entries(rows).filter(([id, r]) => validRow(id, r)).map(([id, r]) => ({ id, yil: r.y, km: r.k, fiyat: r.f }));
 
 function nearby(comps, yil, km) {
   return comps.filter((c) => Math.abs(c.yil - yil) <= 2 && Math.abs(c.km - km) <= km * 0.5 + 1).slice(0, 200);
@@ -163,7 +165,7 @@ async function handle(msg, sender) {
     }
     case 'batch': {
       if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
-      const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km }) => ({ ilan_no, fiyat, yil, km }));
+      const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km }) => ({ ilan_no, fiyat, yil, km })).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
       const mk = await loadMk(), group = groupOfPath(msg.pagePath), now = Date.now();
       const pageRows = Object.fromEntries(items.map((i) => [i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat, t: now }]));
       if (group) {            // sayfada ZATEN görünen satırlar yerel emsal olarak birikir

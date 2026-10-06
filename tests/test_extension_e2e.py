@@ -217,14 +217,29 @@ def test_search_page_adds_neutral_price_badges_from_local_comparables(browser_ct
     assert "aracx-pahali" in by["3333333333"][0] and "Pahalı" in by["3333333333"][0]
     assert "aracx-cok_ucuz_suphe" in by["4444444444"][0] and "nedenini sor" in by["4444444444"][0]
     assert by["9999999990"] == []                                            # okunamayan satır rozetsiz
+    assert by["1212121212"] == []                                            # iki fiyatlı (eski/yeni) satır belirsiz: atlanır, batch bozulmaz
     assert all("kelepir" not in b.lower() for v in by.values() for b in v)
-    assert "karar değildir" in page.inner_text(".aracx-status") and "1 satır okunamadı" in page.inner_text(".aracx-status")
+    assert "karar değildir" in page.inner_text(".aracx-status") and "2 satır okunamadı" in page.inner_text(".aracx-status")
     assert DISCLAIMER in page.text_content(".aracx-legal")                   # arayüzde zorunlu uyarı
 
     # emsaller yalnızca kullanıcının tarayıcısında (yerel depo) birikti
     mk = sw.evaluate("async () => (await chrome.storage.local.get('mk')).mk")
     assert len(mk["groups"]["p:renault-megane"]) == 8
     assert all(set(r) == {"y", "k", "f", "t"} for r in mk["groups"]["p:renault-megane"].values())   # başlık/bağlantı yok
+    page.close()
+
+
+def test_corrupt_local_comparables_are_ignored_not_sent(browser_ctx):
+    """Önceki hatalı sürümden depoda kalmış milyarlık fiyatlı kayıt, istek reddettirmemeli."""
+    sw = browser_ctx["sw"]
+    sw.evaluate("""async () => { const now = Date.now();
+        await chrome.storage.local.set({mk: {groups: {'p:az-ilan': {BAD1: {y: 2022, k: 1, f: 12501150000, t: now}, 'ok_1': {y: 2022, k: 1, f: 500000, t: now}}}, idx: {}}}); }""")
+    page = browser_ctx["ctx"].new_page()
+    page.goto(FEW_URL)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 3", timeout=60000)
+    assert "reddetti" not in page.inner_text(".aracx-status")
+    mk = sw.evaluate("async () => (await chrome.storage.local.get('mk')).mk")
+    assert "BAD1" not in mk["groups"]["p:az-ilan"]
     page.close()
 
 
