@@ -1,6 +1,7 @@
 """otoXray AI uç noktaları (/api/v1). İLAN VERİSİ AÇISINDAN DURUMSUZ: ilan metni, başlık, bağlantı ya da karar sunucuda
 SAKLANMAZ; ilan önbelleği ve günlük kaydı yoktur, her istek bellekte işlenir. Tek kalıcı kayıt davetli kullanıcı hesabıdır
-(web/accounts.py: anahtar özeti, günlük sayaç, kullanıcının bilerek gönderdiği geri bildirim); sahip anahtarı ona da dokunmaz.
+(web/accounts.py: e-postaya bağlı üye ve hakları, anahtar/kod özetleri, sayaçlar, kullanıcının bilerek gönderdiği geri
+bildirim); sahip anahtarı ona da dokunmaz.
 Piyasa emsalleri kullanıcının kendi tarayıcısında tutulur, istekle birlikte geçici gelir.
 Yetki: yalnızca Bearer EXTENSION_TOKEN (çerez yok, CORS yok). İstemci verisi güvensizdir: sınırlar, beyaz listeler,
 telefon maskeleme. Karar mantığı değişmedi: description_llm + rules_engine + offer."""
@@ -22,7 +23,7 @@ from arac_eksper.privacy import mask_phones
 from arac_eksper.report.legal import DISCLAIMER
 from arac_eksper.report.offer_text import whatsapp_text
 from arac_eksper.schemas import DescriptionFindings, ListingDetail, MarketStats, PartState, Verdict
-from arac_eksper.web import accounts, security
+from arac_eksper.web import accounts, mailer, security
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(security.require_extension_auth)])
 
@@ -112,16 +113,22 @@ def current_user(request: Request) -> dict:
     return request.state.user
 
 
-def _take(user: dict, tur: str, limit: int | None) -> None:
-    """Davetli kullanıcının günlük hakkından düşer; sahip (id 0) hesap deposuna hiç dokunmaz."""
-    if user["id"] and not accounts.consume(user["id"], limit, tur):
+def _take(user: dict, tur: str, limit: int | None, monthly: int | None = None) -> None:
+    """Üyenin günlük (ve verildiyse aylık) hakkından düşer; sahip (id 0) hesap deposuna hiç dokunmaz."""
+    if user["id"] and not accounts.consume(user["id"], limit, tur, monthly):
+        if monthly is not None and accounts.used_month(user["id"], tur) >= monthly:
+            raise HTTPException(status_code=429, detail=f"Bu ayki hakkınız doldu ({monthly}). Ay başında yenilenir.")
         raise HTTPException(status_code=429, detail=f"Günlük hakkınız doldu ({limit}). Yarın yenilenir.")
 
 
 def _kota(user: dict) -> dict | None:
+    """Üyenin hakları: günlük (limit/kullanilan, eklenti bunu gösterir), aylık, bitiş, rozet."""
     if not user["id"]:
         return None
-    return {"limit": user["gunluk_kota"], "kullanilan": accounts.used_today(user["id"])}
+    aylik = user.get("aylik_kota")
+    return {"limit": user["gunluk_kota"], "kullanilan": accounts.used_today(user["id"]),
+            "aylik": None if aylik is None else {"limit": aylik, "kullanilan": accounts.used_month(user["id"])},
+            "bitis": user.get("bitis"), "rozet": bool(user.get("rozet", 1))}
 
 
 def _kanitlar(findings) -> tuple[list[dict], list[dict]]:
@@ -168,7 +175,7 @@ def _pending(req: AnalyzeRequest) -> dict:
 # ------------------------------------------------------------------ uç noktalar
 @router.get("/ping")
 def ping(user=Depends(current_user)):
-    return {"ok": True, "surum": 3, "durumsuz": True, "kullanici": user["ad"], "kota": _kota(user),
+    return {"ok": True, "surum": 3, "durumsuz": True, "kullanici": user.get("email") or user["ad"], "kota": _kota(user),
             "yasal_uyari": DISCLAIMER}
 
 
@@ -193,7 +200,7 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user)):
-    _take(user, "analyze", user["gunluk_kota"])
+    _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
     if not _llm_budget_ok():
         if user["id"]:
             accounts.refund(user["id"])
@@ -243,6 +250,8 @@ def rozet(sapma: float | None, n: int, rules: dict) -> tuple[str, str]:
 
 @router.post("/batch-evaluate")
 def batch_evaluate(req: BatchRequest, user=Depends(current_user)):
+    if user["id"] and not user.get("rozet", 1):
+        raise HTTPException(status_code=403, detail="Arama sayfası fiyat rozetleri hesabınızda kapalı.")
     _take(user, "batch", settings.user_daily_batch)
     rules = load_rules()
     comps = _comps(req.emsal)
@@ -280,3 +289,80 @@ def feedback(req: FeedbackRequest, user=Depends(current_user)):
     notu = mask_phones(req.notu.strip())[:500] if req.notu and req.notu.strip() else None
     fid = accounts.add_feedback(user["id"], req.ilan_no, req.etiket, req.skor, req.oy, req.sonuc, notu)
     return {"ok": True, "kaydedildi": True, "id": fid}
+
+
+@router.post("/cikis")
+def cikis(user=Depends(current_user)):
+    """Bu cihazın anahtarını iptal eder (eklentide 'Çıkış yap')."""
+    if user["id"] and user.get("key_id"):
+        accounts.revoke_key(user["key_id"])
+    return {"ok": True}
+
+
+# ------------------------------------------------------------------ e-posta koduyla giriş (anahtar GEREKMEZ)
+auth_router = APIRouter(prefix="/api/v1/auth")
+_code_ips: dict[str, deque] = {}
+_code_ips_lock = threading.Lock()
+GENEL_YANIT = "Adres kayıtlı ve erişimi açıksa giriş kodu gönderildi. E-postanızı (gerekirse spam klasörünü) kontrol edin."
+
+
+class KodRequest(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class GirisRequest(BaseModel):
+    email: str = Field(max_length=254)
+    kod: str = Field(pattern=r"^\d{6}$")
+    cihaz: str | None = Field(None, max_length=60)
+
+
+def _ip_ok(ip: str, limit: int = 20) -> bool:
+    now = time.time()
+    with _code_ips_lock:
+        q = _code_ips.setdefault(ip, deque())
+        while q and now - q[0] > 3600:
+            q.popleft()
+        if len(q) >= limit:
+            return False
+        q.append(now)
+        return True
+
+
+@auth_router.post("/kod")
+def kod_iste(req: KodRequest, request: Request):
+    """Kayıtlı ve erişimi açık üyeye 6 haneli kod gönderir. Yanıt, adresin kayıtlı olup olmadığını SÖYLEMEZ."""
+    if not _ip_ok(security.client_ip(request)):
+        raise HTTPException(status_code=429, detail="Çok fazla istek. Bir saat sonra tekrar deneyin.")
+    try:
+        email = accounts.normalize_email(req.email)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Geçersiz e-posta adresi") from None
+    if not mailer.configured():
+        raise HTTPException(status_code=503, detail="E-posta gönderimi henüz açık değil. Yöneticiye haber verin.")
+    m = accounts.get_member_by_email(email)
+    if m and not accounts.access_problem(m):
+        code = accounts.create_code(email, "uye")
+        if code:
+            try:
+                mailer.send_code(email, code)
+            except mailer.MailUnavailable:
+                raise HTTPException(status_code=503, detail="Kod gönderilemedi, biraz sonra tekrar deneyin.") from None
+    return {"ok": True, "mesaj": GENEL_YANIT}
+
+
+@auth_router.post("/giris")
+def giris(req: GirisRequest, request: Request):
+    """Doğru kodla bu cihaz için anahtar verir. Yanlış denemeler IP başına sınırlıdır."""
+    ip = security.client_ip(request)
+    if security.login_blocked(ip):
+        raise HTTPException(status_code=429, detail="Çok fazla deneme")
+    m = accounts.get_member_by_email(req.email)
+    if not m or not accounts.verify_code(req.email, "uye", req.kod):
+        security.record_fail(ip)
+        raise HTTPException(status_code=401, detail="Kod hatalı ya da süresi dolmuş.")
+    problem = accounts.access_problem(m)
+    if problem:
+        raise HTTPException(status_code=403, detail=problem)
+    key = accounts.issue_key(m["id"], req.cihaz)
+    m = accounts.find_by_key(key)
+    return {"ok": True, "anahtar": key, "email": m["email"], "ad": m["ad"], "kota": _kota(m)}

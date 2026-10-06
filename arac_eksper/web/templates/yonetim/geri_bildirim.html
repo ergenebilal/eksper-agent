@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Geri bildirim{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Geri bildirim</h1>
+  <p class="muted">Davetlilerin gönderdiği oy, ekspertiz sonucu ve notlar. İlan açıklaması saklanmaz.</p>
+  {% set geri_bildirim = kayitlar %}
+  {% include "_geri_bildirim_tablo.html" %}
+</section>
+{% endblock %}

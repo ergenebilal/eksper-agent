@@ -18,8 +18,17 @@ Kalan adımlar (sende):
    `LLM_API_KEY`, `LLM_MODEL_FAST` ve `LLM_MODEL_STRONG` satırlarını ekle, sonra `sudo systemctl restart otoxray`.
 4. **Sahip anahtarın** (kendi eklentin için): `sudo grep EXTENSION_TOKEN /opt/otoxray/.env`.
 
-Sunucuda yönetim komutları (`arac xray user ...`) şu biçimde çalıştırılır:
-`cd /opt/otoxray && sudo -u otoxray .venv/bin/arac xray user list`.
+### Davetli yönetimi (e-postaya bağlı)
+- **Web:** `https://otoxray.cybergene.co/yonetim`. `ADMIN_EMAILS` listesindeki adrese gelen kodla girilir.
+  Burada üye eklenir, günlük/aylık hak, bitiş tarihi ve rozet izni belirlenir, üye durdurulur/iptal edilir,
+  cihaz oturumları kapatılır, davet yeniden gönderilir ve geri bildirimler görülür.
+- **Davetli:** davet e-postasındaki bağlantıdan eklentiyi kurar, ayarlarda e-postasını yazar, gelen 6 haneli kodu girer.
+  Anahtar kopyalamak gerekmez; her cihaz kendi anahtarını alır.
+- **Gerekenler (`.env`):** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `ADMIN_EMAILS`, `STORE_URL`
+  (bkz. [env.production.example](env.production.example)). SMTP yoksa kod gönderilemez ve yönetim sayfası bunu açıkça gösterir.
+- **Komutla da yapılabilir:**
+  `cd /opt/otoxray && sudo -u otoxray .venv/bin/arac xray user add ayse@ornek.com --gunluk 30 --bitis 2026-12-31 --davet`.
+  Diğer komutlar: `user list|set|pause|resume|revoke|logout`, `xray feedback`.
 
 ---
 

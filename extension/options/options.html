@@ -4,41 +4,76 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>otoXray AI · Ayarlar</title>
+<link rel="stylesheet" href="../lib/brand.css">
 <link rel="stylesheet" href="options.css">
 </head>
 <body>
+<header class="top">
+  <span class="wordmark"><img src="../icons/cg.svg" alt=""><span><b>otoXray AI</b><small>CyberGene</small></span></span>
+</header>
 <main>
-  <h1>otoXray AI · Ayarlar</h1>
-  <p class="note">Bir <a href="https://cybergene.co" target="_blank" rel="noopener">CyberGene</a> ürünü.</p>
-  <form id="f" autocomplete="off">
-    <label>Sunucu adresi
-      <input id="apiBase" type="url" required placeholder="https://otoxray.cybergene.co">
-      <small>Varsayılan: <code>https://otoxray.cybergene.co</code>. Kendi sunucunuz için yerel/Tailscale (http) ya da https.</small>
-    </label>
-    <label>Erişim anahtarı
-      <input id="token" type="password" required minlength="16" autocomplete="off">
-      <small>Size verilen kişisel anahtar (<code>oxr_</code> ile başlar). Kimseyle paylaşmayın; yalnızca bu tarayıcı profilinde saklanır.</small>
-    </label>
-    <label>En yüksek bütçem (TL, isteğe bağlı)
-      <input id="maxButce" type="number" min="0" step="1000">
+  <h1>İlanları ekspertize gitmeden önce eleyin.</h1>
+  <p class="lede">otoXray, açtığınız araç ilanını okur: açıklamadaki gizli kusurları, piyasa kıyasını ve teklif önerisini yan panelde gösterir.</p>
+
+  <section class="panel" id="login-box" aria-labelledby="login-h">
+    <h2 id="login-h">Giriş</h2>
+    <div id="signed-out">
+      <p class="mute">Davet edildiğiniz e-posta adresini yazın; adresinize 6 haneli bir kod gelir.</p>
+      <form id="email-form" class="inline" autocomplete="on">
+        <label class="sr" for="email">E-posta</label>
+        <input id="email" type="email" required autocomplete="email" placeholder="ornek@eposta.com">
+        <button type="submit" id="send-code" class="pri">Kod gönder</button>
+      </form>
+      <form id="code-form" class="inline" hidden>
+        <label class="sr" for="code">Giriş kodu</label>
+        <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="6 haneli kod">
+        <button type="submit" id="login" class="pri">Giriş yap</button>
+      </form>
+    </div>
+    <div id="signed-in" hidden>
+      <p class="who"><span class="ok-dot" aria-hidden="true"></span><span id="who"></span></p>
+      <dl id="rights" class="rights"></dl>
+      <button type="button" id="logout">Çıkış yap</button>
+    </div>
+    <p id="auth-msg" class="msg" role="status"></p>
+  </section>
+
+  <form id="f" class="panel" autocomplete="off" aria-labelledby="pref-h">
+    <h2 id="pref-h">Tercihler</h2>
+    <label>En yüksek bütçem (TL)
+      <input id="maxButce" type="number" min="0" step="1000" placeholder="Boş bırakılabilir">
       <small>Doluysa bütçeyi aşan ilanlar elenir.</small>
     </label>
-    <label class="chk"><input id="autoAnalyze" type="checkbox"> İlan sayfası açılınca otomatik analiz et (LLM kullanır)</label>
-    <label class="chk"><input id="autoBatch" type="checkbox"> Arama sayfasında fiyat rozetlerini otomatik göster</label>
+    <label class="chk"><input id="autoAnalyze" type="checkbox"> İlan sayfası açılınca otomatik analiz et</label>
+    <label class="chk"><input id="autoBatch" type="checkbox"> Arama sayfasında fiyat rozetlerini göster</label>
+
+    <details id="advanced">
+      <summary>Gelişmiş: kendi sunucunuz</summary>
+      <label>Sunucu adresi
+        <input id="apiBase" type="url" required placeholder="https://otoxray.cybergene.co">
+        <small>Varsayılan: <code>https://otoxray.cybergene.co</code>. Kendi sunucunuz için yerel/Tailscale (http) ya da https.</small>
+      </label>
+      <label>Sahip anahtarı
+        <input id="token" type="password" minlength="16" autocomplete="off" placeholder="Yalnız sunucu sahibi için">
+        <small>E-postayla giriş yaptıysanız boş bırakın.</small>
+      </label>
+    </details>
+
     <div class="actions">
       <button type="submit" class="pri">Kaydet</button>
       <button type="button" id="test">Bağlantıyı test et</button>
       <button type="button" id="wipe">Yerel verileri sil</button>
     </div>
-    <p id="msg" role="status"></p>
+    <p id="msg" class="msg" role="status"></p>
   </form>
-  <p class="note"><b>Gizlilik:</b> Eklenti siteye hiçbir istek atmaz; yalnızca açtığınız sayfadaki aracın teknik verisini
-    (fiyat, km, yıl, hasar tablosu, açıklama) okur. Satıcı adı, telefonu ve profili okunmaz; açıklamadaki telefon
-    numaraları gönderilmeden maskelenir. Sunucu ilan verisini saklamaz; yalnızca günlük kullanım sayınızı ve
-    sizin bilerek gönderdiğiniz geri bildirimi (ilan no, oy, ekspertiz sonucu, not) tutar. Emsal fiyatlar ve önceki sonuçlar yalnızca bu
-    tarayıcıda tutulur (“Yerel verileri sil” ile silinir). Açıklama metni, yapay zeka analizi için yapılandırdığınız
-    LLM sağlayıcısına gönderilir.</p>
-  <p class="note" id="legal"></p>
+
+  <section class="note">
+    <h2>Gizlilik</h2>
+    <p>Eklenti siteye kendi başına istek atmaz; yalnızca açtığınız sayfadaki aracın teknik verisini (fiyat, km, yıl, hasar tablosu, açıklama) okur.
+      Satıcı adı, telefonu ve profili okunmaz; açıklamadaki telefon numaraları gönderilmeden maskelenir. Sunucu ilan verisini saklamaz; yalnızca
+      günlük kullanım sayınızı ve bilerek gönderdiğiniz geri bildirimi tutar. Emsal fiyatlar ve önceki sonuçlar yalnızca bu tarayıcıda durur.</p>
+    <p id="legal" class="legal"></p>
+  </section>
 </main>
 <script src="../lib/legal.js"></script>
 <script src="options.js"></script>

@@ -1,0 +1,22 @@
+{% set ETIKET = {'ALINIR': 'Alınır', 'DUSUNULEBILIR': 'Düşünülebilir', 'ALINMAZ': 'Alınmaz'} %}
+{% set SONUC = {'ekspertiz_temiz': 'Ekspertiz temiz', 'ekspertiz_kucuk_kusur': 'Küçük kusur', 'ekspertiz_agir_kusur': 'Ağır kusur', 'gitmedim': 'Gitmedi'} %}
+{% if geri_bildirim %}
+<div class="table-wrap">
+<table class="stackable">
+  <thead><tr><th>Tarih</th><th>Üye</th><th>İlan</th><th>Gösterilen</th><th>Oy</th><th>Sonuç</th><th>Not</th></tr></thead>
+  <tbody>
+  {% for f in geri_bildirim %}
+    <tr>
+      <td class="num" data-label="Tarih">{{ f.created_at[:16] | replace('T', ' ') }}</td>
+      <td data-label="Üye">{{ f.email or '—' }}</td>
+      <td class="num" data-label="İlan">{{ f.ilan_no }}</td>
+      <td data-label="Gösterilen">{{ ETIKET.get(f.etiket, '—') }}{% if f.skor is not none %}, {{ f.skor }}{% endif %}</td>
+      <td data-label="Oy">{{ {'pos': '👍', 'neg': '👎'}.get(f.oy, '—') }}</td>
+      <td data-label="Sonuç">{{ SONUC.get(f.sonuc, '—') }}</td>
+      <td class="note" data-label="Not">{{ f.notu or '' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="muted">Henüz geri bildirim yok.</p>{% endif %}

@@ -12,7 +12,7 @@ function el(tag, cls, text) {
   return e;
 }
 const tl = (n) => (n == null ? '—' : n.toLocaleString('tr-TR') + ' TL');
-const card = (title) => { const c = el('section', 'card'); if (title) c.append(el('h2', '', title)); return c; };
+const card = (title) => { const c = el('section', 'sec'); if (title) c.append(el('h2', '', title)); return c; };
 
 async function activeTabId() {
   if (params.get('tabId')) return Number(params.get('tabId'));
@@ -27,17 +27,19 @@ async function render() {
 }
 
 const VERDICT = {
-  ALINIR: ['🟢', 'ALINIR', 'Ekspertize götürmeye değer'], DUSUNULEBILIR: ['🟡', 'DÜŞÜNÜLEBİLİR', 'Dikkatle değerlendir'],
-  ALINMAZ: ['🔴', 'ALINMAZ', 'Elenen ilan']
+  ALINIR: ['🟢', 'Alınır', 'Ekspertize götürmeye değer'], DUSUNULEBILIR: ['🟡', 'Düşünülebilir', 'Dikkatle değerlendirin'],
+  ALINMAZ: ['🔴', 'Alınmaz', 'Bu ilan elendi']
 };
+const scannedAt = new Set();          // tarama efekti her sonuç için yalnız bir kez
 
 function loadingView(st) {
   const out = [head(st.meta)];
   const q = st.quick;
-  const wait = card();
+  const wait = el('section', 'wait');
   wait.id = 'waiting';
   const secs = Math.max(0, Math.round((Date.now() - (st.since || st.at || Date.now())) / 1000));
-  wait.append(el('p', '', `⏳ Açıklama röntgeni yapılıyor… ${secs} sn`),
+  const title = el('p', 'num'); title.append(el('span', 'pulse'), document.createTextNode(`Açıklama röntgeni yapılıyor… ${secs} sn`));
+  wait.append(title,
               el('p', 'small mute', q ? 'Yapay zeka analizi genelde 15-40 saniye sürer. Aşağıdaki piyasa ve teklif ön hesabı bu sırada hazırdır.'
                                       : 'Yapay zeka analizi genelde 15-40 saniye sürer.'));
   if (st.quickError) wait.append(el('p', 'small warnbox', 'Ön hesap alınamadı: ' + st.quickError));
@@ -55,8 +57,9 @@ function loadingView(st) {
 
 function view(st, tabId) {
   if (!st) {
-    const c = card();
-    c.append(el('p', 'mute', 'Bir araç ilanı sayfası açın; analiz burada görünür.'), settingsBtn());
+    const c = el('section', 'empty');
+    c.append(el('h2', '', 'Bir araç ilanı açın'),
+      el('p', 'mute', 'İlan sayfasında analiz kendiliğinden başlar; karne, piyasa kıyası ve teklif burada görünür.'), settingsBtn());
     return [c];
   }
   if (st.status === 'loading') return loadingView(st);
@@ -71,10 +74,16 @@ function settingsBtn() {
   return b;
 }
 
+function carLine(meta) {
+  const p = el('p', 'car');
+  p.append(el('b', '', meta && meta.baslik ? meta.baslik : 'İlan'));
+  if (meta && meta.fiyat) p.append(document.createTextNode(`${tl(meta.fiyat)}, ${meta.yil || ''} model, ${(meta.km || 0).toLocaleString('tr-TR')} km`));
+  return p;
+}
+
 function head(meta) {
-  const c = card();
-  c.append(el('div', 'big', meta && meta.baslik ? meta.baslik : 'İlan'));
-  if (meta && meta.fiyat) c.append(el('div', 'mute small', `${tl(meta.fiyat)} · ${meta.yil || ''} · ${(meta.km || 0).toLocaleString('tr-TR')} km`));
+  const c = el('section', 'sec');
+  c.append(carLine(meta));
   return c;
 }
 
@@ -113,7 +122,10 @@ function marketCard(d, meta) {
   m.append(row('İlan fiyatı', tl(meta.fiyat), 'big'));
   if (p && p.medyan > 0) {
     const avg = row('Piyasa ortalaması (ilan medyanı)', tl(p.medyan), 'big'); avg.id = 'avg'; m.append(avg);
-    if (p.p25 && p.p75) m.append(row('Tipik aralık', `${tl(p.p25)} – ${tl(p.p75)}`));
+    if (p.p25 && p.p75) {
+      m.append(row('Tipik aralık', `${tl(p.p25)} – ${tl(p.p75)}`));
+      if (meta.fiyat) m.append(rangeBar(p, meta.fiyat));
+    }
     if (d.sapma_yuzde != null) {
       const sp = d.sapma_yuzde;
       const pill = el('span', 'pill ' + (sp < -20 ? 'warn' : sp <= -5 ? 'good' : sp > 5 ? 'bad' : ''),
@@ -128,6 +140,23 @@ function marketCard(d, meta) {
   }
   m.append(el('p', 'disc', 'Bunlar talep (ilan) fiyatlarıdır; gerçek satış fiyatı değildir.'));
   return m;
+}
+
+function rangeBar(p, fiyat) {
+  // İlan fiyatının emsal aralığındaki yeri: bant = tipik aralık, çizgi = ortalama, kapsül = bu ilan
+  const lo = Math.min(p.p25, fiyat, p.medyan) * 0.94, hi = Math.max(p.p75, fiyat, p.medyan) * 1.06;
+  const pos = (v) => `${(((v - lo) / (hi - lo)) * 100).toFixed(2)}%`;
+  const wrap = el('div'), bar = el('div', 'range');
+  bar.setAttribute('role', 'img');
+  bar.setAttribute('aria-label', `İlan fiyatı ${tl(fiyat)}; tipik aralık ${tl(p.p25)} ile ${tl(p.p75)} arası`);
+  const band = el('span', 'band'); band.style.left = pos(p.p25); band.style.width = `calc(${pos(p.p75)} - ${pos(p.p25)})`;
+  const med = el('span', 'med'); med.style.left = pos(p.medyan);
+  const you = el('span', 'you'); you.style.left = pos(fiyat);
+  bar.append(el('span', 'rail'), band, med, you);
+  const lg = el('div', 'range-legend');
+  lg.append(el('span', '', 'Ucuz'), el('span', '', 'çizgi: ortalama, kapsül: bu ilan'), el('span', '', 'Pahalı'));
+  wrap.append(bar, lg);
+  return wrap;
 }
 
 function offerCard(d, onhesap) {
@@ -171,14 +200,27 @@ function renderOk(st, tabId) {
   const d = st.data, out = [];
 
   // 1) Karne başlığı
-  const [emo, name, sub] = d.beklemede ? ['⏳', 'ANALİZ BEKLİYOR', 'LLM erişilemedi; temiz sayılmaz'] : VERDICT[d.etiket];
-  const v = el('section', 'card verdict v-' + (d.beklemede ? 'WAIT' : d.etiket));
+  const [, name, sub] = d.beklemede ? ['', 'Analiz bekliyor', 'Yapay zekaya ulaşılamadı; temiz sayılmaz'] : VERDICT[d.etiket];
+  const v = el('section', 'plate v-' + (d.beklemede ? 'WAIT' : d.etiket));
   v.id = 'verdict';
-  v.append(el('span', 'emo', emo));
-  const t = el('div'); t.append(el('b', '', name), el('span', 'mute small', sub));
-  v.append(t);
-  if (!d.beklemede) { const s = el('div', 'score', `${d.skor}/10`); s.append(el('div', 'mute small', `veri tamlığı %${Math.round(d.veri_tamlik * 100)}`)); v.append(s); }
-  out.push(head(st.meta), v);
+  v.setAttribute('aria-label', `Karar: ${name}`);
+  v.append(carLine(st.meta));
+  const vr = el('div', 'verdict-row');
+  // Elenen ilanda halka puan göstermez: yüksek puan + 🔴 "iyi" gibi okunmasın (elenme puandan bağımsızdır)
+  const elendi = !d.beklemede && d.etiket === 'ALINMAZ' && (d.hard_fails || []).length > 0;
+  const ring = el('div', 'ring');
+  ring.style.setProperty('--p', d.beklemede ? 0 : elendi ? 100 : Math.round(d.skor * 10));
+  const sc = el('span', '', d.beklemede ? '—' : elendi ? '✕' : String(d.skor));
+  sc.append(el('small', '', elendi ? 'elendi' : 'güven / 10'));
+  ring.append(sc);
+  const t = el('div');
+  t.append(el('div', 'word', name), el('span', 'word-sub', sub));
+  if (elendi) t.append(el('span', 'word-meta', `Puan ${d.skor}/10, ama aşağıdaki neden ilanı tek başına eler`));
+  else if (!d.beklemede) t.append(el('span', 'word-meta', `Veri tamlığı %${Math.round(d.veri_tamlik * 100)}`));
+  vr.append(ring, t);
+  v.append(vr);
+  if (!scannedAt.has(st.at)) { scannedAt.add(st.at); v.append(el('span', 'scan')); }   // sonuç ilk geldiğinde tek tarama
+  out.push(v);
 
   // 2) Elenme nedenleri
   if (d.hard_fails && d.hard_fails.length) {
@@ -198,18 +240,18 @@ function renderOk(st, tabId) {
     const b = el('div'); b.append(el('b', '', k.etiket), document.createElement('br'), el('q', 'small', k.alinti));
     e.append(b); x.append(e);
   });
-  [['⚠️', d.eksiler], ['✅', d.artilar]].forEach(([ic, list]) => (list || []).forEach((s) => x.append(el('div', 'small', `${ic} ${s}${ic === '✅' ? ' (beyan)' : ''}`))));
+  [['neg', d.eksiler], ['pos', d.artilar]].forEach(([k, list]) => (list || []).forEach((s) => x.append(el('div', 'line ' + k, `${s}${k === 'pos' ? ' (beyan)' : ''}`))));
   out.push(x);
 
   { const oc = offerCard(d, false); if (oc) out.push(oc); }
 
   // 6) Ekspertiz kontrol listesi
   const k = card('Ekspertiz kontrol listesi');
-  const ul = el('ul'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
-  k.append(ul, el('p', 'disc', d.uyari), el('p', 'disc', d.yasal_uyari || globalThis.OTOXRAY_DISCLAIMER)); out.push(k);
+  const ul = el('ul', 'checklist'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
+  k.append(ul, el('p', 'disc', d.uyari)); out.push(k);          // yasal uyarı altbilgide (#legal) tek kez
 
   if (!d.beklemede) out.push(feedbackCard(d, st.meta));
-  if (d.kota) out.push(el('p', 'small mute', `Bugünkü analiz hakkın: ${Math.max(d.kota.limit - d.kota.kullanilan, 0)}/${d.kota.limit}`));
+  if (d.kota) out.push(el('p', 'quota', `Bugünkü analiz hakkın: ${Math.max(d.kota.limit - d.kota.kullanilan, 0)}/${d.kota.limit}`));
 
   // 7) Eylemler
   const act = el('div', 'actions');
@@ -231,13 +273,14 @@ function feedbackCard(d, meta) {
   const mark = () => { up.className = oy === 'pos' ? 'on' : ''; down.className = oy === 'neg' ? 'on' : ''; };
   up.addEventListener('click', () => { oy = 'pos'; mark(); });
   down.addEventListener('click', () => { oy = 'neg'; mark(); });
-  const btns = el('div', 'actions'); btns.append(up, down);
+  const btns = el('div', 'vote'); btns.append(up, down);
+  up.setAttribute('aria-label', 'Faydalı'); down.setAttribute('aria-label', 'Faydalı değil');
   const sel = document.createElement('select'); sel.id = 'fb-sonuc';
   SONUC.forEach(([v, t]) => { const o = el('option', '', t); o.value = v; sel.append(o); });
   const note = document.createElement('textarea'); note.id = 'fb-not'; note.maxLength = 500; note.rows = 2;
   note.placeholder = 'Not (isteğe bağlı): neyi yanlış/doğru buldu?';
   const send = el('button', 'pri', 'Gönder'); send.id = 'fb-send';
-  const msg = el('p', 'small mute');
+  const msg = el('p', 'small mute fb-msg');
   send.addEventListener('click', async () => {
     if (!oy && !sel.value && !note.value.trim()) { msg.textContent = 'Önce 👍/👎, sonuç ya da not seç.'; return; }
     send.disabled = true;

@@ -414,7 +414,8 @@ def test_wrong_token_is_reported_not_crashing(browser_ctx):
 def test_invited_user_sees_quota_and_sends_feedback_without_description(browser_ctx):
     from arac_eksper.web import accounts
     ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
-    uid, key = accounts.create_user("e2e-davetli", 7)
+    uid = accounts.create_member("e2e@ornek.com", gunluk_kota=7)
+    key = accounts.issue_key(uid)
     sw.evaluate("""async (k) => { const all = await chrome.storage.local.get(null);
         await chrome.storage.local.remove(Object.keys(all).filter(x => x.startsWith('ac:')));
         await chrome.storage.local.set({token: k}); }""", key)
@@ -436,9 +437,44 @@ def test_invited_user_sees_quota_and_sends_feedback_without_description(browser_
         panel.click("#fb-send")
         panel.wait_for_selector("#feedback >> text=Teşekkürler", timeout=15000)
         fb = accounts.list_feedback()[0]
-        assert fb["user_id"] == uid and fb["oy"] == "pos" and fb["sonuc"] == "ekspertiz_temiz"
+        assert fb["member_id"] == uid and fb["oy"] == "pos" and fb["sonuc"] == "ekspertiz_temiz"
         assert fb["ilan_no"] == "1234567890" and "0532" not in fb["notu"]
         panel.close()
         page.close()
     finally:
         sw.evaluate("t => chrome.storage.local.set({token: t})", TOKEN)
+
+
+def test_email_code_login_and_logout_on_options_page(browser_ctx, monkeypatch):
+    import re as _re
+    from arac_eksper.web import accounts, mailer
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    sent = []
+    monkeypatch.setattr(settings, "smtp_host", "smtp.test")
+    monkeypatch.setattr(settings, "smtp_from", "otoxray@cybergene.co")
+    monkeypatch.setattr(mailer, "send", lambda to, subject, body: sent.append(subject))
+    accounts.create_member("giris@ornek.com", gunluk_kota=9, aylik_kota=90, bitis="2099-12-31")
+    sw.evaluate("() => chrome.storage.local.remove(['token', 'email'])")
+    try:
+        page = ctx.new_page()
+        page.goto(f"chrome-extension://{browser_ctx['id']}/options/options.html")
+        assert page.is_hidden("#code-form") and page.is_hidden("#signed-in")
+        page.fill("#email", "giris@ornek.com")
+        page.click("#send-code")
+        page.wait_for_selector("#code-form:not([hidden])", timeout=15000)
+        code = _re.search(r"(\d{6})", sent[-1]).group(1)
+        page.fill("#code", code)
+        page.click("#login")
+        page.wait_for_selector("#signed-in:not([hidden])", timeout=15000)
+        page.wait_for_selector("#rights dd", timeout=15000)
+        text = page.text_content("#signed-in")
+        assert "giris@ornek.com" in text and "9 / 9" in text and "90 / 90" in text
+        stored = sw.evaluate("async () => await chrome.storage.local.get(['token', 'email'])")
+        assert stored["email"] == "giris@ornek.com" and stored["token"].startswith("oxr_")
+        assert "oxr_" not in page.content()                      # anahtar sayfaya hiç verilmez
+        page.click("#logout")
+        page.wait_for_selector("#signed-out:not([hidden])", timeout=15000)
+        assert accounts.find_by_key(stored["token"]) is None     # sunucuda da iptal
+        page.close()
+    finally:
+        sw.evaluate("t => chrome.storage.local.set({token: t, email: ''})", TOKEN)

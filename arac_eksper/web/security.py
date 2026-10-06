@@ -39,12 +39,14 @@ def extension_problem() -> str | None:
     return None
 
 
-OWNER = {"id": 0, "ad": "sahip", "gunluk_kota": None}
+OWNER = {"id": 0, "ad": "sahip", "email": "sahip", "gunluk_kota": None, "aylik_kota": None, "bitis": None,
+         "rozet": 1, "key_id": None}
 
 
 def require_extension_auth(request: Request) -> dict:
-    """/api/v1: Bearer EXTENSION_TOKEN (sahip, kotasız) ya da davetli kullanıcının kişisel anahtarı (oxr_…, kotalı,
-    iptal edilebilir). Çerez kabul edilmez (tarayıcıdan CSRF imkânı olmasın). Kimlik request.state.user'a yazılır."""
+    """/api/v1: Bearer EXTENSION_TOKEN (sahip, kotasız) ya da üyenin cihaz anahtarı (oxr_…, e-posta koduyla alınır,
+    kotalı, iptal edilebilir). Çerez kabul edilmez (tarayıcıdan CSRF imkânı olmasın). Kimlik request.state.user'a yazılır.
+    Durdurulmuş/süresi dolmuş üye 403 alır (neden metniyle); bu, deneme sınırına sayılmaz."""
     if extension_problem():
         raise HTTPException(status_code=503, detail="Eklenti API'si kapalı (EXTENSION_TOKEN ayarlı değil)")
     h = request.headers.get("authorization", "")
@@ -61,6 +63,11 @@ def require_extension_auth(request: Request) -> dict:
             raise HTTPException(status_code=429, detail="Çok fazla deneme")
         record_fail(ip)
         raise HTTPException(status_code=401, detail="Yetkisiz", headers={"WWW-Authenticate": "Bearer"})
+    if user["id"]:
+        from arac_eksper.web import accounts
+        problem = accounts.access_problem(user)
+        if problem:
+            raise HTTPException(status_code=403, detail=problem)
     request.state.user = user
     return user
 
@@ -147,7 +154,7 @@ def require_api_auth(request: Request) -> None:
 
 
 SECURITY_HEADERS = {
-    "Content-Security-Policy": ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; "
+    "Content-Security-Policy": ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
                                 "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"),
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",

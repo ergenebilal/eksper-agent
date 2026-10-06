@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Üyeler{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Üyeler</h1>
+  <p class="summary">{{ ozet.toplam }} üye, {{ ozet.aktif }} tanesinin erişimi açık. Bugün {{ ozet.bugun }}, bu ay {{ ozet.bu_ay }} analiz yapıldı; {{ ozet.geri_bildirim }} geri bildirim var.</p>
+</div>
+
+{% if not smtp %}<p class="flash warn">E-posta gönderimi yapılandırılmadı: davet ve giriş kodları gönderilemez (SMTP ayarları).</p>{% endif %}
+
+<section class="card list">
+  {% if uyeler %}
+  <div class="table-wrap">
+  <table class="stackable">
+    <thead><tr><th>Üye</th><th>Durum</th><th>Bugün</th><th>Bu ay</th><th>Bitiş</th><th>Cihaz</th><th>Son kullanım</th></tr></thead>
+    <tbody>
+    {% for m in uyeler %}
+      <tr>
+        <td data-label="Üye"><a href="/yonetim/uye/{{ m.id }}">{{ m.email }}</a>{% if m.ad %}<small>{{ m.ad }}</small>{% endif %}</td>
+        <td data-label="Durum">{% if not m.erisim_sorunu %}<span class="pill ok">Açık</span>{% elif m.durum != 'aktif' %}<span class="pill off">{{ durum_etiket[m.durum] }}</span>{% else %}<span class="pill off">Süresi doldu</span>{% endif %}</td>
+        <td class="use" data-label="Bugün"><span class="num">{{ m.bugun }}/{{ m.gunluk_kota }}</span><meter min="0" max="{{ [m.gunluk_kota, 1] | max }}" value="{{ m.bugun }}" low="{{ (m.gunluk_kota * 0.7) | round(0, 'floor') }}" high="{{ (m.gunluk_kota * 0.9) | round(0, 'floor') }}" optimum="0" aria-label="Bugünkü kullanım"></meter></td>
+        <td class="num" data-label="Bu ay">{{ m.bu_ay }}{% if m.aylik_kota is not none %}/{{ m.aylik_kota }}{% endif %}</td>
+        <td class="num" data-label="Bitiş">{{ m.bitis or '—' }}</td>
+        <td class="num" data-label="Cihaz">{{ m.cihaz }}</td>
+        <td class="num" data-label="Son kullanım">{{ (m.son_kullanim or '—')[:16] | replace('T', ' ') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty"><h2>Henüz üye yok</h2><p class="muted">Aşağıdan ilk davetliyi ekleyin; e-posta adresine eklentiyi nasıl kuracağını anlatan bir davet gider.</p></div>
+  {% endif %}
+</section>
+
+<section class="card add">
+  <h2>Üye ekle</h2>
+  <form method="post" action="/yonetim/uye" class="grid">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="wide">E-posta<input name="email" type="email" required></label>
+    <label>Ad (isteğe bağlı)<input name="ad" maxlength="60"></label>
+    <label>Günlük analiz<input name="gunluk" type="number" min="0" max="10000" value="{{ varsayilan_gunluk }}" required></label>
+    <label>Aylık üst sınır<input name="aylik" type="number" min="0" max="300000" placeholder="Sınırsız"></label>
+    <label>Bitiş tarihi<input name="bitis" type="date"></label>
+    <label class="wide">Not (yalnız siz görürsünüz)<input name="notu" maxlength="300"></label>
+    <label class="check"><input type="checkbox" name="rozet" checked> Arama sayfası fiyat rozetleri</label>
+    <label class="check"><input type="checkbox" name="davet" checked> Davet e-postası gönder</label>
+    <button class="pri wide">Üyeyi ekle</button>
+  </form>
+</section>
+{% endblock %}

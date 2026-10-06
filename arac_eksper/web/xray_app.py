@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from arac_eksper.config.settings import settings
-from arac_eksper.web import api, security
+from arac_eksper.web import api, security, yonetim
 
 
 @asynccontextmanager
@@ -20,6 +20,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="otoXray AI API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 security.harden(app)
 app.include_router(api.router)
+app.include_router(api.auth_router)
+app.include_router(yonetim.router)
 
 
 @app.exception_handler(HTTPException)

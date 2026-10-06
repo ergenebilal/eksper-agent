@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     user_daily_quota: int = 30          # davetli kullanıcı başına günlük analiz (LLM) sınırı
     user_daily_batch: int = 400         # davetli başına günlük arama sayfası rozeti isteği (toplu kopyalamaya karşı)
     feedback_daily_limit: int = 50
+    # E-posta koduyla giriş ve davet (SMTP). Boşsa kod gönderilemez (açıkça hata verir).
+    smtp_host: str = ""
+    smtp_port: int = 587               # 587 = STARTTLS, 465 = SSL
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""                # ör. otoxray@cybergene.co
+    store_url: str = ""                # davet e-postasındaki Chrome Web Store bağlantısı
+    # Yönetim sayfası (/yonetim): yalnız bu adreslere giriş kodu gönderilir
+    admin_emails: list[str] = []
+    admin_cookie_secure: bool = True   # https arkasında True (yerel http denemede False)
 
     # Toplama güvenliği (CLAUDE.md kural 1-2)
     block_backoff_minutes: list[int] = [30, 120, 360]

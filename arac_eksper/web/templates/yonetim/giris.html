@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Giriş{% endblock %}
+{% block content %}
+<section class="auth">
+  <h1>Yönetim girişi</h1>
+  {% if adim == "kod" %}
+  <p class="muted">{{ email }} adresine gelen 6 haneli kodu girin.</p>
+  <form method="post" action="/yonetim/dogrula" class="stack">
+    <input type="hidden" name="email" value="{{ email }}">
+    <label>Giriş kodu<input name="kod" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus></label>
+    <button class="pri">Giriş yap</button>
+  </form>
+  <a class="muted small" href="/yonetim/giris">Farklı adres / yeniden kod iste</a>
+  {% else %}
+  <p class="muted">Şifre yok: yönetici e-posta adresinize tek kullanımlık bir kod gönderilir.</p>
+  <form method="post" action="/yonetim/giris" class="stack">
+    <label>E-posta<input name="email" type="email" autocomplete="email" required autofocus></label>
+    <button class="pri">Kod gönder</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

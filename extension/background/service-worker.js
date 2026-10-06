@@ -4,7 +4,7 @@
  * Desteklenen siteye HİÇBİR istek atılmaz; yalnızca kullanıcının açtığı sayfadan okunan veri yerel API'ye gider. */
 importScripts('../lib/site.js');
 
-const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', maxButce: null, autoAnalyze: true, autoBatch: true };
+const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: true, autoBatch: true };
 const TIMEOUT_MS = 120000;                    // LLM çözümlemesi uzun sürebilir
 const KEY = (tabId) => `r:${tabId}`;
 const MK = 'mk';                              // yerel piyasa deposu (emsaller): yalnız sayısal nitelikler
@@ -29,9 +29,9 @@ function validBase(base) {
   return null;
 }
 
-async function api(path, { method = 'POST', body } = {}) {
+async function api(path, { method = 'POST', body, noAuth = false } = {}) {
   const s = await getSettings();
-  if (!s.token) return { ok: false, code: 'no_token', message: 'Ayarlardan erişim anahtarını girin.' };
+  if (!s.token && !noAuth) return { ok: false, code: 'no_token', message: 'Ayarlardan e-postanızla giriş yapın.' };
   const base = validBase(s.apiBase);
   if (!base) return { ok: false, code: 'bad_base', message: 'Sunucu adresi geçersiz.' };
   const ctl = new AbortController();
@@ -39,10 +39,16 @@ async function api(path, { method = 'POST', body } = {}) {
   try {
     const r = await fetch(base + path, {
       method, signal: ctl.signal, cache: 'no-store', credentials: 'omit',
-      headers: { Authorization: 'Bearer ' + s.token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      headers: { ...(noAuth ? {} : { Authorization: 'Bearer ' + s.token }), ...(body ? { 'Content-Type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined
     });
-    if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Erişim anahtarı reddedildi (yanlış ya da iptal edilmiş).' };
+    if (r.status === 401 && noAuth) return { ok: false, code: 'bad_code', message: 'Kod hatalı ya da süresi dolmuş.' };
+    if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Oturum reddedildi: ayarlardan yeniden giriş yapın.' };
+    if (r.status === 403 || r.status === 503) {     // erişim durduruldu/süresi doldu ya da e-posta kapalı: sunucunun kısa açıklaması
+      let why = '';
+      try { const j = await r.json(); why = typeof j.detail === 'string' ? j.detail.slice(0, 160) : ''; } catch (_) { /* yok */ }
+      if (why) return { ok: false, code: r.status === 403 ? 'no_access' : 'unavailable', message: why };
+    }
     if (r.status === 503) return { ok: false, code: 'disabled', message: 'Sunucuda EXTENSION_TOKEN ayarlı değil.' };
     if (r.status === 404) return { ok: false, code: 'outdated', message: 'Sunucu eski sürüm (bu özellik yok). otoxray-yeniden-baslat.cmd ile yeniden başlatın.' };
     if (r.status === 429) {          // sunucunun kendi açıklaması (kota/deneme) kısa ve güvenli bir metindir
@@ -134,7 +140,7 @@ async function handle(msg, sender) {
   switch (msg.type) {
     case 'getSettings': {
       const s = await getSettings();
-      return { configured: !!s.token, autoAnalyze: s.autoAnalyze, autoBatch: s.autoBatch };   // token YOK
+      return { configured: !!s.token, email: s.email, autoAnalyze: s.autoAnalyze, autoBatch: s.autoBatch };   // token YOK
     }
     case 'analyze': {
       if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
@@ -202,6 +208,21 @@ async function handle(msg, sender) {
       catch (_) { return { ok: false, code: 'gesture', message: 'Eklenti simgesine tıklayın.' }; }
     }
     case 'ping': return api('/api/v1/ping', { method: 'GET' });
+    case 'auth:kod':
+    case 'auth:giris':
+    case 'auth:cikis': {           // yalnız ayarlar sayfasından
+      if (!String(sender.url || '').startsWith(chrome.runtime.getURL('options/'))) return { ok: false, code: 'forbidden' };
+      if (msg.type === 'auth:kod') return api('/api/v1/auth/kod', { body: { email: String(msg.email || '').slice(0, 254) }, noAuth: true });
+      if (msg.type === 'auth:giris') {
+        const email = String(msg.email || '').slice(0, 254);
+        const r = await api('/api/v1/auth/giris', { body: { email, kod: String(msg.kod || ''), cihaz: 'Chrome' }, noAuth: true });
+        if (r.ok) await chrome.storage.local.set({ token: r.data.anahtar, email: r.data.email });
+        return r.ok ? { ok: true, data: { email: r.data.email, ad: r.data.ad, kota: r.data.kota } } : r;   // anahtar sayfaya verilmez
+      }
+      await api('/api/v1/cikis', {});            // sunucuda bu cihazın anahtarını kapat (başarısız olsa da yerelde sil)
+      await chrome.storage.local.remove(['token', 'email']);
+      return { ok: true };
+    }
     case 'feedback': {             // yalnız yan panelden; kullanıcının BİLEREK gönderdiği oy/sonuç/not
       if (!String(sender.url || '').startsWith(chrome.runtime.getURL('sidepanel/'))) return { ok: false, code: 'forbidden' };
       const f = msg.feedback || {};

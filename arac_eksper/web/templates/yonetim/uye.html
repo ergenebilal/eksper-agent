@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ uye.email }}{% endblock %}
+{% block content %}
+<a class="back" href="/yonetim">← Üyeler</a>
+<section class="card">
+  <h1>{{ uye.email }}</h1>
+  <p class="muted">{{ uye.ad or '' }} · eklenme {{ uye.created_at[:10] }} · {{ haklar }}</p>
+  <p><span class="pill {{ 'ok' if not uye.erisim_sorunu else 'off' }}">{{ uye.erisim_sorunu or 'Erişim açık' }}</span></p>
+  <section class="stats">
+    <div><b>{{ uye.bugun }}/{{ uye.gunluk_kota }}</b><span>bugün</span></div>
+    <div><b>{{ uye.bu_ay }}{% if uye.aylik_kota is not none %}/{{ uye.aylik_kota }}{% endif %}</b><span>bu ay</span></div>
+    <div><b>{{ uye.toplam }}</b><span>toplam analiz</span></div>
+    <div><b>{{ uye.cihaz }}</b><span>açık cihaz</span></div>
+  </section>
+</section>
+
+<section class="card">
+  <h2>Haklar</h2>
+  <form method="post" action="/yonetim/uye/{{ uye.id }}" class="grid">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Ad<input name="ad" maxlength="60" value="{{ uye.ad or '' }}"></label>
+    <label>Günlük analiz<input name="gunluk" type="number" min="0" max="10000" value="{{ uye.gunluk_kota }}" required></label>
+    <label>Aylık üst sınır<input name="aylik" type="number" min="0" max="300000" value="{{ uye.aylik_kota if uye.aylik_kota is not none else '' }}" placeholder="sınırsız"></label>
+    <label>Bitiş tarihi<input name="bitis" type="date" value="{{ uye.bitis or '' }}"></label>
+    <label class="wide">Not<input name="notu" maxlength="300" value="{{ uye.notu or '' }}"></label>
+    <label class="check"><input type="checkbox" name="rozet" {{ 'checked' if uye.rozet }}> Arama sayfası fiyat rozetleri</label>
+    <button class="pri wide">Kaydet</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Erişim</h2>
+  <div class="actions">
+    {% if uye.durum == 'aktif' %}
+    <form method="post" action="/yonetim/uye/{{ uye.id }}/durum"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="durum" value="durduruldu"><button>Durdur</button></form>
+    {% elif uye.durum == 'durduruldu' %}
+    <form method="post" action="/yonetim/uye/{{ uye.id }}/durum"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="durum" value="aktif"><button class="pri">Yeniden aç</button></form>
+    {% endif %}
+    <form method="post" action="/yonetim/uye/{{ uye.id }}/davet"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Daveti yeniden gönder</button></form>
+    <form method="post" action="/yonetim/uye/{{ uye.id }}/cihazlar"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Tüm cihazlarda oturumu kapat</button></form>
+    {% if uye.durum != 'iptal' %}
+    <form method="post" action="/yonetim/uye/{{ uye.id }}/durum"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="durum" value="iptal"><button class="danger">Kalıcı iptal</button></form>
+    {% endif %}
+  </div>
+  <p class="muted small">Durdurma geçicidir; iptal tüm cihaz anahtarlarını da kalıcı olarak kapatır.</p>
+</section>
+
+<section class="card">
+  <h2>Geri bildirimleri</h2>
+  {% include "_geri_bildirim_tablo.html" %}
+</section>
+{% endblock %}

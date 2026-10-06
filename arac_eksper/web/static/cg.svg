@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <!-- Purple to Blue Gradient for C -->
+    <linearGradient id="cgGradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    
+    <!-- Blue to Emerald Gradient for G -->
+    <linearGradient id="cgGradG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Core Glow Filter -->
+    <filter id="coreGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Dark Rounded Container -->
+  <rect width="100" height="100" rx="24" fill="#05070C" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+
+  <!-- Outer 'C' Arch -->
+  <path 
+    d="M 68 25 C 55 16, 30 18, 22 34 C 14 50, 16 70, 32 80 C 46 88, 68 84, 76 72" 
+    stroke="url(#cgGradC)" 
+    stroke-width="8" 
+    stroke-linecap="round" 
+    fill="none" 
+  />
+
+  <!-- Inner 'G' Core Arch & Horizontal Beam -->
+  <path 
+    d="M 62 38 C 52 32, 38 35, 34 46 C 30 58, 36 68, 50 68 C 62 68, 64 60, 64 54 H 46" 
+    stroke="url(#cgGradG)" 
+    stroke-width="7" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none" 
+  />
+
+  <!-- AI Agent Core Pupil / Eye -->
+  <circle cx="58" cy="54" r="4" fill="#10B981" filter="url(#coreGlow)" />
+  <circle cx="58" cy="54" r="2" fill="#FFFFFF" />
+
+  <!-- Cybernetic Corner Nodes -->
+  <circle cx="22" cy="34" r="2" fill="#A855F7" />
+  <circle cx="76" cy="72" r="2" fill="#10B981" />
+</svg>

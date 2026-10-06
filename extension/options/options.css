@@ -1,13 +1,38 @@
-:root{--bg:#f8fafc;--card:#fff;--line:#e2e8f0;--fg:#0f172a;--mute:#64748b;--acc:#2563eb;--ok:#16a34a;--bad:#dc2626}
-@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--line:#26334a;--fg:#e6edf7;--mute:#8da0bd;--acc:#60a5fa;--ok:#4ade80;--bad:#f87171}}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
-main{max-width:34rem;margin:0 auto;padding:24px 16px}
-form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
-label{display:flex;flex-direction:column;gap:4px;font-weight:600}
-label.chk{flex-direction:row;align-items:center;gap:8px;font-weight:400}
-small,.note{color:var(--mute);font-weight:400;font-size:12px}
-input[type=url],input[type=password],input[type=number]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}
-button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer}
-button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
-.actions{display:flex;gap:8px}
-#msg{min-height:1.4em;margin:0}#msg.ok{color:var(--ok)}#msg.err{color:var(--bad)}
+/* otoXray ayarlar — CyberGene kimliği */
+body{min-height:100vh;background:radial-gradient(700px 380px at 80% -120px,rgba(168,85,247,.12),transparent 70%),
+  radial-gradient(520px 320px at -10% 40%,rgba(6,182,212,.06),transparent 70%),var(--night);background-attachment:fixed}
+.top{max-width:640px;margin:0 auto;padding:22px 20px 0}
+main{max-width:640px;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:34px;line-height:1.08;letter-spacing:-.045em;max-width:15ch;background:var(--ink-gradient);
+  -webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:4px}
+.lede{color:var(--text-2);font-size:15px;max-width:52ch;margin:12px 0 28px}
+.panel{border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--glow),var(--surface);padding:20px;margin-bottom:16px}
+.panel h2,.note h2{font-size:17px;letter-spacing:-.02em;margin-bottom:10px}
+#login-box{box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.inline{display:flex;gap:8px;margin-top:12px}
+.inline input{flex:1}
+.inline button.pri{white-space:nowrap}
+#code{font:500 20px/1 var(--display);letter-spacing:.3em;text-align:center}
+.who{display:flex;align-items:center;gap:10px;font:500 16px/1.3 var(--display);margin:0 0 12px}
+.ok-dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 12px rgba(16,185,129,.7)}
+.rights{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:0 0 16px}
+.rights div{border-top:1px solid var(--line);padding-top:8px}
+.rights dt{font-size:12px;color:var(--muted)}
+.rights dd{margin:2px 0 0;font:500 17px/1.2 var(--display);font-variant-numeric:tabular-nums}
+label{display:block;font-size:13px;color:var(--text-2);margin:14px 0 0}
+label input{margin-top:6px}
+label small{display:block;color:var(--faint);font-size:12px;margin-top:5px}
+label.chk{display:flex;align-items:center;gap:10px;color:var(--text)}
+label.chk input{width:18px;height:18px;margin:0;accent-color:var(--purple)}
+details{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;color:var(--text-2);font-size:13px}
+code{font-size:12px;color:var(--text-2)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.actions .pri{flex:1 1 140px}
+.msg{min-height:1.4em;font-size:13px;margin:12px 0 0;color:var(--muted)}
+.msg.ok{color:var(--emerald)}.msg.err{color:var(--stop)}
+.note{padding:6px 2px;color:var(--muted);font-size:13px}
+.note p{max-width:64ch}
+.legal{font-size:11.5px;color:var(--faint)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:480px){h1{font-size:28px}.inline{flex-direction:column}}

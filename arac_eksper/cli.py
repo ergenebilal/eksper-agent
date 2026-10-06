@@ -411,56 +411,120 @@ def xray_serve():
     xray_app.serve()
 
 
-xray_user_app = typer.Typer(help="Davetli kullanıcılar: kişi başı erişim anahtarı ve günlük kota")
+xray_user_app = typer.Typer(help="Davetli üyeler (e-postaya bağlı): haklar, durum, davet. Web: /yonetim")
 xray_app_cli.add_typer(xray_user_app, name="user")
 
 
-@xray_user_app.command("add")
-def xray_user_add(ad: str = typer.Argument(..., help="Kişinin adı/takma adı (yalnız senin için)"),
-                  kota: Optional[int] = typer.Option(None, help="Günlük analiz sınırı (varsayılan USER_DAILY_QUOTA)")):
-    """Yeni davetli anahtarı üretir. Anahtar YALNIZ BİR KEZ gösterilir; sunucuda yalnız özeti saklanır."""
+def _member_or_exit(ref: str) -> dict:
     from arac_eksper.web import accounts
-    uid, key = accounts.create_user(ad, kota)
-    say(f"Kullanıcı #{uid} ({ad}) eklendi. Erişim anahtarı (bir daha gösterilmez, kişiye güvenli kanaldan ilet):")
-    say(key)
+    m = accounts.get_member(int(ref)) if ref.isdigit() else accounts.get_member_by_email(ref)
+    if not m:
+        say(f"Üye bulunamadı: {ref}")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    return m
+
+
+@xray_user_app.command("add")
+def xray_user_add(email: str = typer.Argument(..., help="Üyenin e-posta adresi (giriş kodu buraya gider)"),
+                  ad: Optional[str] = typer.Option(None, help="Ad/takma ad (yalnız senin için)"),
+                  gunluk: Optional[int] = typer.Option(None, help="Günlük analiz hakkı (varsayılan USER_DAILY_QUOTA)"),
+                  aylik: Optional[int] = typer.Option(None, help="Aylık üst sınır (boş = sınırsız)"),
+                  bitis: Optional[str] = typer.Option(None, help="Erişim bitiş tarihi YYYY-AA-GG (dahil)"),
+                  rozet: bool = typer.Option(True, "--rozet/--rozetsiz", help="Arama sayfası fiyat rozetleri"),
+                  davet: bool = typer.Option(False, "--davet", help="Davet e-postası gönder (SMTP gerekir)")):
+    """Üye ekler. Üye, eklentide e-postasını yazıp gelen kodla girer; anahtar paylaşmak gerekmez."""
+    from arac_eksper.web import accounts, mailer, yonetim
+    try:
+        mid = accounts.create_member(email, ad, gunluk, aylik, bitis, rozet)
+    except ValueError as e:
+        say(str(e))
+        raise typer.Exit(EXIT_BAD_INPUT)
+    m = accounts.get_member(mid)
+    say(f"Üye #{mid} eklendi: {m['email']} — {yonetim.haklar_metni(m)}")
+    if davet:
+        try:
+            mailer.send_invite(m["email"], m["ad"], yonetim.haklar_metni(m))
+            say("Davet e-postası gönderildi.")
+        except mailer.MailUnavailable as e:
+            say(f"Davet gönderilemedi: {e}")
 
 
 @xray_user_app.command("list")
 def xray_user_list(json_out: bool = typer.Option(False, "--json")):
     from arac_eksper.web import accounts
-    users = accounts.list_users()
+    members = accounts.list_members()
     if json_out:
-        emit_json(users)
+        emit_json(members)
         return
-    if not users:
-        say("Henüz davetli kullanıcı yok. Eklemek için: arac xray user add <ad>")
-    for u in users:
-        say(f"#{u['id']:<3} {u['ad']:<20} {u['key_prefix']}…  {'aktif' if u['aktif'] else 'İPTAL'}  "
-            f"bugün {u['bugun']}/{u['gunluk_kota']}  toplam {u['toplam']}  geri bildirim {u['geri_bildirim']}")
+    if not members:
+        say("Henüz üye yok. Eklemek için: arac xray user add <e-posta>")
+    for m in members:
+        durum = accounts.access_problem(m) or "açık"
+        aylik = f"/{m['aylik_kota']}" if m["aylik_kota"] is not None else ""
+        say(f"#{m['id']:<3} {m['email']:<32} {durum:<22} bugün {m['bugun']}/{m['gunluk_kota']}  "
+            f"ay {m['bu_ay']}{aylik}  bitiş {m['bitis'] or '-'}  cihaz {m['cihaz']}  geri bildirim {m['geri_bildirim']}")
+
+
+@xray_user_app.command("set")
+def xray_user_set(ref: str = typer.Argument(..., help="Üye no ya da e-posta"),
+                  ad: Optional[str] = typer.Option(None), gunluk: Optional[int] = typer.Option(None),
+                  aylik: Optional[str] = typer.Option(None, help="Sayı ya da 'yok' (sınırsız)"),
+                  bitis: Optional[str] = typer.Option(None, help="YYYY-AA-GG ya da 'yok'"),
+                  rozet: Optional[bool] = typer.Option(None, "--rozet/--rozetsiz")):
+    """Üyenin haklarını değiştirir (yalnız verilen alanlar)."""
+    from arac_eksper.web import accounts, yonetim
+    m = _member_or_exit(ref)
+    f = {k: v for k, v in {"ad": ad, "gunluk_kota": gunluk, "rozet": rozet}.items() if v is not None}
+    if aylik is not None:
+        f["aylik_kota"] = None if aylik == "yok" else aylik
+    if bitis is not None:
+        f["bitis"] = None if bitis == "yok" else bitis
+    try:
+        accounts.update_member(m["id"], **f)
+    except ValueError as e:
+        say(str(e))
+        raise typer.Exit(EXIT_BAD_INPUT)
+    say(f"#{m['id']} güncellendi: {yonetim.haklar_metni(accounts.get_member(m['id']))}")
+
+
+def _set_status(ref: str, durum: str) -> None:
+    from arac_eksper.web import accounts
+    m = _member_or_exit(ref)
+    if m["durum"] == "iptal":
+        say(f"#{m['id']} zaten iptal.")
+        raise typer.Exit(EXIT_BAD_INPUT)
+    accounts.set_status(m["id"], durum)
+    say(f"#{m['id']} ({m['email']}): {durum}")
+
+
+@xray_user_app.command("pause")
+def xray_user_pause(ref: str = typer.Argument(...)):
+    """Erişimi geçici durdurur."""
+    _set_status(ref, "durduruldu")
+
+
+@xray_user_app.command("resume")
+def xray_user_resume(ref: str = typer.Argument(...)):
+    _set_status(ref, "aktif")
 
 
 @xray_user_app.command("revoke")
-def xray_user_revoke(user_id: int = typer.Argument(...)):
-    """Anahtarı kalıcı olarak iptal eder (sızan anahtar için)."""
-    from arac_eksper.web import accounts
-    if not accounts.revoke(user_id):
-        say(f"#{user_id} bulunamadı ya da zaten iptal.")
-        raise typer.Exit(EXIT_BAD_INPUT)
-    say(f"#{user_id} iptal edildi.")
+def xray_user_revoke(ref: str = typer.Argument(...)):
+    """Kalıcı iptal: tüm cihaz anahtarları da kapanır."""
+    _set_status(ref, "iptal")
 
 
-@xray_user_app.command("quota")
-def xray_user_quota(user_id: int = typer.Argument(...), kota: int = typer.Argument(..., min=0)):
+@xray_user_app.command("logout")
+def xray_user_logout(ref: str = typer.Argument(...)):
+    """Üyenin tüm cihazlarındaki oturumu kapatır (yeniden kodla girer)."""
     from arac_eksper.web import accounts
-    if not accounts.set_quota(user_id, kota):
-        say(f"#{user_id} bulunamadı.")
-        raise typer.Exit(EXIT_BAD_INPUT)
-    say(f"#{user_id} günlük kota: {kota}")
+    m = _member_or_exit(ref)
+    say(f"#{m['id']}: {accounts.revoke_all_keys(m['id'])} cihaz anahtarı kapatıldı.")
 
 
 @xray_app_cli.command("feedback")
 def xray_feedback(limit: int = typer.Option(50), json_out: bool = typer.Option(False, "--json")):
-    """Davetli kullanıcıların gönderdiği geri bildirimler (en yeni önce)."""
+    """Üyelerin gönderdiği geri bildirimler (en yeni önce)."""
     from arac_eksper.web import accounts
     rows = accounts.list_feedback(limit)
     if json_out:
@@ -468,7 +532,7 @@ def xray_feedback(limit: int = typer.Option(50), json_out: bool = typer.Option(F
         return
     for f in rows:
         oy = {"pos": "👍", "neg": "👎"}.get(f["oy"] or "", "  ")
-        say(f"{f['created_at'][:16]} {oy} #{f['user_id']} {f['ad'] or '?'}: ilan {f['ilan_no']} "
+        say(f"{f['created_at'][:16]} {oy} {f['email'] or '?'}: ilan {f['ilan_no']} "
             f"[{f['etiket'] or '-'} {f['skor'] if f['skor'] is not None else ''}] {f['sonuc'] or ''} {f['notu'] or ''}")
 
 

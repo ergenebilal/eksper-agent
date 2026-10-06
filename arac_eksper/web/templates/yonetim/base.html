@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}Yönetim{% endblock %} · otoXray · CyberGene</title>
+<link rel="icon" href="/yonetim/static/favicon-32.png">
+<link rel="preload" href="/yonetim/static/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/yonetim/static/yonetim.css">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="/yonetim"><img src="/yonetim/static/cg.svg" alt=""><span><b>otoXray</b><small>CyberGene · yönetim</small></span></a>
+  {% if sess %}
+  <nav>
+    <a href="/yonetim">Üyeler</a>
+    <a href="/yonetim/geri-bildirim">Geri bildirim</a>
+    <form method="post" action="/yonetim/cikis"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link">Çıkış</button></form>
+  </nav>
+  {% endif %}
+</header>
+<main>
+  {% if mesaj %}<p class="flash {{ mesaj[0] }}" role="status">{{ mesaj[1] }}</p>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">otoXray AI · bir CyberGene ürünü · yalnız yöneticiler</footer>
+</body>
+</html>

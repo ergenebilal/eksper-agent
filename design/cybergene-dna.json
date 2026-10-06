@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "name": "CyberGene — otoXray ürün arayüzü",
+    "description": "cybergene.co kurumsal kimliğinden çıkarılan tasarım DNA'sı; otoXray eklentisi (yan panel, ayarlar) ve yönetim sayfasına uygulanır. Ürün arayüzü olduğu için pazarlama sitesinin efektleri sadeleştirilmiştir.",
+    "source_references": ["https://cybergene.co (ana sayfa, ekran görüntüsü + hesaplanmış CSS, 6 Ekim 2026)", "https://cybergene.co/favicon.svg"],
+    "created_at": "2026-10-06"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "analogous (mor → mavi → camgöbeği/zümrüt) koyu zemin üzerinde",
+      "primary": { "hex": "#a855f7", "role": "Marka moru: vurgu, odak halkası, gradyan başlangıcı (--purple)" },
+      "secondary": { "hex": "#06b6d4", "role": "Camgöbeği: ikincil vurgu, gradyan sonu, bilgi (--cyan)" },
+      "accent": { "hex": "#704ed3", "role": "Birincil düğme yüzü (ölçülen; site gradyanı #5d34d0 → #7547dc → #3b82f6)" },
+      "neutral": {
+        "scale": ["#f4f4f6", "#c2c1cf", "#b1b1c0", "#989ba9", "#514f67", "#1a1f2e", "#0f131d", "#0a0d14", "#07090e"],
+        "usage": "Açık uç metin (#f4f4f6 ana metin, #c2c1cf gövde, #989ba9 soluk); koyu uç zemin ve yüzeyler (#07090e sayfa, #0a0d14 kart). Çizgiler rgba(185,192,224,.13)."
+      },
+      "semantic": { "success": "#10b981", "warning": "#f5b544", "error": "#f05d6c", "info": "#06b6d4" },
+      "surface": { "background": "#07090e", "card": "#0a0d14", "elevated": "#0f131d" },
+      "contrast_strategy": "Koyu zemin üzerinde yüksek kontrastlı açık metin; hiyerarşi soluk metin tonları ve ince çizgilerle, renk yalnızca vurgu ve durumda",
+      "measurement": { "k": 8, "sampling": { "method": "deterministic_stratified", "max_pixels": 160000, "sampled_pixels": 160000 } },
+      "measured_palette": [
+        { "hex": "#0c0e18", "coverage": 0.8864, "role": "background" },
+        { "hex": "#9590a3", "coverage": 0.0456, "role": "unassigned" },
+        { "hex": "#704ed3", "coverage": 0.024, "role": "accent" },
+        { "hex": "#514f67", "coverage": 0.0163, "role": "unassigned" },
+        { "hex": "#f1f0f6", "coverage": 0.0146, "role": "text" },
+        { "hex": "#b4b4d8", "coverage": 0.0088, "role": "unassigned" },
+        { "hex": "#6ebfcd", "coverage": 0.003, "role": "unassigned" },
+        { "hex": "#5aaba7", "coverage": 0.0012, "role": "unassigned" }
+      ]
+    },
+    "typography": {
+      "type_scale": {
+        "display": { "size": "65px", "weight": "500", "line_height": "1.05", "tracking": "-0.064em" },
+        "heading_1": { "size": "36.9px", "weight": "500", "line_height": "1.08", "tracking": "-0.045em" },
+        "heading_2": { "size": "24px", "weight": "500", "line_height": "1.15", "tracking": "-0.03em" },
+        "heading_3": { "size": "18px", "weight": "500", "line_height": "1.25", "tracking": "-0.02em" },
+        "body": { "size": "16px", "weight": "400", "line_height": "1.5", "tracking": "0" },
+        "body_small": { "size": "14px", "weight": "400", "line_height": "1.5", "tracking": "0" },
+        "caption": { "size": "12px", "weight": "500", "line_height": "1.5", "tracking": "0.065em" },
+        "overline": { "size": "11px", "weight": "600", "line_height": "1.3", "tracking": "0.14em" }
+      },
+      "font_families": {
+        "heading": "\"Space Grotesk\", Inter, system-ui, sans-serif",
+        "body": "Inter, system-ui, sans-serif",
+        "mono": "ui-monospace, \"SF Mono\", Consolas, monospace"
+      },
+      "font_style_notes": "Başlıklar geometrik grotesk (Space Grotesk 500) ve sıkı negatif harf aralığıyla; gövde nötr Inter. Vurgulu başlık kelimeleri mor→camgöbeği gradyan dolgu. Yazı tipleri sitenin kendi woff2 dosyaları (self-host)."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": ["4px", "8px", "12px", "16px", "20px", "24px", "32px", "48px", "64px", "96px"],
+      "content_density": "ürün arayüzünde comfortable-compact (site: spacious)",
+      "section_rhythm": "Kartlar arası 12-16px, kart içi 16-20px; sitede bölümler arası 96px+"
+    },
+    "layout": {
+      "grid_system": "Tek sütun yan panel; yönetimde 12 sütunlu form ızgarası (auto-fit minmax 180px)",
+      "max_content_width": "1120px",
+      "columns": "1 (panel) / 2-4 (yönetim formları)",
+      "gutter": "16px",
+      "breakpoints": ["480px", "768px", "1120px"],
+      "alignment_tendency": "sol hizalı, kartlara gruplanmış"
+    },
+    "shape": {
+      "border_radius": { "small": "10px", "medium": "18px", "large": "22px", "pill": "999px" },
+      "border_usage": "Her yüzeyde ince 1px çizgi rgba(255,255,255,.12)",
+      "divider_style": "1px rgba(185,192,224,.13)"
+    },
+    "elevation": {
+      "shadow_style": "soft diffused + üstten mor radyal ışıma",
+      "levels": {
+        "low": "0 1px 0 rgba(255,255,255,.04) inset",
+        "medium": "0 14px 32px rgba(93,52,208,.27)",
+        "high": "0 30px 80px rgba(0,0,0,.35)"
+      },
+      "depth_cues": "kart tepesinde radial-gradient(320px 200px at 50% 0%, rgba(168,85,247,.10), transparent 70%), ince kenar ve koyu gölge"
+    },
+    "iconography": {
+      "style": "ince çizgi (outline), yuvarlatılmış kapak; logo gradyanlı çizgi işareti",
+      "stroke_weight": "1.5-2px",
+      "size_scale": ["14px", "16px", "20px", "24px"],
+      "preferred_set": "Lucide benzeri outline; ürün işareti: CyberGene 'CG' gradyan çizgi logosu"
+    },
+    "motion": {
+      "easing": "cubic-bezier(.2,.8,.2,1)",
+      "duration_scale": { "micro": "140ms", "normal": "220ms", "macro": "480ms" },
+      "entrance_pattern": "kısa fade + 4px yukarı kayma",
+      "exit_pattern": "fade",
+      "philosophy": "sakin, işlevsel; ışıma ve gradyan hareketsiz, yalnız bekleme durumunda yumuşak nabız"
+    },
+    "components": {
+      "button_style": "Birincil: 18px yarıçap, linear-gradient(120deg,#5d34d0,#7547dc 65%,#3b82f6) + sol üstte pembe radyal, iç üst parlaklık ve alt gölge (0 14px 32px rgba(93,52,208,.27)). İkincil: şeffaf, ince çizgi, metin #f4f4f6.",
+      "input_style": "#0f131d zemin, 1px çizgi, 12px yarıçap, odakta mor halka (0 0 0 3px rgba(168,85,247,.25))",
+      "card_style": "#0a0d14 zemin, 1px rgba(255,255,255,.12) kenar, 22px yarıçap, tepede mor radyal ışıma",
+      "navigation_pattern": "Üst çubukta solda logo + 'CyberGene / AI AGENCY' kelime işareti, sağda küçük soluk bağlantılar; dil seçici hap",
+      "modal_style": "kartla aynı yüzey, high gölge",
+      "list_style": "satır başı küçük renkli nokta; satırlar ince çizgiyle ayrık",
+      "component_notes": "Hap rozetleri (999px) yarı saydam renk zemin + aynı renk metin. Üst başlık etiketi (overline) önünde mor nokta."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": ["gece", "teknolojik", "sakin", "güven veren", "premium"],
+      "visual_metaphor": "Karanlıkta aydınlanan yapay zeka çekirdeği: mor-camgöbeği ışık, ince devre çizgileri",
+      "era_influence": "2024-26 AI SaaS (koyu mod, gradyan metin, yumuşak ışıma)",
+      "genre": "dark AI agency / SaaS",
+      "personality_traits": ["sakin", "yetkin", "şeffaf", "insan odaklı"],
+      "adjectives": ["koyu", "ışıltılı", "rafine", "sade", "geometrik"]
+    },
+    "visual_language": {
+      "complexity": "moderate",
+      "ornamentation": "subtle accents",
+      "whitespace_usage": "cömert; ürün arayüzünde ölçülü",
+      "visual_weight_distribution": "Ağırlık başlık ve birincil düğmede; geri kalan soluk",
+      "focal_strategy": "single hero element (panelde karar kartı)",
+      "contrast_level": "yüksek (metin) / düşük (yüzey katmanları)",
+      "texture_usage": "doku yok; yalnız radyal ışıma ve ince yörünge çizgileri"
+    },
+    "composition": {
+      "hierarchy_method": "typographic hierarchy + color weight",
+      "balance_type": "asymmetric (site) / dikey yığın (panel)",
+      "flow_direction": "yukarıdan aşağı, soldan sağa",
+      "grouping_strategy": "kartlarla gruplama, ince çizgili ayırıcılar",
+      "negative_space_role": "ışımanın ve odağın nefes alanı"
+    },
+    "imagery": {
+      "photo_treatment": "fotoğraf yok; soyut siluet ve ışık",
+      "illustration_style": "minimal siluet + gradyan ışık",
+      "graphic_elements": "gradyan metin, mor/camgöbeği noktalar, ince yörünge çemberleri",
+      "pattern_usage": "yok",
+      "image_shape": "yuvarlatılmış kart"
+    },
+    "interaction_feel": {
+      "feedback_style": "renk ve ışıma değişimi, abartısız",
+      "hover_behavior": "kenar çizgisi açılır, düğme 1px yükselir, ışıma güçlenir",
+      "transition_personality": "smooth glide",
+      "loading_style": "yumuşak nabız / ışık taraması",
+      "microinteraction_density": "düşük"
+    },
+    "brand_voice_in_ui": {
+      "tone": "sade, net, insanca; jargon yok",
+      "formality": "yarı resmi, 'siz' dili",
+      "cta_style": "friendly invitation",
+      "empty_state_approach": "ne yapılacağını tek cümleyle söyler",
+      "error_tone": "suçlamayan, ne olduğunu ve sonraki adımı söyleyen"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "subtle-accent",
+      "performance_tier": "lightweight",
+      "fallback_strategy": "reduce to CSS; prefers-reduced-motion'da animasyon yok",
+      "primary_technology": "CSS only (site: tek canvas ile arka plan)"
+    },
+    "background_effects": {
+      "type": "gradient-animation",
+      "description": "Sayfa zemininde büyük, çok soluk mor ve camgöbeği radyal ışımalar (statik). Sitede ince yörünge çemberleri.",
+      "technology": "CSS radial-gradient",
+      "params": { "color_palette": ["rgba(168,85,247,.10)", "rgba(6,182,212,.06)"], "speed": "statik", "density": "2 ışıma", "opacity": "0.06-0.12", "blend_mode": "normal" }
+    },
+    "particle_systems": {
+      "enabled": false, "type": "none", "description": "Yok", "technology": "none",
+      "params": { "count": "0", "shape": "none", "size_range": "none", "movement_pattern": "none", "color_behavior": "none", "interaction": "none", "spawn_area": "none" }
+    },
+    "3d_elements": {
+      "enabled": false, "type": "none", "description": "Yok (sitedeki siluet düz görsel)", "technology": "none",
+      "params": { "renderer": "none", "lighting": "none", "camera": "none", "materials": "none", "geometry": "none", "post_processing": [], "interaction_model": "none" }
+    },
+    "shader_effects": {
+      "enabled": false, "type": "none", "description": "Yok", "technology": "none",
+      "params": { "uniforms": "none", "vertex_manipulation": "none", "fragment_output": "none", "noise_type": "none", "distortion": "none" }
+    },
+    "scroll_effects": {
+      "parallax": { "enabled": false, "layers": "0", "depth_range": "none", "speed_curve": "none" },
+      "scroll_triggered_animations": { "enabled": false, "trigger_points": "none", "animation_type": "none", "scrub_behavior": "none" },
+      "scroll_morphing": { "enabled": false, "description": "Yok" }
+    },
+    "text_effects": {
+      "type": "gradient-fill",
+      "description": "Vurgulu başlık kelimeleri statik gradyan dolgu",
+      "technology": "CSS background-clip:text",
+      "params": { "split_strategy": "by-word", "animation_per_unit": "none", "stagger": "none", "effect_style": "linear-gradient(110deg,#c6a1f2 0%,#a2bce7 45%,#53c6d0 78%,#6edcb6 110%)" }
+    },
+    "cursor_effects": {
+      "enabled": false, "type": "none", "description": "Yok",
+      "params": { "shape": "none", "size": "none", "blend_mode": "none", "trail": "none", "interaction_zone": "none" }
+    },
+    "image_effects": {
+      "type": "none", "description": "Yok", "technology": "none",
+      "params": { "filter_pipeline": "none", "hover_transform": "none", "reveal_animation": "none", "distortion_type": "none" }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": false, "style": "none",
+      "params": { "blur_radius": "0", "transparency": "1", "border_treatment": "ince açık çizgi", "shadow_type": "soft diffused", "light_source_angle": "üstten" }
+    },
+    "canvas_drawings": {
+      "enabled": false, "type": "none", "description": "Sitedeki tek canvas ürün arayüzüne taşınmadı (eklenti performansı)", "technology": "none",
+      "params": { "draw_method": "none", "animation_loop": "none", "color_scheme": "none", "responsiveness": "none", "interaction": "none" }
+    },
+    "svg_animations": {
+      "enabled": false, "type": "none", "description": "Logo statik SVG (gradyan çizgi + ışıyan çekirdek noktası)",
+      "params": { "animation_method": "none", "path_morphing": "none", "stroke_animation": "none", "filter_effects": "feGaussianBlur glow (logoda)" }
+    },
+    "composite_notes": "Pazarlama sitesindeki canvas yörüngeleri ve sohbet balonu ürün arayüzüne alınmadı; kimliği taşıyan katmanlar: koyu zemin, kart tepesi mor ışıma, gradyan birincil düğme, gradyan vurgulu başlık, Space Grotesk/Inter ve CG logosu."
+  }
+}
