@@ -264,3 +264,18 @@ def test_whatsapp_helper_directly():
                 ust_sinir=830_000, piyasa=MarketStats(n=9, medyan=900000, p25=1, p75=2, guven="yuksek"))
     t = whatsapp_text(d, v)
     assert "810.000 TL" in t and "830" not in t and "sol kapi değişen" in t and "tampon" not in t
+
+
+def test_every_extension_script_is_syntactically_valid():
+    """Tarayıcıda sessizce yüklenmeyen betik tüm eklentiyi bozar: her .js dosyası node ile sözdizimi denetimine girer."""
+    import pathlib
+    import shutil
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node yok")
+    root = pathlib.Path(__file__).resolve().parent.parent / "extension"
+    files = [f for f in root.rglob("*.js") if "tests" not in f.parts]
+    assert len(files) >= 10
+    for f in files:
+        r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
+        assert r.returncode == 0, f"{f.relative_to(root)}: {r.stderr[:300]}"

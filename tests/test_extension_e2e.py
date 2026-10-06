@@ -266,6 +266,8 @@ def test_label_driven_reading_on_a_realistic_layout_and_diagnose_report(browser_
     sent = ScriptedLLM.last_prompt
     assert "Nuri" not in sent and "378" not in sent and "[telefon]" in sent
     assert "Sahibinden" not in sent                                          # 'Kimden' (satıcı türü) okunmadı
+    # filtre kutusundaki uzun "Marka" listesi değer sanılmadı (gerçek hata: marka 60 karakteri aşıp 422 verdi)
+    assert "Audi BMW" not in str(st[key]) and st[key]["status"] == "ok"
 
     rep = sw.evaluate("async (id) => await chrome.tabs.sendMessage(id, {type: 'diagnose'})", int(key[2:]))
     assert rep["ok"] and rep["report"]["okuma"]["ok"] is True
