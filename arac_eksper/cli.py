@@ -433,7 +433,11 @@ def eval_cmd(
         raise typer.Exit(EXIT_BAD_INPUT)
     cases = cases[:limit] if limit else cases
     say(f"{len(cases)} vaka ölçülüyor (ikinci geçiş: {second_pass})...", True)
-    rep = evaluation.evaluate(llm_client.OpenAIClient(), cases, second_pass)
+    def progress(i, n, r):
+        ok = not (r.hata or r.kacirilan or r.yanlis_alarm)
+        say(f"[{i}/{n}] {r.id} {'✓' if ok else '✗'} {r.sure_sn} sn", True)
+
+    rep = evaluation.evaluate(llm_client.OpenAIClient(), cases, second_pass, on_case=progress)
     gecti = rep.recall is not None and rep.recall >= min_recall and rep.hatali == 0
     if json_out:
         emit_json({**rep.model_dump(), "min_recall": min_recall, "gecti": gecti})
@@ -452,6 +456,40 @@ def eval_cmd(
                     f"tramer_doğru={r.tramer_dogru} olumsuz_doğru={r.olumsuz_dogru}" + (f" HATA: {r.hata}" if r.hata else ""))
         say("GEÇTİ ✓" if gecti else "GEÇMEDİ ✗")
     raise typer.Exit(EXIT_OK if gecti else EXIT_ERROR)
+
+
+fixture_app = typer.Typer(help="Test fixture'ları")
+app.add_typer(fixture_app, name="fixture")
+
+
+@fixture_app.command("sanitize")
+def fixture_sanitize(
+    paths: list[Path] = typer.Argument(..., help="Tarayıcıdan kaydedilmiş .html dosyaları"),
+    out: Path = typer.Option(Path("tests/fixtures/real"), help="Çıktı klasörü"),
+    remove: list[str] = typer.Option([], "--remove", help="Silinecek CSS seçicisi (satıcı kutusu vb.), tekrarlanabilir"),
+):
+    """Kaydedilmiş ilan sayfasını kişisel veriden arındırıp fixture klasörüne yazar. Kaynak dosyaya dokunmaz.
+    Satıcı adı biçimden tanınamaz: 'şüpheli blok' raporuna bakıp gerekirse --remove ile yeniden çalıştırın."""
+    from arac_eksper import fixture_sanitizer
+    out.mkdir(parents=True, exist_ok=True)
+    for p in paths:
+        if not p.is_file():
+            say(f"Bulunamadı: {p}")
+            raise typer.Exit(EXIT_BAD_INPUT)
+        target = out / p.name
+        if target.resolve() == p.resolve():
+            say(f"Kaynak ile hedef aynı dosya: {p}. Farklı bir --out verin.")
+            raise typer.Exit(EXIT_BAD_INPUT)
+        html, rep = fixture_sanitizer.sanitize(p.read_text(encoding="utf-8", errors="replace"), remove)
+        target.write_text(html, encoding="utf-8")
+        m = rep["maskelenen"]
+        say(f"✓ {p.name} → {target}  (silinen etiket: {rep['silinen_etiket']}, maskelenen telefon/eposta/plaka "
+            f"alanı: {m['telefon']}/{m['eposta']}/{m['plaka']})")
+        for sel, n in rep["silinen_secici"].items():
+            say(f"   --remove {sel!r}: {n} öğe silindi" + ("  ⚠ eşleşme yok" if n == 0 else ""))
+        for b in rep["supheli_bloklar"]:
+            say(f"   ⚠ şüpheli blok (elle kontrol et): {b['secici']}  [{b['metin_uzunlugu']} karakter metin]")
+    say("Satıcı adı/kullanıcı adı kalmadığını dosyayı açıp kontrol etmeden commit etmeyin.")
 
 
 telegram_app = typer.Typer(help="Telegram")

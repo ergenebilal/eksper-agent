@@ -144,5 +144,11 @@ def summarize(results: list[CaseResult]) -> Report:
     )
 
 
-def evaluate(client: LLMClient, cases: list[Case], second_pass: str = "hard") -> Report:
-    return summarize([run_case(client, c, second_pass) for c in cases])
+def evaluate(client: LLMClient, cases: list[Case], second_pass: str = "hard", on_case=None) -> Report:
+    """on_case(i, n, CaseResult): her vaka bitince çağrılır (ilerleme göstermek için)."""
+    results = []
+    for i, c in enumerate(cases, 1):
+        results.append(run_case(client, c, second_pass))
+        if on_case:
+            on_case(i, len(cases), results[-1])
+    return summarize(results)
