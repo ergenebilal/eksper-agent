@@ -83,7 +83,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "icons/cg.svg",
+        "icons/cg-ikon.png",
         "fonts/inter-latin.woff2",
         "fonts/inter-latin-ext.woff2",
         "fonts/space-grotesk-latin.woff2",

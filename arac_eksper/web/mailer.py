@@ -78,24 +78,28 @@ def haklar_kalemleri(m: dict) -> list[tuple[str, str]]:
             ("Erişim", f"{bitis} tarihine kadar" if bitis else "Süre sınırı yok")]
 
 
-ADIMLAR = [("Eklentiyi kurun.", "Chrome'da bu e-posta adresiyle oturum açmış olmanız gerekebilir."),
-           ("Ayarlar sayfasında e-postanızı yazın", "ve “Kod gönder”e basın."),
-           ("Gelen 6 haneli kodu girin.", "Bir araç ilanı açın; ön hesap kendiliğinden gelir, röntgeni yan panelden başlatırsınız.")]
+ADIMLAR = [("Eklentiyi kurun:", "kurulum sayfasındaki düğmeyle indirip Chrome'a ekleyin (sayfa adım adım gösterir)."),
+           ("Giriş yapın:", "eklentinin Ayarlar sayfasına bu e-posta adresini yazın, “Kod gönder”e basın, gelen 6 haneli kodu girin."),
+           ("Bir ilan açın:", "araç çubuğundaki CyberOto simgesine tıklayın; yan panel açılır. İlan açmak hak harcamaz.")]
+
+
+def kurulum_url() -> str:
+    return settings.public_url.rstrip("/") + "/kurulum"
 
 
 def send_invite(to: str, ad: str | None, haklar: str, kalemler: list[tuple[str, str]] | None = None) -> None:
-    store = settings.store_url or "(eklenti bağlantısı ayrıca iletilecektir)"
+    kurulum = kurulum_url()
     subject = "CyberOto AI'ye davet edildiniz"
-    html = _html("invite.html", subject=subject, preheader="Kapalı betaya davetlisiniz: üç adımda başlayın.", ad=ad,
-                 haklar=kalemler or [("Kullanım hakkı", haklar)], adimlar=ADIMLAR, store_url=settings.store_url)
+    html = _html("invite.html", subject=subject, preheader="Kurulum ve giriş iki dakika: kurulum sayfası adım adım gösterir.",
+                 ad=ad, haklar=kalemler or [("Kullanım hakkı", haklar)], adimlar=ADIMLAR, kurulum_url=kurulum)
     send(to, subject,
          f"Merhaba{(' ' + ad) if ad else ''},\n\n"
-         "CyberOto AI kapalı betasına davet edildiniz. CyberOto, araç ilanlarını ekspertize gitmeden önce eler: "
-         "açıklamadaki gizli kusurları, piyasa kıyasını ve teklif önerisini gösterir.\n\n"
-         f"1) Chrome eklentisini kurun: {store}\n"
-         "   (Bu e-posta adresiyle Chrome'a/Google hesabınıza giriş yapmış olmanız gerekebilir.)\n"
-         "2) Eklentinin Ayarlar sayfasında bu e-posta adresini yazıp 'Kod gönder'e basın.\n"
-         "3) Gelen 6 haneli kodu girin. Hepsi bu.\n\n"
+         "CyberOto AI kapalı betasına davet edildiniz. CyberOto, bilgisayarınızda Chrome'a kurulan bir eklentidir: "
+         "açtığınız araç ilanındaki gizli kusurları, piyasa kıyasını ve teklif önerisini yan panelde gösterir.\n\n"
+         f"Kurulum ve giriş (tek tık, adım adım): {kurulum}\n\n"
+         "1) Eklentiyi kurun: kurulum sayfasındaki düğmeyle indirip Chrome'a ekleyin.\n"
+         "2) Giriş yapın: eklentinin Ayarlar sayfasına bu e-posta adresini yazın, 'Kod gönder'e basın, gelen 6 haneli kodu girin.\n"
+         "3) Bir araç ilanı açın ve araç çubuğundaki CyberOto simgesine tıklayın; yan panel açılır.\n\n"
          f"Kullanım hakkınız: {haklar}\n\n"
          "CyberOto bir yapay zeka karar destek aracıdır; resmi ekspertiz raporu değildir. 🟢 'ekspertize götürmeye "
          "değer' demektir, 'satın al' değil.\n\n" + BRAND + "\n", html=html)

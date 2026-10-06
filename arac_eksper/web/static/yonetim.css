@@ -136,17 +136,60 @@ button.small-btn{font-size:13px;padding:8px 12px;border-radius:12px;white-space:
 td form{margin:0}
 /* CyberOto ürün imzası (logo: Cyber beyaz, Oto turuncu #FF9A24) */
 .brand .oto{color:#ff9a24;font-weight:650}
-/* Açılış sayfası (/) — davetle kullanılan ürünün tek sayfalık tanıtımı */
-.acilis .giris{max-width:760px;margin:56px 0 40px}
-.acilis .giris h1{font-size:44px;line-height:1.04}
-.acilis .lede{color:var(--text-2);font-size:17px;max-width:62ch;margin:18px 0 0}
-.acilis .beta{margin:22px 0 0;padding:12px 16px;border:1px solid rgba(255,154,36,.35);border-radius:14px;background:rgba(255,154,36,.06);color:var(--text-2);max-width:62ch}
+/* Açılış (/) ve kurulum (/kurulum) — tek cesur öğe: tarayıcı çerçevesindeki gerçek panel ekranı */
+.acilis .bar{width:100%}
+.acilis .bar nav a{color:var(--text-2)}
+.acilis main{padding-top:8px}
+.hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:48px;align-items:center;margin:40px 0 72px}
+.hero h1{font-size:52px;line-height:1.02;letter-spacing:-.05em}
+.acilis .lede{color:var(--text-2);font-size:17px;max-width:56ch;margin:20px 0 0}
+.acilis .beta{margin:24px 0 0;padding:12px 16px;border:1px solid rgba(255,154,36,.35);border-radius:14px;background:rgba(255,154,36,.06);color:var(--text-2);max-width:56ch}
 .acilis .beta b{color:#ff9a24;font-weight:600}
-.acilis .ozellik{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:22px;overflow:hidden}
-.acilis .ozellik div{background:var(--surface);padding:22px}
-.acilis .ozellik h2{font-size:16px;margin-bottom:8px}
-.acilis .ozellik p{margin:0;color:var(--muted);font-size:14px}
-.acilis .not{color:var(--faint);font-size:12.5px;max-width:80ch;margin:28px 0 0}
-.acilis .foot a{color:var(--text-2)}
-@media (max-width:600px){.acilis .giris{margin:28px 0 28px}.acilis .giris h1{font-size:32px}}
-.acilis .bar{justify-content:flex-start;width:100%}
+.acilis .beta a{color:var(--text);margin-left:4px;white-space:nowrap}
+.tarayici{margin:0;border:1px solid var(--line-2);border-radius:18px;background:#0b0e15;box-shadow:0 40px 90px rgba(0,0,0,.5),0 0 0 1px rgba(168,85,247,.08);overflow:hidden}
+.tarayici-ust{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:#0e121b}
+.tarayici-ust i{width:9px;height:9px;border-radius:50%;background:#2a2f40}
+.tarayici-ust span{margin-left:12px;font-size:11.5px;color:var(--faint);background:#141927;border-radius:8px;padding:3px 12px;flex:1}
+.tarayici-ic{display:grid;grid-template-columns:1fr 320px;min-height:300px}
+.ilan-taslak{padding:16px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--line)}
+.ilan-taslak .foto{height:110px;border-radius:10px;background:linear-gradient(135deg,#1a2030,#121725)}
+.ilan-taslak .satir{height:9px;border-radius:5px;background:#1a2030;width:70%}
+.ilan-taslak .uzun{width:92%;height:12px}.ilan-taslak .kisa{width:40%}
+.ilan-taslak .tablo{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ilan-taslak .tablo span{height:8px;border-radius:4px;background:#161b28}
+.panel-kare{background:var(--night);overflow:hidden}
+.panel-kare img{display:block;width:100%;height:auto}
+.akis{margin:0 0 72px}
+.akis ol{list-style:none;counter-reset:a;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line)}
+.akis li{counter-increment:a;padding:18px 20px 0 0;position:relative}
+.akis li::before{content:counter(a);display:block;font:500 13px/1 var(--display);color:#ff9a24;margin-bottom:10px}
+.akis li b{display:block;font:500 17px/1.2 var(--display);margin-bottom:6px}
+.akis li span{color:var(--muted);font-size:14px}
+.galeri .alt{color:var(--faint);font-size:13px;margin:-6px 0 20px}
+.kartlar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.kartlar figure{margin:0;border:1px solid var(--line-2);border-radius:20px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.kartlar .ekran{background:var(--night);padding:14px 14px 0;max-height:360px;overflow:hidden;position:relative}
+.kartlar .uzun .ekran{max-height:520px}
+.kartlar .ekran::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(transparent,var(--night))}
+.kartlar img{display:block;width:100%;max-width:380px;margin:0 auto;height:auto}
+.kartlar figcaption{padding:16px 20px 20px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+.kartlar figcaption b{display:block;color:var(--text);font:500 16px/1.3 var(--display);margin-bottom:4px}
+.acilis .not{color:var(--faint);font-size:12.5px;max-width:80ch;margin:36px 0 0}
+.imza{box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;max-width:1120px;margin:0 auto;padding:22px 24px 34px;border-top:1px solid var(--line);color:var(--text-2);font:500 15px/1.4 var(--display)}
+.imza img{width:22px;height:22px;border-radius:6px}
+.imza a{color:var(--text)}
+/* kurulum */
+.kurulum h1{font-size:40px;margin:36px 0 10px}
+.kurulum .lede{margin:0 0 28px}
+.adimlar{list-style:none;counter-reset:k;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;max-width:760px}
+.adimlar>li{counter-increment:k;border:1px solid var(--line-2);border-radius:20px;background:var(--surface);padding:20px 22px 20px 64px;position:relative}
+.adimlar>li::before{content:counter(k);position:absolute;left:22px;top:20px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,154,36,.5);color:#ff9a24;font:500 14px/28px var(--display);text-align:center}
+.adimlar h2{margin:2px 0 8px}
+.adimlar p,.adimlar li li{color:var(--text-2);font-size:14.5px}
+.adimlar ol{margin:10px 0 0;padding-left:20px}
+.adimlar code{font-size:13px;background:#141927;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.dugme{display:inline-block;margin-top:12px;padding:12px 22px;border-radius:14px;background:var(--cta);color:#fff;text-decoration:none;font-weight:600}
+.uyari-not{color:var(--muted);font-size:13px;margin-top:10px}
+@media (max-width:900px){.hero{grid-template-columns:1fr;gap:32px;margin:24px 0 56px}.akis ol{grid-template-columns:1fr 1fr;row-gap:8px}}
+@media (max-width:600px){.hero h1{font-size:36px}.tarayici-ic{grid-template-columns:1fr}.ilan-taslak{display:none}
+  .akis ol{grid-template-columns:1fr}.kartlar{grid-template-columns:1fr}.kurulum h1{font-size:30px}.adimlar>li{padding:18px 18px 18px 56px}.adimlar>li::before{left:16px}}

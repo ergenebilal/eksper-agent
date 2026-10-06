@@ -54,6 +54,39 @@ def acilis(request: Request):
     return yonetim.templates.TemplateResponse(request, "acilis.html", {"yasal": DISCLAIMER})
 
 
+@app.get("/kurulum", include_in_schema=False)
+def kurulum(request: Request):
+    """Davet e-postasındaki tek tık: eklentiyi kurma, e-posta koduyla giriş, ilk kullanım."""
+    from arac_eksper.report.legal import DISCLAIMER
+    return yonetim.templates.TemplateResponse(request, "kurulum.html", {"yasal": DISCLAIMER, "store_url": settings.store_url})
+
+
+_ZIP: dict = {}
+
+
+@app.get("/kurulum/cyberoto-eklenti.zip", include_in_schema=False)
+def eklenti_zip():
+    """Mağaza yayınına kadar eklenti paketi (yalnız istemci kodu; analiz beyni sunucuda kalır). Bellekte üretilir."""
+    import io
+    import zipfile
+    from pathlib import Path
+
+    from fastapi.responses import Response
+    kok = Path(__file__).resolve().parent.parent.parent / "extension"
+    dosyalar = sorted(f for f in kok.rglob("*") if f.is_file() and f.suffix != ".md"
+                      and "tests" not in f.relative_to(kok).parts)          # test sayfaları pakete girmez
+    imza = tuple((str(f), f.stat().st_mtime_ns) for f in dosyalar)
+    if _ZIP.get("imza") != imza:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in dosyalar:
+                z.write(f, f.relative_to(kok).as_posix())       # Windows "Tümünü ayıkla" klasörü = eklenti kökü
+        _ZIP.update(imza=imza, veri=buf.getvalue())
+    return Response(_ZIP["veri"], media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="cyberoto-eklenti.zip"',
+                             "Cache-Control": "no-cache"})
+
+
 def _fail_if_port_busy() -> None:
     """Port doluysa ham 'Errno 10048' yerine ne olduğunu söyle (çoğu zaman sunucu zaten çalışıyordur)."""
     import socket

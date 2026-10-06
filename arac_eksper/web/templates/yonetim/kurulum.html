@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Kurulum ve giriş · CyberOto AI</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/yonetim/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/yonetim/static/favicon-16.png">
+<link rel="apple-touch-icon" href="/yonetim/static/apple-touch-icon.png">
+<link rel="preload" href="/yonetim/static/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/yonetim/static/yonetim.css">
+</head>
+<body class="acilis kurulum">
+<header class="bar">
+  <a class="brand" href="/"><img src="/yonetim/static/cg-ikon.png" alt=""><span><b>Cyber<span class="oto">Oto</span> AI</b><small>CyberGene</small></span></a>
+</header>
+<main>
+  <h1>Kurulum ve giriş</h1>
+  <p class="lede">Üç adım, yaklaşık iki dakika. Bilgisayarda Google Chrome (ya da Edge, Brave gibi Chrome tabanlı bir tarayıcı) gerekir.</p>
+  <ol class="adimlar">
+    <li>
+      <h2>Eklentiyi kurun</h2>
+      {% if store_url %}
+      <p>Chrome Web Mağazası'nda açılan sayfada “Chrome'a ekle”ye basın.</p>
+      <a class="dugme" href="{{ store_url }}">Chrome Web Mağazası'nda aç</a>
+      {% else %}
+      <p>Eklenti şimdilik mağaza dışından kuruluyor:</p>
+      <a class="dugme" href="/kurulum/cyberoto-eklenti.zip">Eklenti dosyasını indir (.zip)</a>
+      <ol>
+        <li>İnen dosyaya sağ tıklayıp <b>Tümünü ayıkla</b>yı seçin; <code>cyberoto-eklenti</code> adlı bir klasör oluşur. Bu klasörü silmeyin.</li>
+        <li>Adres çubuğuna <code>chrome://extensions</code> yazıp açın.</li>
+        <li>Sağ üstteki <b>Geliştirici modu</b> düğmesini açın.</li>
+        <li><b>Paketlenmemiş öğe yükle</b>ye basıp <code>cyberoto-eklenti</code> klasörünü seçin.</li>
+      </ol>
+      <p class="uyari-not">Chrome mağaza dışı eklentiler için bir uyarı gösterebilir; bu beklenen bir durumdur. Mağaza yayını hazır olunca bu adım tek tıka inecek.</p>
+      {% endif %}
+    </li>
+    <li>
+      <h2>Giriş yapın</h2>
+      <ol>
+        <li>Kurulumdan sonra Ayarlar sayfası kendiliğinden açılır. Açılmazsa araç çubuğundaki yapboz simgesinden CyberOto'yu sabitleyip sağ tıklayın, <b>Seçenekler</b>i seçin.</li>
+        <li>Davet edildiğiniz e-posta adresini yazın ve <b>Kod gönder</b>e basın.</li>
+        <li>E-postanıza gelen 6 haneli kodu girin. Birden fazla e-posta geldiyse en son gelendeki kod geçerlidir.</li>
+      </ol>
+      <p class="uyari-not">Şifre yoktur; her cihaz kendi girişini bu kodla yapar.</p>
+    </li>
+    <li>
+      <h2>Bir ilan açın</h2>
+      <p>İlan sitesinde bir araç ilanı açıp araç çubuğundaki CyberOto simgesine tıklayın; yan panel açılır. Piyasa kıyası ve ön teklif hemen gelir ve hak harcamaz.
+        <b>Röntgeni çalıştır</b> düğmesi açıklamayı inceler ve bir analiz hakkı kullanır; aynı ilanı tekrar açmak ücretsizdir.</p>
+      <p class="uyari-not">Fiyat kıyası için önce o modelin arama sonuçları sayfasını bir kez gezin; panel benzer ilanları oradan öğrenir.</p>
+    </li>
+  </ol>
+  <p class="not">{{ yasal }}</p>
+</main>
+<footer class="imza"><img src="/yonetim/static/cg-ikon.png" alt=""><span>CyberOto AI · bir <a href="https://cybergene.co">CyberGene</a> ürünüdür.</span></footer>
+</body>
+</html>

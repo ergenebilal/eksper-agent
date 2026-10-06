@@ -1,4 +1,4 @@
-"""Savaş Odası karşılaştırması (R3.3): 2-5 ilan → deterministik tablo + kural tabanlı seçimler + doğrulanmış anlatım.
+"""Aday Karşılaştırma karşılaştırması (R3.3): 2-5 ilan → deterministik tablo + kural tabanlı seçimler + doğrulanmış anlatım.
 
 Kararlar KODDA verilir (açıklanabilir): fiyat/performans galibi, en riskli, pazarlık şansı en yüksek, ekspertiz sırası.
 LLM yalnız bu tablodan gerekçe metni yazar; tabloda olmayan SAYI ya da dil kılavuzu dışı kelime içeren cümle atılır

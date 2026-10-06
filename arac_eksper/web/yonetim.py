@@ -109,7 +109,10 @@ def haklar_metni(m: dict) -> str:
 
 
 # ------------------------------------------------------------------ giriş
-STATIC = {"yonetim.css": "text/css", "cg.svg": "image/svg+xml", "favicon-32.png": "image/png", "mail-logo.png": "image/png",
+STATIC = {"yonetim.css": "text/css", "cg-ikon.png": "image/png", "favicon-32.png": "image/png", "favicon-16.png": "image/png",
+          "apple-touch-icon.png": "image/png", "mail-logo.png": "image/png",
+          **{f"tanitim/{n}.png": "image/png" for n in ("karne", "kanit", "piyasa", "maliyet", "teklif", "karsilastirma",
+                                                       "belge")},
           "fonts/inter-latin.woff2": "font/woff2", "fonts/inter-latin-ext.woff2": "font/woff2",
           "fonts/space-grotesk-latin.woff2": "font/woff2", "fonts/space-grotesk-latin-ext.woff2": "font/woff2"}
 

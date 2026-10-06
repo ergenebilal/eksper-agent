@@ -47,7 +47,7 @@
   <span class="status aracx-status" role="status"></span>
   <div class="legal aracx-legal"></div>
 </div>`;
-  root.querySelector('img').src = chrome.runtime.getURL('icons/cg.svg');
+  root.querySelector('img').src = chrome.runtime.getURL('icons/cg-ikon.png');
   const btn = root.querySelector('button'), label = btn.querySelector('span');
   const status = root.querySelector('.status');
   root.querySelector('.legal').textContent = globalThis.OTOXRAY_DISCLAIMER;

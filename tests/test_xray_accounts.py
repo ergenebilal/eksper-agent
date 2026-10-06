@@ -455,7 +455,9 @@ def test_invite_email_is_branded_html_with_plain_text_and_real_rights(client, ou
     h = m["html"]
     assert "12 analiz" in h and "200 analiz" in h and "31.01.2099 tarihine kadar" in h
     assert "Ayşe &lt;b&gt;" in h and "<b>," not in h                        # ad kaçışlı
-    assert "https://chromewebstore.google.com/detail/otoxray/abc" in h and "Eklentiyi kurun" in h
+    kurulum = settings.public_url.rstrip("/") + "/kurulum"
+    assert f'href="{kurulum}"' in h and "Kurulum sayfasını aç" in h and "Eklentiyi kurun" in h   # tek tık: kurulum sayfası
+    assert kurulum in m["body"]
     assert "/yonetim/static/mail-logo.png" in h and "CyberOto AI" in h
 
 
@@ -562,3 +564,18 @@ def test_admin_password_cli_prompts_hidden_and_checks_list(client, monkeypatch):
     assert runner.invoke(app, ["xray", "admin-sifre", ADMIN]).exit_code != 0                     # tekrar eşleşmedi
     assert accounts.check_admin_password(ADMIN, "cli-sifresi-456")
     assert runner.invoke(app, ["xray", "admin-sifre", "yabanci@ornek.com"]).exit_code != 0        # listede değil
+
+
+
+def test_setup_page_and_extension_zip(client, monkeypatch):
+    import io as _io
+    import zipfile
+    r = client.get("/kurulum")
+    assert r.status_code == 200 and "cyberoto-eklenti.zip" in r.text and "Kod gönder" in r.text and "<script" not in r.text
+    monkeypatch.setattr(settings, "store_url", "https://chromewebstore.google.com/detail/x/abc")
+    assert "Chrome Web Mağazası'nda aç" in client.get("/kurulum").text
+    z = client.get("/kurulum/cyberoto-eklenti.zip")
+    assert z.status_code == 200 and z.headers["content-type"] == "application/zip"
+    names = zipfile.ZipFile(_io.BytesIO(z.content)).namelist()
+    assert "manifest.json" in names and "icons/cg-ikon.png" in names and not any(n.endswith(".md") for n in names)
+    assert not any(n.startswith(("arac_eksper", "tests")) or ".env" in n for n in names)          # yalnız istemci

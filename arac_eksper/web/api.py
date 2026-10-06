@@ -413,7 +413,7 @@ def giris(req: GirisRequest, request: Request):
     return {"ok": True, "anahtar": key, "email": m["email"], "ad": m["ad"], "kota": _kota(m)}
 
 
-# ------------------------------------------------------------------ Savaş Odası: karşılaştır ve karar ver (R3.3)
+# ------------------------------------------------------------------ Aday Karşılaştırma: karşılaştır ve karar ver (R3.3)
 class CompareSonuc(BaseModel):
     """İstemcinin tarayıcısında duran, önceden yapılmış röntgen sonucunun özeti (sunucu saklamaz)."""
     etiket: Literal["ALINIR", "DUSUNULEBILIR", "ALINMAZ"]

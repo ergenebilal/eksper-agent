@@ -36,7 +36,7 @@ function rehberCard() {
   return d;
 }
 
-// ------------------------------------------------------------------ Savaş Odası (havuz yalnız bu tarayıcıda)
+// ------------------------------------------------------------------ Aday Karşılaştırma (havuz yalnız bu tarayıcıda)
 let VIEW = 'ilan';
 let HV = null, HV_MAX = 10;
 const SEL = new Set();

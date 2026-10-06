@@ -5,31 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>CyberOto AI · CyberGene</title>
-<meta name="description" content="Araç ilanını ekspertize götürmeden önce okuyan, davetle kullanılan tarayıcı eklentisi.">
-<link rel="icon" href="/yonetim/static/favicon-32.png">
+<meta name="description" content="Araç ilanını ekspertizden önce okuyan, davetle kullanılan tarayıcı eklentisi.">
+<link rel="icon" type="image/png" sizes="32x32" href="/yonetim/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/yonetim/static/favicon-16.png">
+<link rel="apple-touch-icon" href="/yonetim/static/apple-touch-icon.png">
 <link rel="preload" href="/yonetim/static/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/yonetim/static/yonetim.css">
 </head>
 <body class="acilis">
 <header class="bar">
-  <span class="brand"><img src="/yonetim/static/cg.svg" alt=""><span><b>Cyber<span class="oto">Oto</span> AI</b><small>CyberGene</small></span></span>
+  <span class="brand"><img src="/yonetim/static/cg-ikon.png" alt=""><span><b>Cyber<span class="oto">Oto</span> AI</b><small>CyberGene</small></span></span>
+  <nav><a href="/kurulum">Kurulum ve giriş</a></nav>
 </header>
 <main>
-  <section class="giris">
-    <h1>Ekspertize gitmeden önce ilanı okuyun.</h1>
-    <p class="lede">CyberOto AI, tarayıcınızda açtığınız araç ilanını yan panelde değerlendirir: açıklamadaki gizli kusurları
-      alıntısıyla gösterir, benzer ilanlarla fiyatı kıyaslar, tahmini masrafı ve pazarlık için bir teklif aralığı çıkarır.</p>
-    <p class="beta">Şu an <b>kapalı beta</b>: yalnızca davet edilen kullanıcılar kullanabilir. Davetliyseniz eklentiyi davet
-      e-postanızdaki bağlantıdan kurun ve e-postanızla giriş yapın.</p>
+  <section class="hero">
+    <div class="hero-metin">
+      <h1>Her ilan ekspertize değmez.</h1>
+      <p class="lede">CyberOto AI, tarayıcınızda açtığınız araç ilanını yan panelde okur. Açıklamadaki kusurları alıntısıyla
+        gösterir, fiyatı benzer ilanlarla kıyaslar ve ilanın ekspertize götürülmeye değip değmediğini söyler.</p>
+      <p class="beta">Şu an <b>kapalı beta</b>: yalnızca davet edilen kullanıcılar kullanabilir.
+        <a href="/kurulum">Davetliyseniz kurulum ve giriş</a></p>
+    </div>
+    <figure class="tarayici" aria-label="Tarayıcıda ilan sayfası ve sağda CyberOto yan paneli">
+      <div class="tarayici-ust"><i></i><i></i><i></i><span>araç ilanı</span></div>
+      <div class="tarayici-ic">
+        <div class="ilan-taslak" aria-hidden="true">
+          <div class="foto"></div>
+          <div class="satir uzun"></div><div class="satir"></div>
+          <div class="tablo"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="satir"></div><div class="satir kisa"></div>
+        </div>
+        <div class="panel-kare"><img src="/yonetim/static/tanitim/karne.png" alt="Yan panelde ilanın karnesi: Alınır, güven puanı 9,7 / 10" width="380" height="300"></div>
+      </div>
+    </figure>
   </section>
-  <section class="ozellik">
-    <div><h2>Kusur röntgeni</h2><p>İlan açıklamasındaki şase, airbag, motor ve tramer ifadelerini bulur; her bulgu ilandan birebir alıntıyla gelir.</p></div>
-    <div><h2>Piyasa ve teklif</h2><p>Gördüğünüz benzer ilanlarla fiyat kıyası, tahmini gerçek maliyet ve açılış teklifi.</p></div>
-    <div><h2>Savaş odası</h2><p>Adayları havuzda toplayın, yan yana karşılaştırın, ekspertize hangi sırayla gideceğinizi görün.</p></div>
-    <div><h2>Belge röntgeni</h2><p>Ekspertiz raporu ya da hasar kaydı ekleyin; ilanla çelişen noktaları ve rapora göre fiyatı görün.</p></div>
+
+  <section class="akis" aria-labelledby="akis-baslik">
+    <h2 id="akis-baslik">Bir ilanda neler olur</h2>
+    <ol>
+      <li><b>İlan açılır</b><span>Piyasa kıyası ve ön teklif hemen gelir. Hak harcamaz.</span></li>
+      <li><b>Röntgen</b><span>Açıklama okunur; her bulgu ilandan birebir alıntıyla. Sonuç: Alınır, Düşünülebilir ya da Alınmaz.</span></li>
+      <li><b>Karşılaştırma</b><span>Beğenilen adaylar havuzda yan yana; ekspertize hangi sırayla gidileceği çıkar.</span></li>
+      <li><b>Belge</b><span>Ekspertiz raporu ya da hasar kaydı eklenir; ilanla çelişen noktalar ve rapora göre fiyat.</span></li>
+    </ol>
   </section>
+
+  <section class="galeri" aria-labelledby="galeri-baslik">
+    <h2 id="galeri-baslik">Panelde gördükleriniz</h2>
+    <p class="alt">Görseller örnek bir ilanla çizilmiş gerçek panel ekranlarıdır.</p>
+    <div class="kartlar">
+      <figure><div class="ekran"><img src="/yonetim/static/tanitim/kanit.png" alt="Kanıtlı bulgular listesi" loading="lazy"></div>
+        <figcaption><b>Kanıtlı bulgular</b>Olumlu, olumsuz ve belirsiz ifadeler, ilan metninden alıntıyla. Kanıtı olmayan bulgu gösterilmez.</figcaption></figure>
+      <figure><div class="ekran"><img src="/yonetim/static/tanitim/piyasa.png" alt="Piyasa özeti ve fiyat çubuğu" loading="lazy"></div>
+        <figcaption><b>Piyasa kıyası</b>Gezdiğiniz arama sayfalarındaki benzer ilanlarla; ilan fiyatı ortalamanın neresinde.</figcaption></figure>
+      <figure><div class="ekran"><img src="/yonetim/static/tanitim/maliyet.png" alt="Tahmini gerçek maliyet" loading="lazy"></div>
+        <figcaption><b>Tahmini gerçek maliyet</b>İlanda yazan yapılacak işler ve km'si gelmiş bakımlar, TL aralığı olarak.</figcaption></figure>
+      <figure><div class="ekran"><img src="/yonetim/static/tanitim/teklif.png" alt="Teklif ve pazarlık" loading="lazy"></div>
+        <figcaption><b>Teklif</b>Açılış teklifi, makul anlaşma noktası ve size özel üst sınır; nasıl hesaplandığı açık.</figcaption></figure>
+      <figure class="uzun"><div class="ekran"><img src="/yonetim/static/tanitim/karsilastirma.png" alt="Aday karşılaştırma sonucu" loading="lazy"></div>
+        <figcaption><b>Aday karşılaştırma</b>2-5 adayın içinden fiyat/performans galibi, en riskli ilan, pazarlık şansı en yüksek ilan ve ekspertiz sırası.</figcaption></figure>
+      <figure class="uzun"><div class="ekran"><img src="/yonetim/static/tanitim/belge.png" alt="Belge röntgeni sonucu" loading="lazy"></div>
+        <figcaption><b>Belge röntgeni</b>Ekspertiz raporu ya da hasar kaydı (metin, PDF ya da fotoğraf): ilanla çelişkiler, onarım aralığı, üst sınır.</figcaption></figure>
+    </div>
+  </section>
+
   <p class="not">🟢 işareti “ekspertize götürmeye değer” demektir, “satın alın” değil. {{ yasal }}</p>
 </main>
-<footer class="foot">CyberOto AI · bir <a href="https://cybergene.co">CyberGene</a> ürünü</footer>
+<footer class="imza"><img src="/yonetim/static/cg-ikon.png" alt=""><span>CyberOto AI · bir <a href="https://cybergene.co">CyberGene</a> ürünüdür.</span></footer>
 </body>
 </html>

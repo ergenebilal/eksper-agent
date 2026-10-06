@@ -25,7 +25,7 @@ Son güncelleme: 2026-10-07 (R0–R5 yazılım işleri tamam) · Hazırlayan: Cl
 | Bileşen | Durum | Yer |
 |---|---|---|
 | Eklenti (MV3): ilan sayfası okuma, yan panel karnesi, arama sayfası fiyat rozetleri | ✅ seçiciler 18 gerçek ilan + 3 arama sayfasıyla doğrulandı (R0) | `extension/` |
-| Savaş Odası (havuz + karşılaştır), sinyaller, belge röntgeni, kalibrasyon | ✅ R3–R5 | `analysis/compare.py`, `sinyaller.py`, `likidite.py`, `belge.py` |
+| Aday Karşılaştırma (havuz + karşılaştır), sinyaller, belge röntgeni, kalibrasyon | ✅ R3–R5 | `analysis/compare.py`, `sinyaller.py`, `likidite.py`, `belge.py` |
 | Ücretsiz ön hesap (LLM'siz: piyasa, yapısal elenme, ön teklif) — ilan açılınca | ✅ | `api.py:/quick` |
 | Yapay zeka röntgeni (açıklama analizi, kanıt alıntılı) — yalnız düğmeyle, 1 hak | ✅ | `api.py:/analyze`, `analysis/description_llm.py` |
 | Aynı ilan + aynı açıklama 7 gün ücretsiz tekrar (yalnız hash) | ✅ | `accounts.py: charges` |
@@ -52,12 +52,12 @@ Canlı: Hermes sunucusu (`hermes@100.80.122.74`, genel IP 13.140.183.88), `/opt/
 
 ## 3. Fikirlerin değerlendirmesi (Claude'un bakışı)
 
-Kullanıcının önerileri (1: Savaş Odası, 2A–2E) aşağıda **değer / risk / bizim kısıtlarımızla uyum** açısından değerlendirildi.
+Kullanıcının önerileri (1: Aday Karşılaştırma, 2A–2E) aşağıda **değer / risk / bizim kısıtlarımızla uyum** açısından değerlendirildi.
 Özet: hepsi doğru yönde. En yüksek değer/maliyet oranı **E (araca özel ekspertiz)**, **C (soru çarşafı)** ve **B (gerçek maliyet)**;
-**Savaş Odası** ürünü "tek ilan aracı"ndan "karar aracı"na çeviren ana özellik. **D (likidite)** ve **gizli alsatçı** veri eksikliği nedeniyle
+**Aday Karşılaştırma** ürünü "tek ilan aracı"ndan "karar aracı"na çeviren ana özellik. **D (likidite)** ve **gizli alsatçı** veri eksikliği nedeniyle
 dürüst sınırlarla, düşük güvenle başlamalı.
 
-### 1 · Savaş Odası (Havuz + Karşılaştır ve Karar Ver) — ⭐ ana özellik
+### 1 · Aday Karşılaştırma (Havuz + Karşılaştır ve Karar Ver) — ⭐ ana özellik
 - **Neden güçlü:** Gerçek alıcı tek ilana değil, 3-5 aday arasında karar verir. Bugün CyberOto her ilanı tek başına puanlıyor; karşılaştırma eksik.
 - **Kısıtlarla uyum:** Havuz **kullanıcının tarayıcısında** tutulur (ilan verisi sunucuda saklanmaz). Karşılaştırma isteğinde seçili ilanların verisi geçici gönderilir, sunucu hesaplayıp unutur.
 - **Zenginleştirme:**
@@ -71,7 +71,7 @@ dürüst sınırlarla, düşük güvenle başlamalı.
 ### 2A · Satıcı psikolojisi ve fırsat radarı
 - **Aciliyet dedektifi:** Değerli ve kolay: kalıplar ("ev alacağım için", "acil", "bugünlük", "takas yok nakit") LLM'in zaten çıkardığı sinyallere yeni bir kategori olarak eklenir, **alıntı zorunlu**.
   - **Değişiklik önerisi:** 0-100 skor yerine **3 bant** (düşük / orta / yüksek) + alıntılar. 0-100, elimizdeki veriyle olmayan bir hassasiyet ima eder.
-  - Fiyat düşüşü sinyali yalnızca kullanıcının kendi gözlemlerinden (Savaş Odası snapshot'ları).
+  - Fiyat düşüşü sinyali yalnızca kullanıcının kendi gözlemlerinden (Aday Karşılaştırma snapshot'ları).
   - Pazarlık marjına bağlanır: yüksek aciliyet → teklif aralığı biraz aşağı (kural tabanlı, `rules.yaml`).
 - **Gizli alsatçı filtresi:** Dikkatli olunmalı.
   - Fotoğraf çekim tarzı → görsel analiz gerektirir (Faz 4'e). Satıcının diğer ilanları → **okunmaz** (kural 2).
@@ -117,7 +117,7 @@ dürüst sınırlarla, düşük güvenle başlamalı.
 ### Claude'un ek önerileri
 - **F · Tramer yapıştır:** Kullanıcı kendi aldığı SBM hasar sorgusu SMS'ini/ekran metnini yapıştırır → parse edilir → ilandaki beyanla **çelişki** varsa kırmızı bayrak ("ilanda 18 bin yazıyor, kayıt 64 bin"). Veri kullanıcıdan gelir, scraping yok. Çok güçlü güven sinyali.
 - **G · Görsel röntgen (Faz 4):** İlan fotoğraflarından boya tonu farkı, panel aralıkları, gösterge fotoğrafındaki km ile ilandaki km tutarlılığı, direksiyon/pedal aşınması. Yalnızca "ekspertizde bak" ipucu üretir. Maliyet ve doğruluk ölçümü (eval) şart.
-- **H · Karar sonrası döngü:** "Ekspertize gittim → sonuç", "aldım/almadım" → hem kalibrasyon hem likidite verisi. Geri bildirim altyapısı var; Savaş Odası'na "durum" alanı olarak bağlanır.
+- **H · Karar sonrası döngü:** "Ekspertize gittim → sonuç", "aldım/almadım" → hem kalibrasyon hem likidite verisi. Geri bildirim altyapısı var; Aday Karşılaştırma'na "durum" alanı olarak bağlanır.
 - **I · Gerçek ilan doğrulaması (ÖNKOŞUL):** Yukarıdaki her şey eklentinin gerçek sayfayı doğru okumasına bağlı. Seçiciler hâlâ sentetik sayfalarla test ediliyor. **Bu, R0 paketidir ve her şeyden önce gelir.**
 
 ## 3b. Gerçek sayfa bulguları (R0, 2026-10-07 — 13 ilan)
@@ -189,7 +189,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 | R2.2b | LLM ile masraf kalemi genişletme (eşanlamlı/dolaylı ifadeler), alıntı zorunlu, tutar yine KB'den; `arac eval`'e masraf vakaları | ✅ b618df2: `masraf_kalemleri` (yalnız KB kodu, birebir alıntı, "yapıldı" diyen alıntı atılır), kural tabanlıyla birleşir. Canlı: 18 gerçek ilanda 3/3, 0 yanlış alarm; ana eval değişmedi (1,0/1,0) | Kural tabanlıya göre recall artışı ölçülür, uydurma tutar 0 | R0.3 |
 | R2.3 | **B · Gerçek maliyet** hesabı (metin + km tetikli) → aralık + döküm; `offer.py` entegrasyonu | ✅ ön hesapta da (hak harcamaz); beyan kalemlerin alt tahmini teklifden düşülür, olası bakım yalnız gösterilir; panel "Tahmini gerçek maliyet". **Tutarlar R2.1 onayına kadar "onay bekliyor"** | Panelde "Tahmini gerçek maliyet: X–Y TL" + kalemler; teklif dayanağında görünür | R2.1, R2.2, R1.1 |
 
-### R3 — Savaş Odası
+### R3 — Aday Karşılaştırma
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
 | R3.1 | **Havuz**: "📌 Havuza ekle" (panel + rozet), yerel saklama, havuz görünümü (yan panel sekmesi), sil/temizle | ✅ 6bb1386 (panel düğmesi; rozet düğmesi yok) | Havuz yalnız `chrome.storage.local`; en fazla 10 ilan; sunucuya ilan verisi yazılmaz (test) | R0.2 |
@@ -292,9 +292,9 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | 2026-10-07 | Claude (5d82b169) | Alan adı ✅, R5.2 belge fotoğrafı ✅ | DNS doğrulandı (yerel + sunucu), geçiş betiği çalıştı; yeni/eski adres, yönetim, e-posta logosu, sertifika ve yenileme provası tek tek doğrulandı. cb314a5 görsel okuma: canlı sunucuda sahip anahtarıyla fotoğraf testi başarılı. 457 test. **Sıradaki:** eklenti 0.2.0 dağıtımı (kullanıcı), gerçek belge örnekleri. |
 | 2026-10-07 | Claude (5d82b169) | Onaylar + alan adı hazırlığı | 7f3e6b4 KB/eval onayları yayında (tutarlar ve piyasa hızı bandı etkin). Alan adı: eklenti 0.2.0 + `deploy/alan-adi-gecisi.sh` + nginx şablonları; sunucu `.env` iki adı kabul eder. Canlı hata bulundu ve düzeltildi: nginx gövde sınırı 256k idi, belge röntgeni PDF'leri 413 alırdı → 8m. **Bekleyen:** DNS A kaydı. |
 | 2026-10-07 | Claude (5d82b169) | R4, R5, R0.3/R0.4, R2.2b, P.2/P.4, yeniden adlandırma ✅ | 1008db6 R4 sinyaller + likidite · 6dd51ee belge röntgeni (pypdf) · c1bdce1 kalibrasyon + kanıt tekrarı · f9c1c3b Python ayrıştırıcı gerçek yapıda · e94011f gerçek vaka taslakları · b618df2 LLM masraf kalemleri · 643d158/6363cb2 saklama temizliği + yasal taslaklar · 31e42d3 CyberOto AI. 450 test, 31e42d3 yayında. Eval (canlı LLM): ana 50 vaka 1,0/1,0; gerçek taslak 18 vaka 1,0/1,0. Not: kullanıcının `rapor.md` dosyası yanlışlıkla bir commit'e girdi; commit'ten ve sunucudan çıkarıldı (yerelde duruyor, izlenmiyor). **Sıradaki:** §7 kullanıcı girdileri. |
-| 2026-10-07 | Claude (5d82b169) | R3 ✅ | Savaş Odası: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
+| 2026-10-07 | Claude (5d82b169) | R3 ✅ | Aday Karşılaştırma: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
-| 2026-10-07 | Claude (5d82b169) | R1.1/R1.3 onay, R2 | Kullanıcı R1.1 (32 model) ve R1.3'ü sohbette toplu onayladı (kaynak alanlarına işlendi). R2.1 masraf_kb taslağı (42 kalem). R2.2 planı değişti: LLM yerine önce kural tabanlı bulucu (alıntılı, ön hesapta da çalışır); LLM genişletmesi R2.2b. R2.3 gerçek maliyet + teklif düşümü + panel kartı. 389 test. **Sıradaki:** kullanıcıdan masraf_kb onayı; sonra R3 (Savaş Odası). |
+| 2026-10-07 | Claude (5d82b169) | R1.1/R1.3 onay, R2 | Kullanıcı R1.1 (32 model) ve R1.3'ü sohbette toplu onayladı (kaynak alanlarına işlendi). R2.1 masraf_kb taslağı (42 kalem). R2.2 planı değişti: LLM yerine önce kural tabanlı bulucu (alıntılı, ön hesapta da çalışır); LLM genişletmesi R2.2b. R2.3 gerçek maliyet + teklif düşümü + panel kartı. 389 test. **Sıradaki:** kullanıcıdan masraf_kb onayı; sonra R3 (Aday Karşılaştırma). |
 | 2026-10-07 | Claude (5d82b169) | R1.2 ✅, R1.4 ✅ | Araca özel ekspertiz listesi ve soru çarşafı (`analysis/checklist.py`), API `ekspertiz`/`soru_carsafi`/`soru_metni`, panel bölümleri; 8 birim + e2e. 364 test. **R1 durumu:** R1.1 ve R1.3 taslakları kullanıcı onayı bekliyor (onaylanınca kronik/bakım maddeleri ve alım günü listesi görünür). **Sıradaki ajan:** onay gelirse `arac kb kontrol` → yayın; yoksa R2.1 `masraf_kb.yaml` taslağı (aralıklar, kaynak/tarih, onaysız). |
 | 2026-10-07 | Claude (5d82b169) | R0 ✅ | 2. tur örnekler (3 arama, 2 galeriden, 3 boş şemalı) işlendi. Boş şema = "orijinal" sanma hatası anlam düzeyinde çözüldü (`diagram_check.py`, 22 birim testi). Arama: seri/marka okuma, model karışması, reklam satırı düzeltildi. Kullanıcı isteği: arama çubuğu sayfa geçişi/geri dönüşte kayboluyordu → kalıcı + CyberGene tasarımı. 356 test. **R0 tamam; R1'e geçiliyor.** |
 | 2026-10-07 | Claude (5d82b169) | R0.1, R0.2 | 13 gerçek ilan temizlenip `tests/fixtures/real`'e alındı (satıcı/hesap blokları, telefon, plaka, harita koordinatı silindi; hesap adı 0 eşleşme). Eklenti detay okuması 13/13 doğrulandı; **hasar şeması okunmuyordu (tüm gerçek ilanlar 🟢 alamıyordu) → düzeltildi**. KB şanzıman maddeleri vites+model+yıl eşleşmesine geçti. `tests/test_real_pages.py` (19 test). 324 test. Bulgular §3b. Sıradaki: kullanıcıdan 3 arama sayfası + galeriden/belirtilmemiş örnekler; R0.3 için 13 açıklamanın etiket taslağı; ilan tarihi okuma. |

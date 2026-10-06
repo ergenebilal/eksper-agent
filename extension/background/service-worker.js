@@ -155,7 +155,7 @@ async function pruneCache() {
   await chrome.storage.local.remove([...dead, ...live.slice(CACHE_MAX).map(([k]) => k)]);
 }
 
-// ------------------------------------------------------------------ Savaş Odası havuzu (YALNIZ bu tarayıcıda)
+// ------------------------------------------------------------------ Aday Karşılaştırma havuzu (YALNIZ bu tarayıcıda)
 const HAVUZ = 'havuz', HAVUZ_MAX = 10;
 const fromPanel = (sender) => String(sender.url || '').startsWith(chrome.runtime.getURL('sidepanel/'));
 async function loadHavuz() { return (await chrome.storage.local.get(HAVUZ))[HAVUZ] || { items: {}, son: null }; }

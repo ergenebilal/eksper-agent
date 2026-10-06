@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Yönetim{% endblock %} · CyberOto · CyberGene</title>
-<link rel="icon" href="/yonetim/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/yonetim/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/yonetim/static/favicon-16.png">
+<link rel="apple-touch-icon" href="/yonetim/static/apple-touch-icon.png">
 <link rel="preload" href="/yonetim/static/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/yonetim/static/yonetim.css">
 </head>
 <body>
 <header class="bar">
-  <a class="brand" href="/yonetim"><img src="/yonetim/static/cg.svg" alt=""><span><b>Cyber<span class="oto">Oto</span></b><small>CyberGene · yönetim</small></span></a>
+  <a class="brand" href="/yonetim"><img src="/yonetim/static/cg-ikon.png" alt=""><span><b>Cyber<span class="oto">Oto</span></b><small>CyberGene · yönetim</small></span></a>
   {% if sess %}
   <nav>
     <a href="/yonetim">Üyeler</a>
@@ -26,6 +28,6 @@
   {% if mesaj %}<p class="flash {{ mesaj[0] }}" role="status">{{ mesaj[1] }}</p>{% endif %}
   {% block content %}{% endblock %}
 </main>
-<footer class="foot">CyberOto AI · bir CyberGene ürünü · yalnız yöneticiler</footer>
+<footer class="foot">CyberOto AI · bir CyberGene ürünüdür. Bu sayfa yalnız yöneticiler içindir.</footer>
 </body>
 </html>

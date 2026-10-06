@@ -4,8 +4,14 @@
   {% if ad %}{{ ad }}, CyberOto kapalı betasına davetlisiniz.{% else %}CyberOto kapalı betasına davetlisiniz.{% endif %}
 </div>
 <div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#c2c1cf;margin:0 0 24px;">
-  CyberOto, açtığınız araç ilanını ekspertize gitmeden önce eler: açıklamadaki gizli kusurları, piyasa kıyasını ve teklif önerisini tarayıcınızın yan panelinde gösterir.
+  CyberOto, bilgisayarınızda Chrome'a kurulan bir eklentidir. Açtığınız araç ilanını yan panelde okur: açıklamadaki gizli kusurları, piyasa kıyasını ve teklif önerisini gösterir. Kurulum ve giriş iki dakika sürer; aşağıdaki düğme adım adım anlatır.
 </div>
+<!-- tek tık: kurulum sayfası -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 26px;">
+  <tr><td align="center" bgcolor="#6d3fd6" style="border-radius:16px;background-color:#6d3fd6;background-image:linear-gradient(120deg,#5d34d0,#7547dc 65%,#3b82f6);">
+    <a href="{{ kurulum_url }}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:16px;">Kurulum sayfasını aç</a>
+  </td></tr>
+</table>
 
 <!-- haklar -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #23263a;border-bottom:1px solid #23263a;margin:0 0 26px;">
@@ -34,18 +40,9 @@
   {% endfor %}
 </table>
 
-{% if store_url %}
-<!-- düğme -->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
-  <tr><td align="center" bgcolor="#6d3fd6" style="border-radius:16px;background-color:#6d3fd6;background-image:linear-gradient(120deg,#5d34d0,#7547dc 65%,#3b82f6);">
-    <a href="{{ store_url }}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:16px;">Eklentiyi kurun</a>
-  </td></tr>
-</table>
-{% else %}
-<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;border-left:2px solid #f5b544;padding:2px 0 2px 12px;margin:0 0 22px;">
-  Eklenti bağlantısı size ayrıca iletilecek.
+<div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;margin:0 0 22px;">
+  Düğme çalışmazsa bu adresi tarayıcınıza yapıştırın: <a href="{{ kurulum_url }}" style="color:#c6a1f2;">{{ kurulum_url }}</a>
 </div>
-{% endif %}
 
 <div style="font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#989ba9;">
   <span style="color:#10b981;">●</span> “Alınır” etiketi “ekspertize götürmeye değer” demektir, “satın al” değil. İlan açmak hak harcamaz; hak yalnızca yapay zeka röntgenini çalıştırdığınızda düşer.
