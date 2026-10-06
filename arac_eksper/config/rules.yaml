@@ -81,5 +81,8 @@ rules:
     pazarlik_yuksek_skor: 0.02
     pazarlik_skor_esik: 7.0
 
+  rozet:                          # yalnızca liste rozeti (GÖRSEL); karar etiketini etkilemez
+    pahali_esik: 0.05             # sapma bunun üstündeyse "pahalı" rozeti
+
   radar:
     fiyat_dusus_orani: 0.03

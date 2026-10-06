@@ -32,6 +32,33 @@ def check_startup() -> None:
         raise RuntimeError(problem)
 
 
+def extension_problem() -> str | None:
+    t = settings.extension_token
+    if not t or len(t) < MIN_TOKEN_LEN:
+        return "EXTENSION_TOKEN boş/kısa: eklenti API'si kapalı."
+    return None
+
+
+def require_extension_auth(request: Request) -> None:
+    """/api/v1: yalnızca Bearer EXTENSION_TOKEN. Çerez kabul edilmez (tarayıcıdan CSRF imkânı olmasın)."""
+    if extension_problem():
+        raise HTTPException(status_code=503, detail="Eklenti API'si kapalı (EXTENSION_TOKEN ayarlı değil)")
+    h = request.headers.get("authorization", "")
+    cand = h[7:].strip() if h[:7].lower() == "bearer " else ""
+    if not cand or not hmac.compare_digest(cand.encode(), settings.extension_token.encode()):
+        ip = client_ip(request)
+        if login_blocked(ip):
+            raise HTTPException(status_code=429, detail="Çok fazla deneme")
+        record_fail(ip)
+        raise HTTPException(status_code=401, detail="Yetkisiz", headers={"WWW-Authenticate": "Bearer"})
+
+
+def host_allowed(request: Request) -> bool:
+    host = request.headers.get("host", "")
+    name = host.rsplit(":", 1)[0] if not host.startswith("[") else host.split("]")[0].lstrip("[")
+    return name.lower() in {h.lower() for h in settings.panel_allowed_hosts}
+
+
 def token_matches(candidate: str | None) -> bool:
     if token_problem() or not candidate:
         return False    # token yoksa/zayıfsa hiçbir şey kabul edilmez (fail closed)

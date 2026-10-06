@@ -65,12 +65,10 @@ def create_or_update_listing_summary(db: Session, summary, marka: str, model: st
         # fetched_at = "son görülme": ilan listede durdukça taze kalır (piyasa 30 gün penceresi için)
         db_listing.fetched_at = now_utc
             
-    snapshot = ListingSnapshot(
-        ilan_no=summary.ilan_no,
-        fiyat=summary.fiyat,
-        fetched_at=now_utc
-    )
-    db.add(snapshot)
+    last = (db.query(ListingSnapshot).filter(ListingSnapshot.ilan_no == summary.ilan_no)
+            .order_by(ListingSnapshot.id.desc()).first())
+    if last is None or last.fiyat != summary.fiyat:     # aynı fiyatı her görüşte tekrar yazma (şişme)
+        db.add(ListingSnapshot(ilan_no=summary.ilan_no, fiyat=summary.fiyat, fetched_at=now_utc))
     db.commit()
     db.refresh(db_listing)
     return db_listing

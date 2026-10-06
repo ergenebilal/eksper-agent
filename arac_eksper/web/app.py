@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from arac_eksper.config.settings import settings
-from arac_eksper.storage.db import SessionLocal
-from arac_eksper.web import security, service
+from arac_eksper.web import api as ext_api, security, service
+from arac_eksper.web.app_deps import get_db  # noqa: F401  (testler dependency_overrides için buradan alır)
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))   # .html için otomatik kaçış AÇIK
@@ -26,6 +26,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Araç Eksper Panel", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+@app.middleware("http")
+async def host_guard(request: Request, call_next):
+    if not security.host_allowed(request):      # DNS rebinding: tanımsız Host ile hiçbir şey sunulmaz
+        return JSONResponse({"detail": "Geçersiz Host"}, status_code=421)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -43,16 +50,13 @@ async def http_exc(request: Request, exc: HTTPException):
     return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def page(request: Request, name: str, sess: dict, **ctx):
     return templates.TemplateResponse(request, name, {"csrf": sess["csrf"], **ctx})
+
+
+app.include_router(ext_api.router)
 
 
 # ------------------------------------------------------------------ giriş / çıkış

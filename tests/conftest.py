@@ -8,6 +8,7 @@ def _isolate(tmp_path, monkeypatch):
     """Testler gerçek kilit dosyasına, Telegram'a ya da veri dizinine dokunmasın."""
     monkeypatch.setattr(lock, "LOCK_PATH", tmp_path / "collect.lock")
     monkeypatch.setattr(settings, "notify_mode", "off")
+    monkeypatch.setattr(settings, "panel_allowed_hosts", ["127.0.0.1", "localhost", "testserver", "panel.test"])
     monkeypatch.setattr(settings, "telegram_bot_token", "")
     monkeypatch.setattr(settings, "telegram_chat_id", "")
 
