@@ -15,7 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
-from arac_eksper.analysis import description_llm, market_calc, offer as offer_calc, rules_engine
+from arac_eksper.analysis import description_llm, market_calc, offer as offer_calc, rehber, rules_engine
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.config.settings import settings
 from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
@@ -177,6 +177,12 @@ def _pending(req: AnalyzeRequest) -> dict:
 def ping(user=Depends(current_user)):
     return {"ok": True, "surum": 3, "durumsuz": True, "kullanici": user.get("email") or user["ad"], "kota": _kota(user),
             "yasal_uyari": DISCLAIMER}
+
+
+@router.get("/rehber")
+def rehber_icerik():
+    """Onaylı statik rehberler (alım günü / noter listesi). Onaylanmamışsa null: panel bölümü göstermez."""
+    return {"alim_gunu": rehber.load_alim_gunu()}
 
 
 @router.post("/quick")

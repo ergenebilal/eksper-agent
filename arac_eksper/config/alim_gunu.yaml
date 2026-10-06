@@ -1,0 +1,43 @@
+# Alım günü / noter kontrol listesi (OtoXray_Arge.md R1.3) — yan panelde açılır bölüm olarak gösterilir.
+#
+# ⚠ TASLAK: Claude, 2026-10-06. Kural 10: `onayli: true` yapılana kadar panelde GÖSTERİLMEZ.
+#   Hukuki tavsiye değildir; noter, ödeme ve sigorta kuralları değişebilir: yayından önce güncel uygulamayı teyit edin.
+#   Doğrulama: `uv run arac kb kontrol`
+
+onayli: false
+kaynak: "Taslak (Claude, 2026-10-06): genel alım-satım pratiği; kullanıcı onayı ve güncel noter uygulamasıyla teyit bekliyor"
+uyari: "Bu liste bilgilendirme amaçlıdır, hukuki tavsiye değildir. Güncel kuralları noterden teyit edin."
+
+bolumler:
+  - baslik: "Satıcıyla görüşmeden önce"
+    maddeler:
+      - "Aracı görmeden kapora ya da ön ödeme göndermeyin; 'yurt dışındayım, kargo ile gönderirim' kalıbı dolandırıcılık işaretidir."
+      - "Satıcıdan plaka ile hasar kaydı (tramer) sorgusunun ekran görüntüsünü ve varsa servis kayıtlarını isteyin."
+      - "Aracın kimin adına kayıtlı olduğunu sorun: satıcı ruhsat sahibi değilse, noterde geçerli vekaletname gerekir."
+      - "Ekspertize sizin seçtiğiniz bağımsız bir firmada gitmeyi kabul edip etmediğini sorun; reddediyorsa bunu not edin."
+
+  - baslik: "Aracı görürken"
+    maddeler:
+      - "Ruhsattaki şasi numarasını aracın üzerindeki şasi numarasıyla (ön cam altı / kapı direği) karşılaştırın."
+      - "Ruhsattaki renk, motor ve yakıt türü araçla aynı mı bakın; LPG varsa ruhsata işli olmalı."
+      - "Muayene geçerlilik tarihini ruhsattan kontrol edin."
+      - "Yedek anahtar, servis kitapçığı ve faturaların varlığını sorun."
+
+  - baslik: "Ekspertiz günü"
+    maddeler:
+      - "Ekspertiz raporunu satıcıyla değil, kendinizle birlikte alın; boya/değişen, şase, airbag ve motor testlerini okuyun."
+      - "Test sürüşünde soğuk motorla ilk çalıştırmayı görün; şanzıman geçişlerini farklı hızlarda deneyin."
+      - "Rapordaki bulgular ilandaki beyanla çelişiyorsa fiyatı ekspertiz sonrasında yeniden konuşun."
+
+  - baslik: "Ödeme ve noter"
+    maddeler:
+      - "Satış noterde yapılır; satıcının kimliği ile ruhsat sahibinin aynı kişi olduğunu (ya da vekaletnameyi) noterde görün."
+      - "Yüksek tutarlı nakit yerine noterlerin sunduğu güvenli ödeme sistemini (banka aracılı) kullanmayı tercih edin."
+      - "Araç üzerinde rehin, haciz ya da yakalama kaydı olup olmadığı noter işleminde ortaya çıkar; işlem durursa ödeme yapmayın."
+      - "Motorlu taşıtlar vergisi (MTV) ve varsa trafik cezası borçlarının durumunu satıcıya önceden sorun."
+
+  - baslik: "Teslimden sonra"
+    maddeler:
+      - "Zorunlu trafik sigortası satışla yeni sahibe geçmez; aracı trafiğe çıkarmadan kendi poliçenizi yaptırın."
+      - "Kasko istiyorsanız teslim günü başlatın."
+      - "Satıcıdan gelen tüm belgeleri (fatura, servis kayıtları, ekspertiz raporu) saklayın."

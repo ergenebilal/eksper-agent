@@ -586,6 +586,26 @@ def eval_cmd(
     raise typer.Exit(EXIT_OK if gecti else EXIT_ERROR)
 
 
+kb_app = typer.Typer(help="Bilgi tabanları (models_kb, alim_gunu): doğrulama ve onay durumu")
+app.add_typer(kb_app, name="kb")
+
+
+@kb_app.command("kontrol")
+def kb_kontrol():
+    """Bilgi tabanlarının şemasını doğrular ve onay durumunu gösterir (kural 10: yalnız onaylılar etkilidir)."""
+    from arac_eksper.analysis import models_kb, rehber
+    tum = models_kb.load_kb(include_unapproved=True)
+    errs = models_kb.validate(tum) + [f"alim_gunu: {e}" for e in rehber.validate_alim_gunu()]
+    onayli = [e for e in tum if e.get("onayli") is True]
+    madde = sum(len(e.get("kronik") or []) for e in tum)
+    say(f"models_kb: {len(tum)} model, {madde} kronik madde · onaylı {len(onayli)} / taslak {len(tum) - len(onayli)}")
+    say(f"alim_gunu: {'onaylı (panelde görünür)' if rehber.load_alim_gunu() else 'taslak (panelde görünmez)'}")
+    for e in errs:
+        say(f"  HATA: {e}")
+    say("Şema geçerli." if not errs else f"{len(errs)} hata")
+    raise typer.Exit(EXIT_OK if not errs else EXIT_ERROR)
+
+
 fixture_app = typer.Typer(help="Test fixture'ları")
 app.add_typer(fixture_app, name="fixture")
 

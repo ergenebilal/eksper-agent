@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, PartState
 from arac_eksper.schemas import MarketStats
-from arac_eksper.analysis.models_kb import kronik_arizalar
+from arac_eksper.analysis.models_kb import ekspertiz_maddeleri, kronik_arizalar
 
 from arac_eksper.config.rules_loader import load_rules  # noqa: F401  (yeniden dışa aktarım)
 
@@ -141,11 +141,17 @@ def evaluate_score_trace(detail: ListingDetail, findings: DescriptionFindings, m
         add(f"Fiyat piyasanın %{abs(sapma)*100:.0f} altında", sc["sapma_eksi_5_15"])
 
     # Model bazlı kronik arızalar
-    for k in (kronik or []):
+    for k in _puanlanan(kronik):
         add(f"Kronik arıza: {k.get('etiket', '?')}", sc["kronik_ariza"])
 
     score = max(0.0, min(10.0, 10.0 + sum(t["puan"] for t in trace)))
     return score, trace
+
+
+def _puanlanan(kronik: list[dict] | None) -> list[dict]:
+    """Puana yalnız yüksek ciddiyetli ve km eşiği aşılmış kronik yansır; diğerleri yalnız kontrol listesindedir.
+    (Ciddiyet/tetik alanı olmayan eski kayıtlar eskisi gibi puanlanır.)"""
+    return [k for k in (kronik or []) if k.get("ciddiyet", "yuksek") == "yuksek" and k.get("tetiklendi", True)]
 
 
 def evaluate_score(detail: ListingDetail, findings: DescriptionFindings, market: MarketStats,
@@ -200,10 +206,10 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
         eksiler += [f"ALINIR engeli: {e}" for e in engeller]
     if yetersiz_piyasa:
         eksiler.append("Piyasa emsali yetersiz: fiyat karşılaştırması güvenilir değil")
-    eksiler += [f"Kronik arıza: {k.get('etiket', '?')}" for k in kronik]
+    eksiler += [f"Kronik arıza riski: {k.get('etiket', '?')}" for k in _puanlanan(kronik)]
 
     kontrol = ["Şase uçları", "Podyeler", "Direkler", "Airbag modülü", "Motor üfleme testi"]
-    kontrol += [k["kontrol"] for k in kronik if k.get("kontrol")]
+    kontrol += ekspertiz_maddeleri(detail, kb)      # araca özel: tetiklenmiş kronik + bakım zamanı + diğer kronik
 
     verdict = Verdict(
         ilan_no=detail.ilan_no, etiket=etiket, guven_skoru=round(score, 1), veri_tamlik=round(tamlik, 2),

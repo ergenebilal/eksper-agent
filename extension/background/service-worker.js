@@ -227,6 +227,13 @@ async function handle(msg, sender) {
       catch (_) { return { ok: false, code: 'gesture', message: 'Eklenti simgesine tıklayın.' }; }
     }
     case 'ping': return api('/api/v1/ping', { method: 'GET' });
+    case 'rehber': {              // statik rehber (alım günü listesi): oturum boyunca bir kez çekilir
+      const c = (await chrome.storage.session.get('rehber')).rehber;
+      if (c && Date.now() - c.t < 3600000) return { ok: true, data: c.data };
+      const r = await api('/api/v1/rehber', { method: 'GET' });
+      if (r.ok) await chrome.storage.session.set({ rehber: { t: Date.now(), data: r.data } });
+      return r;
+    }
     case 'auth:kod':
     case 'auth:giris':
     case 'auth:cikis': {           // yalnız ayarlar sayfasından

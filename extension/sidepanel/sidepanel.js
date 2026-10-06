@@ -20,6 +20,22 @@ async function activeTabId() {
   return t ? t.id : null;
 }
 
+let REHBER = null;                     // onaylı alım günü listesi (sunucudan, bir kez)
+chrome.runtime.sendMessage({ type: 'rehber' }).then((r) => { if (r && r.ok) { REHBER = r.data; render(); } }).catch(() => {});
+
+function rehberCard() {
+  const a = REHBER && REHBER.alim_gunu;
+  if (!a || !a.bolumler || !a.bolumler.length) return null;
+  const d = document.createElement('details'); d.className = 'sec rehber'; d.id = 'alim-gunu';
+  d.append(el('summary', '', 'Alım günü ve noter kontrol listesi'));
+  a.bolumler.forEach((b) => {
+    d.append(el('h3', '', b.baslik));
+    const ul = el('ul', 'checklist'); b.maddeler.forEach((m) => ul.append(el('li', '', m))); d.append(ul);
+  });
+  if (a.uyari) d.append(el('p', 'disc', a.uyari));
+  return d;
+}
+
 async function render() {
   const tabId = await activeTabId();
   const st = tabId == null ? null : (await chrome.storage.session.get(KEY(tabId)))[KEY(tabId)];
@@ -95,6 +111,7 @@ function previewView(st, tabId) {
   }
   out.push(xrayCard(q, tabId), marketCard(q, st.meta));
   const oc = offerCard(q, true); if (oc) out.push(oc);
+  const rc = rehberCard(); if (rc) out.push(rc);
   return out;
 }
 
@@ -293,6 +310,7 @@ function renderOk(st, tabId) {
   const k = card('Ekspertiz kontrol listesi');
   const ul = el('ul', 'checklist'); (d.ekspertiz_kontrol_listesi || []).forEach((i) => ul.append(el('li', '', i)));
   k.append(ul, el('p', 'disc', d.uyari)); out.push(k);          // yasal uyarı altbilgide (#legal) tek kez
+  { const rc = rehberCard(); if (rc) out.push(rc); }
 
   if (!d.beklemede) out.push(feedbackCard(d, st.meta));
   if (d.kota) out.push(el('p', 'quota', `Bugünkü analiz hakkın: ${Math.max(d.kota.limit - d.kota.kullanilan, 0)}/${d.kota.limit}`));
