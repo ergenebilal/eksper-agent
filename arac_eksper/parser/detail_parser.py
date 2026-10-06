@@ -4,6 +4,7 @@ from arac_eksper.schemas import ListingDetail, PartState
 from arac_eksper.parser.selectors import Selectors
 from arac_eksper.parser.list_parser import parse_price, parse_date
 from arac_eksper.parser.damage_parser import parse as parse_damage
+from arac_eksper.privacy import mask_phones
 
 def parse(html: str, url: str = "") -> ListingDetail:
     soup = BeautifulSoup(html, "lxml")
@@ -59,6 +60,6 @@ def parse(html: str, url: str = "") -> ListingDetail:
         kimden=info_dict.get("Kimden"),
         agir_hasar_kayitli=hasar,
         parts=parts,
-        aciklama=aciklama,
+        aciklama=mask_phones(aciklama),
         fetched_at=datetime.now(timezone.utc)
     )

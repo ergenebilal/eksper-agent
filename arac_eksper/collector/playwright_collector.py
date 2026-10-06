@@ -15,6 +15,7 @@ from arac_eksper.config.settings import settings
 from arac_eksper.parser.selectors import Selectors, BLOCK_MARKERS
 from arac_eksper.storage.models import FetchLog
 from bs4 import BeautifulSoup
+from arac_eksper.privacy import mask_phones
 
 
 def detect_block(status_code: int, html: str, expected_selector: Optional[str]) -> bool:
@@ -110,7 +111,7 @@ class PlaywrightCollector(Collector):
         save_dir.mkdir(parents=True, exist_ok=True)
         save_path = save_dir / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.html.gz"
         with gzip.open(save_path, "wt", encoding="utf-8") as f:
-            f.write(html)
+            f.write(mask_phones(html))  # satıcı telefonu diske yazılmaz; HTML'i yeniden parse için çevrilmez (yalnız metin maskelenir)
         return FetchResult(status="OK", html=html, final_url=url, saved_path=str(save_path))
 
     async def fetch_list(self, url: str) -> FetchResult:
