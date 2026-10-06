@@ -44,6 +44,10 @@ class ScriptedLLM:
         ScriptedLLM.last_prompt = user_prompt
         if ScriptedLLM.delay:
             time.sleep(ScriptedLLM.delay)
+        from arac_eksper.analysis import belge as bg
+        if response_model is bg.TramerBulgular:
+            return bg.TramerBulgular(kayitlar=[bg.TramerKayit(tutar=64000, alinti="Kaza: 64.000 TL")], toplam=64000,
+                                     toplam_alinti="Toplam: 64.000 TL", agir_hasar="belirsiz")
         return DescriptionFindings(
             sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz", km_degisimi_suphesi=False,
             tramer_tutari=0,
@@ -603,3 +607,24 @@ def test_war_room_pool_and_compare(browser_ctx):
     for page, p in panels:
         p.close(); page.close()
     sw.evaluate("() => chrome.storage.local.remove('havuz')")
+
+
+def test_document_xray_tramer_paste(browser_ctx):
+    """R5.1/R5.4: panelde hasar kaydı metni yapıştırılır → ilanla karşılaştırma ve üst sınır önerisi; belge sonucu sekmeye özel."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    page = ctx.new_page()
+    page.goto(DETAIL_URL + "?belge=1")
+    page.wait_for_selector("#aracx-badge-host", state="attached", timeout=90000)
+    page.wait_for_function("document.getElementById('aracx-badge-host').shadowRoot.querySelector('button').textContent.includes('/10')", timeout=90000)
+    tab_id = next(k[2:] for k, v in session_state(sw).items()
+                  if k.startswith("r:") and (v.get("meta") or {}).get("ilan_no") == "1234567890" and v.get("status") == "ok")
+    panel = ctx.new_page()
+    panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={tab_id}")
+    panel.wait_for_selector("#belge", timeout=15000)
+    panel.click("#belge .seg button[data-tur=tramer]")
+    panel.fill("#belge-metin", "Hasar kaydi sorgusu\nKaza: 64.000 TL\nToplam: 64.000 TL\nSorgu tarihi 2026")
+    panel.click("#belge-go")
+    panel.wait_for_selector("#belge-sonuc", timeout=60000)
+    txt = panel.text_content("#belge-sonuc")
+    assert "Hasar kaydı" in txt and "64.000" in txt
+    panel.close(); page.close()

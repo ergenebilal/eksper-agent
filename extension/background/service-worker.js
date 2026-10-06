@@ -57,10 +57,11 @@ async function api(path, { method = 'POST', body, noAuth = false } = {}) {
       try { const j = await r.json(); why = typeof j.detail === 'string' ? j.detail.slice(0, 120) : ''; } catch (_) { /* yok */ }
       return { ok: false, code: 'rate_limited', message: why || 'Günlük hakkınız doldu ya da çok fazla deneme.' };
     }
-    if (r.status === 422) {          // yalnız ALAN ADI ve kural mesajı gösterilir; girdi değeri (ilan metni) asla
+    if (r.status === 409 || r.status === 422) {   // yalnız ALAN ADI ve kural mesajı ya da sunucunun kısa açıklaması; girdi değeri asla
       let why = '';
       try {
         const j = await r.json();
+        if (typeof j.detail === 'string') return { ok: false, code: 'invalid', message: j.detail.slice(0, 200) };
         why = (Array.isArray(j.detail) ? j.detail : []).slice(0, 3)
           .map((e) => `${(e.loc || []).filter((x) => x !== 'body').join('.')}: ${e.msg}`).join(' · ');
       } catch (_) { /* gövde okunamadı */ }
@@ -269,6 +270,18 @@ async function handle(msg, sender) {
       catch (_) { return { ok: false, code: 'gesture', message: 'Eklenti simgesine tıklayın.' }; }
     }
     case 'ping': return api('/api/v1/ping', { method: 'GET' });
+    case 'belge': {
+      // Belge röntgeni: kullanıcının KENDİ ekspertiz raporu / tramer sorgusu (panelden). İlan bağlamı sekmenin son yükünden.
+      if (!fromPanel(sender)) return { ok: false, code: 'forbidden' };
+      if (!['ekspertiz', 'tramer'].includes(msg.tur)) return { ok: false, message: 'Belge türü geçersiz.' };
+      const metin = String(msg.metin || '').slice(0, 30000), pdf = msg.pdf_b64 ? String(msg.pdf_b64) : null;
+      if (!metin.trim() && !pdf) return { ok: false, message: 'Metni yapıştırın ya da PDF seçin.' };
+      if (pdf && pdf.length > 6000000) return { ok: false, message: 'PDF en fazla 4 MB olabilir.' };
+      const cur = (await chrome.storage.session.get('p:' + msg.tabId))['p:' + msg.tabId];
+      const r = await api('/api/v1/belge', { body: { tur: msg.tur, ...(pdf ? { pdf_b64: pdf } : { metin }), ...(cur && cur.p ? { ilan: cur.p } : {}) } });
+      if (r.ok) await chrome.storage.session.set({ ['b:' + msg.tabId]: { t: Date.now(), ilan_no: cur && cur.p ? cur.p.ilan_no : null, data: r.data } });
+      return r;
+    }
     case 'havuz:get':
     case 'havuz:add':
     case 'havuz:remove':

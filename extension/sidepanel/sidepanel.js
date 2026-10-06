@@ -162,6 +162,7 @@ async function render() {
   if (VIEW === 'havuz') { app.replaceChildren(tabsEl(), ...havuzView()); return; }
   const tabId = await activeTabId();
   const st = tabId == null ? null : (await chrome.storage.session.get(KEY(tabId)))[KEY(tabId)];
+  BS = tabId == null ? null : (await chrome.storage.session.get('b:' + tabId))['b:' + tabId] || null;
   app.replaceChildren(tabsEl(), ...view(st, tabId));
 }
 
@@ -237,6 +238,7 @@ function previewView(st, tabId) {
   { const cc = costCard(q.gercek_maliyet, st.meta); if (cc) out.push(cc); }
   { const sc = signalsCard(q.sinyaller); if (sc) out.push(sc); }
   const oc = offerCard(q, true); if (oc) out.push(oc);
+  out.push(belgeCard(st.meta, tabId));
   const rc = rehberCard(); if (rc) out.push(rc);
   return out;
 }
@@ -344,6 +346,70 @@ function rangeBar(p, fiyat) {
   lg.append(el('span', '', 'Ucuz'), el('span', '', 'çizgi: ortalama, kapsül: bu ilan'), el('span', '', 'Pahalı'));
   wrap.append(bar, lg);
   return wrap;
+}
+
+// ------------------------------------------------------------------ Belge röntgeni (R5.4 ekspertiz raporu, R5.1 tramer)
+let BS = null;                                          // bu sekmenin son belge sonucu (session)
+const BD = { tur: 'ekspertiz', metin: '', pdf: null, pdfAd: '', msg: '', busy: false };   // taslak: yeniden çizimde kaybolmaz
+
+function belgeCard(meta, tabId) {
+  const c = card('Belge röntgeni'); c.id = 'belge';
+  c.append(el('p', 'small mute', 'Ekspertiz raporunuzu ya da hasar kaydı (tramer) sorgunuzu ekleyin: ilanla çelişkileri, onarım aralığını ve üst sınır önerisini çıkarır. Belge saklanmaz.'));
+  const seg = el('div', 'seg');
+  [['ekspertiz', 'Ekspertiz raporu'], ['tramer', 'Hasar kaydı']].forEach(([k, t]) => {
+    const b = el('button', BD.tur === k ? 'on' : '', t); b.dataset.tur = k;
+    b.addEventListener('click', () => { BD.tur = k; render(); }); seg.append(b);
+  });
+  const ta = document.createElement('textarea'); ta.id = 'belge-metin'; ta.rows = 5; ta.maxLength = 30000; ta.value = BD.metin;
+  ta.placeholder = BD.tur === 'tramer' ? 'Sorgu sonucunu (SMS ya da e-Devlet ekranı) buraya yapıştırın' : 'Rapor metnini buraya yapıştırın ya da PDF seçin';
+  ta.addEventListener('input', () => { BD.metin = ta.value; });
+  const fl = el('label', 'file'); const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'application/pdf,.pdf'; fi.id = 'belge-pdf';
+  fl.append(fi, el('span', '', BD.pdfAd ? 'PDF: ' + BD.pdfAd : 'PDF seç (metin içeren, en fazla 4 MB)'));
+  fi.addEventListener('change', () => {
+    const f = fi.files && fi.files[0]; if (!f) return;
+    if (f.size > 4 * 1024 * 1024) { BD.msg = 'PDF en fazla 4 MB olabilir.'; render(); return; }
+    const rd = new FileReader();
+    rd.onload = () => { BD.pdf = String(rd.result).split(',')[1] || null; BD.pdfAd = f.name.slice(0, 60); BD.msg = ''; render(); };
+    rd.readAsDataURL(f);
+  });
+  const go = el('button', 'pri', BD.busy ? 'Belge okunuyor…' : 'Belgeyi analiz et'); go.id = 'belge-go'; go.disabled = BD.busy;
+  go.addEventListener('click', async () => {
+    BD.busy = true; BD.msg = ''; render();
+    const r = await chrome.runtime.sendMessage({ type: 'belge', tabId, tur: BD.tur, metin: BD.metin, pdf_b64: BD.pdf });
+    BD.busy = false; BD.msg = r && r.ok ? '' : ((r && r.message) || 'Belge okunamadı.');
+    if (r && r.ok) { BD.metin = ''; BD.pdf = null; BD.pdfAd = ''; }
+    render();
+  });
+  c.append(seg, ta, fl, go, el('p', 'quota', BD.msg || '1 analiz hakkı kullanır; aynı belgeyi tekrar okumak ücretsiz.'));
+  if (BS && BS.data && (!meta || !BS.ilan_no || BS.ilan_no === meta.ilan_no)) c.append(belgeSonuc(BS.data));
+  return c;
+}
+
+function belgeSonuc(d) {
+  const box = el('div', 'belge-sonuc'); box.id = 'belge-sonuc';
+  box.append(el('p', 'num', d.ozet));
+  const cl = (d.celiskiler || []);
+  if (cl.length) {
+    const ul = el('ul', 'sig');
+    cl.forEach((c) => { const li = el('li', 'bk-' + c.tur, c.mesaj); if (c.alinti) li.append(el('q', 'small', c.alinti)); ul.append(li); });
+    box.append(el('h3', 'sub', 'İlanla karşılaştırma'), ul);
+  }
+  if (d.maliyet && d.maliyet.kalemler.length) {
+    const ul = el('ul', 'costs');
+    d.maliyet.kalemler.forEach((k) => {
+      const li = el('li', 'cost'); const top = el('div', 'row');
+      top.append(el('span', '', k.ad), el('span', 'num', k.aralik ? `${tl(k.aralik[0])} – ${tl(k.aralik[1])}` : 'tutar onayı bekliyor'));
+      li.append(top, el('q', 'small', k.alinti)); ul.append(li);
+    });
+    box.append(el('h3', 'sub', 'Rapordaki onarımlar'), ul);
+  }
+  if (d.teklif) {
+    const r = row('Belge sonrası üst sınır önerisi', tl(d.teklif.ust_sinir), 'big'); r.id = 'belge-ust'; box.append(r);
+    const ul = el('ul', 'sig'); d.teklif.dayanak.forEach((x) => ul.append(el('li', 'small', x))); box.append(ul);
+  }
+  if (d.dusen_bulgu) box.append(el('p', 'small mute', `${d.dusen_bulgu} bulgu belgede birebir bulunamadığı için gösterilmedi.`));
+  box.append(el('p', 'disc', d.uyari));
+  return box;
 }
 
 function signalsCard(sg) {
@@ -489,6 +555,7 @@ function renderOk(st, tabId) {
   // 6) Satıcıya sorulacaklar (öncelik sıralı) + ekspertiz kontrol listesi (araca özel + her araçta)
   { const sc = questionsCard(d); if (sc) out.push(sc); }
   out.push(checklistCard(d));
+  out.push(belgeCard(st.meta, tabId));
   { const rc = rehberCard(); if (rc) out.push(rc); }
 
   if (!d.beklemede) out.push(feedbackCard(d, st.meta));
@@ -581,7 +648,7 @@ function row(label, value, cls) {
 
 chrome.storage.onChanged.addListener((c, area) => {
   if (area === 'local' && c.havuz) { HV = c.havuz.newValue || { items: {}, son: null }; render(); }
-  if (area === 'session') render();
+  if (area === 'session' && !(document.activeElement && document.activeElement.id === 'belge-metin')) render();   // yazarken odak kaybolmasın
 });
 setInterval(() => { if (document.getElementById('waiting')) render(); }, 1000);   // bekleme sayacı
 chrome.tabs.onActivated.addListener(render);

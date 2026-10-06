@@ -488,3 +488,77 @@ def compare(req: CompareRequest, llm=Depends(get_llm), user=Depends(current_user
         accounts.add_charge(user["id"], kume)
     return {"tablo": tablo, **sec, "anlatim": anlatim, "llm": llm_ok, "hak_kullanildi": charge, "kota": _kota(user),
             "uyari": "Karşılaştırma ilan verisine dayanır; karar ekspertiz sonrası verilmelidir.", "yasal_uyari": DISCLAIMER}
+
+
+# ------------------------------------------------------------------ Belge röntgeni: ekspertiz raporu / tramer (R5.4, R5.1)
+_TRAMER_YOK = re.compile(r"tramer(?:siz|i?\s*(?:kayd[ıi])?\s*(?:yok|yoktur|bulunmamaktad[ıi]r))|(?<!a[gğ][ıi]r\s)hasar\s+kayd[ıi]\s+(?:yok|yoktur)", re.I)
+_TRAMER_TUTAR = re.compile(r"(?:tramer|(?<!a[gğ][ıi]r\s)hasar\s+kayd[ıi])\D{0,25}?(\d{1,3}(?:[.\s]\d{3})+|\d+(?:,\d+)?\s*bin|\d{4,7})", re.I)
+
+
+def _tramer_beyan(req: "AnalyzeRequest") -> int | None:
+    """İlanın tramer beyanı: yapılandırılmış alan, yoksa açıklamadaki 'tramer 18.000' / 'tramersiz' (kurallı)."""
+    if req.tramer_tutari_yapilandirilmis is not None:
+        return req.tramer_tutari_yapilandirilmis
+    text = f"{req.baslik}\n{req.aciklama}"
+    if _TRAMER_YOK.search(text):
+        return 0
+    m = _TRAMER_TUTAR.search(text)
+    if m:
+        n = description_llm._amounts(m.group(1))
+        return max(n) if n else None
+    return None
+
+
+class BelgeRequest(BaseModel):
+    tur: Literal["ekspertiz", "tramer"]
+    metin: str = Field("", max_length=30_000)
+    pdf_b64: str | None = Field(None, max_length=6_000_000)
+    ilan: AnalyzeRequest | None = None
+
+
+@router.post("/belge")
+def belge(req: BelgeRequest, llm=Depends(get_llm), user=Depends(current_user)):
+    """Kullanıcının kendi ekspertiz raporu ya da tramer sorgusu → maskeleme → alıntılı çıkarım → ilanla kurallı karşılaştırma,
+    onarım aralığı, üst sınır önerisi. 1 hak; aynı belge + ilan tekrar ücretsiz. Belge SAKLANMAZ (yalnız özet hash'i)."""
+    import hashlib
+
+    from arac_eksper.analysis import belge as bg
+    metin = req.metin
+    if req.pdf_b64:
+        try:
+            metin = bg.pdf_metni(req.pdf_b64)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+    metin = bg.maskele(metin or "")
+    if len(metin.strip()) < 40:
+        raise HTTPException(status_code=422, detail="Belgede okunabilir metin yok. Taranmış (fotoğraf) PDF ise metni "
+                                                    "kopyalayıp yapıştırın.")
+    ilan_no = req.ilan.ilan_no if req.ilan else ""
+    h = "belge:" + hashlib.sha256(f"{req.tur}|{ilan_no}|{metin}".encode()).hexdigest()
+    charge = bool(user["id"]) and not accounts.charged_recently(user["id"], h)
+    if charge:
+        _take(user, "analyze", user["gunluk_kota"], user.get("aylik_kota"))
+    if not _llm_budget_ok():
+        if charge:
+            accounts.refund(user["id"])
+        raise HTTPException(status_code=429, detail="Sunucunun günlük analiz sınırı doldu")
+    try:
+        b, atilan = bg.cikar(llm, req.tur, metin, settings.llm_model_fast)
+    except (LLMUnavailable, ValueError):
+        if charge:
+            accounts.refund(user["id"])
+        raise HTTPException(status_code=503, detail="Belge şu an okunamadı; hakkınız iade edildi. Biraz sonra tekrar deneyin.")
+    if charge:
+        accounts.add_charge(user["id"], h)
+    ilan = None
+    if req.ilan:
+        ilan = {"fiyat": req.ilan.fiyat, "km": req.ilan.km, "marka": req.ilan.marka, "seri": req.ilan.seri,
+                "parts": {k: v.value for k, v in req.ilan.parts.items()}, "agir_hasar_kayitli": req.ilan.agir_hasar_kayitli,
+                "tramer_beyan": _tramer_beyan(req.ilan)}
+    cel = bg.karsilastir(req.tur, b, ilan)
+    mal = bg.maliyet(b, ilan)
+    return {"tur": req.tur, "bulgular": b.model_dump(), "dusen_bulgu": atilan, "celiskiler": cel, "maliyet": mal,
+            "teklif": bg.teklif(req.tur, b, ilan, mal), "ozet": bg.ozet(req.tur, cel, b),
+            "ilan_tramer_beyani": ilan and ilan["tramer_beyan"], "hak_kullanildi": charge, "kota": _kota(user),
+            "uyari": "Belge okuması yapay zeka ile yapıldı; her bulgu belgeden alıntılanır. Belgenin aslıyla karşılaştırın.",
+            "yasal_uyari": DISCLAIMER}
