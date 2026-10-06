@@ -29,6 +29,7 @@ DETAIL_URL = f"{SITE}/ilan/vasita-otomobil-renault-megane-1234567890/detail"
 SEARCH_URL = f"{SITE}/renault-megane"
 FEW_URL = f"{SITE}/az-ilan"
 BAD_URL = f"{SITE}/ilan/vasita-otomobil-bozuk-9999999999/detail"
+REAL_URL = f"{SITE}/ilan/vasita-arazi-suv-pickup-nissan-qashqai-1343960581/detail"
 
 
 class ScriptedLLM:
@@ -89,7 +90,8 @@ def browser_ctx(backend, tmp_path_factory):
             if host.endswith(DOMAIN):
                 site_hits.append((url, r.request.service_worker is not None))
                 name = {DETAIL_URL: "detail_synthetic.html", SEARCH_URL: "search_synthetic.html",
-                        FEW_URL: "search_few_synthetic.html", BAD_URL: "unreadable_synthetic.html"}.get(url.split("?")[0])
+                        FEW_URL: "search_few_synthetic.html", BAD_URL: "unreadable_synthetic.html",
+                        REAL_URL: "detail_realish_synthetic.html"}.get(url.split("?")[0])
                 if name:
                     return r.fulfill(status=200, content_type="text/html; charset=utf-8", body=(FX / name).read_text("utf-8"))
                 return r.fulfill(status=404, body="yok")
@@ -249,12 +251,36 @@ def test_options_page_shows_disclaimer_and_wipe_clears_local_data(browser_ctx):
     page.close()
 
 
+def test_label_driven_reading_on_a_realistic_layout_and_diagnose_report(browser_ctx):
+    """Yıl/km yalnız özet çubuğunda, özellikler tablo satırında: etiket metnine dayalı okuma çalışmalı.
+    Satıcı kutusu (ad/telefon) okunmaz; teşhis raporu yalnız yapı içerir."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    page = ctx.new_page()
+    page.goto(REAL_URL)
+    page.wait_for_selector("mark[data-aracx]", timeout=60000)
+    st = session_state(sw)
+    key = next(k for k, v in st.items() if v.get("meta", {}).get("ilan_no") == "1343960581")
+    meta = st[key]["meta"]
+    assert (meta["fiyat"], meta["yil"], meta["km"]) == (1_270_000, 2014, 159_000)
+    assert st[key]["status"] == "ok"
+    sent = ScriptedLLM.last_prompt
+    assert "Nuri" not in sent and "378" not in sent and "[telefon]" in sent
+    assert "Sahibinden" not in sent                                          # 'Kimden' (satıcı türü) okunmadı
+
+    rep = sw.evaluate("async (id) => await chrome.tabs.sendMessage(id, {type: 'diagnose'})", int(key[2:]))
+    assert rep["ok"] and rep["report"]["okuma"]["ok"] is True
+    flat = str(rep["report"])
+    assert "Nuri" not in flat and "378" not in flat and "543" not in flat
+    assert rep["report"]["etiketler"]["İlan No"] != "bulunamadi" and rep["report"]["fiyat"] != "bulunamadi"
+    page.close()
+
+
 def test_extension_never_requests_the_site_by_itself(browser_ctx):
     """Siteye giden her istek test sayfalarının kendi gezintisidir; service worker/eklenti hiç istek atmaz."""
     hits = browser_ctx["hits"]
     assert hits, "test sayfaları yüklenmedi"
     assert all(not from_sw for _, from_sw in hits)
-    allowed = {DETAIL_URL, SEARCH_URL, FEW_URL, BAD_URL}
+    allowed = {DETAIL_URL, SEARCH_URL, FEW_URL, BAD_URL, REAL_URL}
     stray = [u for u, _ in hits if u.split("?")[0] not in allowed and not u.endswith("favicon.ico")]
     assert stray == [], f"beklenmeyen istek: {stray}"
 

@@ -56,6 +56,7 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if (msg.type === 'diagnose') { sendResponse({ ok: true, report: A.diagnose(document, location) }); return; }
     if (msg.type === 'reanalyze') { run(true).then(() => sendResponse({ ok: true })); return true; }
   });
 

@@ -67,8 +67,20 @@ function unreadable(st, tabId) {
   const c = el('section', 'alert');
   c.append(el('b', '', 'Sayfa okunamadı'),
     el('p', '', `Okunamayan alanlar: ${(st.eksik || []).join(', ')}. Eksik veri “iyi” sayılmaz; bu ilan için karar üretilmedi.`),
-    el('p', 'small mute', 'Okuma kuralları gerçek sayfayla doğrulanmadı. Sayfa düzeni değişmiş olabilir.'));
+    el('p', 'small mute', 'Okuma kuralları gerçek sayfayla doğrulanmadı. Sayfa düzeni değişmiş olabilir. Aşağıdaki rapor yalnızca sayfanın yapısını içerir (kişisel veri yok).'));
+  c.append(diagBtn(tabId));
   return c;
+}
+
+function diagBtn(tabId) {
+  const b = el('button', '', '📋 Teşhis raporunu kopyala');
+  b.addEventListener('click', async () => {
+    const r = await chrome.runtime.sendMessage({ type: 'panel:diagnose', tabId });
+    if (!r || !r.ok) { b.textContent = (r && r.message) || 'Rapor alınamadı'; return; }
+    try { await navigator.clipboard.writeText(JSON.stringify(r.report, null, 1)); b.textContent = '✓ Kopyalandı: geliştiriciye yapıştırın'; }
+    catch (_) { b.textContent = 'Kopyalanamadı'; }
+  });
+  return b;
 }
 
 function renderOk(st, tabId) {
@@ -147,7 +159,7 @@ function renderOk(st, tabId) {
   const act = el('div', 'actions');
   const re = el('button', '', '↻ Yeniden analiz et');
   re.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'panel:reanalyze', tabId }));
-  act.append(re, settingsBtn());
+  act.append(re, settingsBtn(), diagBtn(tabId));
   out.push(act);
   return out;
 }

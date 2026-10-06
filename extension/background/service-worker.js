@@ -182,8 +182,9 @@ async function handle(msg, sender) {
       await chrome.storage.local.remove(Object.keys(all).filter((k) => k === MK || k.startsWith('ac:')));
       return { ok: true };
     }
+    case 'panel:diagnose':
     case 'panel:reanalyze': {
-      try { return await chrome.tabs.sendMessage(msg.tabId, { type: 'reanalyze' }); }
+      try { return await chrome.tabs.sendMessage(msg.tabId, { type: msg.type === 'panel:diagnose' ? 'diagnose' : 'reanalyze' }); }
       catch (_) { return { ok: false, code: 'no_page', message: 'Bu sekmede içerik betiği çalışmıyor.' }; }
     }
     default: return { ok: false, code: 'unknown' };
