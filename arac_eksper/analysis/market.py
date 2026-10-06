@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from arac_eksper.storage.models import Listing
 from arac_eksper.schemas import MarketStats, ListingDetail
+from arac_eksper.config.rules_loader import load_rules
 
 def _tolerant_eq(column, value):
     """Değer biliniyorsa eşleşme ya da bilinmeyen (NULL) kayıt kabul edilir.
@@ -40,13 +41,14 @@ def _base_filters(target: ListingDetail, thirty_days_ago, strict: bool = False):
 
 def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
     """Belirtilen araç için piyasa istatistiklerini hesaplar."""
-    thirty_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
+    pz = load_rules()["piyasa"]
+    thirty_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=pz['gun'])
 
     if not (target.marka and target.model):
         # Marka/model bilinmiyorsa emsal aranamaz; yanlış kümeyle kıyaslamaktansa "yok" dön.
         return MarketStats(n=0, medyan=0, p25=0, p75=0, guven="yok")
 
-    km_margin = target.km * 0.30
+    km_margin = target.km * pz['dar_km_payi']
 
     def narrow(strict: bool):
         return [p.fiyat for p in db.query(Listing).filter(
@@ -59,13 +61,13 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
     confidence = "yuksek"
 
     # 2. Aşama: bilinmeyen (NULL) vites/yakıt/seri kabul edilir → güven düşer
-    if len(prices) < 8:
+    if len(prices) < pz['dar_min_n']:
         prices = narrow(strict=False)
         confidence = "dusuk"
 
     # 3. Aşama: geniş arama (yıl ±2, km ±%50)
-    if len(prices) < 8:
-        km_margin_wide = target.km * 0.50
+    if len(prices) < pz['dar_min_n']:
+        km_margin_wide = target.km * pz['genis_km_payi']
         prices = [p.fiyat for p in db.query(Listing).filter(
             *_base_filters(target, thirty_days_ago),
             Listing.yil >= target.yil - 2, Listing.yil <= target.yil + 2,

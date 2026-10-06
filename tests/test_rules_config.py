@@ -38,3 +38,28 @@ def test_rules_engine_scoring_with_yaml():
     # Total score = 10.0 - 0.6 - 1.2 - 2.0 = 6.2
     
     assert verdict.guven_skoru == 6.2
+
+
+def test_moved_thresholds_keep_their_original_values():
+    """Y1: kodda gömülü olan değerler yaml'a TAŞINDI, değişmedi. Bu test taşıma anındaki değerleri kilitler."""
+    r = load_rules()
+    assert r["bantlar"] == {"tramer_orani_alt": 0.05, "tramer_orani_ust": 0.10, "yillik_km_orta": 25000,
+                            "yillik_km_yuksek": 35000, "yillik_km_suphe_alt": 4000, "yillik_km_suphe_min_yas": 5,
+                            "sapma_bonus_alt": -0.15, "sapma_bonus_ust": -0.05, "sapma_ucuz_uyari": -0.20}
+    assert r["tamlik"] == {"parca_yok": 0.3, "tramer_bilinmiyor": 0.1, "piyasa_yetersiz": 0.3}
+    assert r["piyasa"] == {"gun": 30, "dar_km_payi": 0.30, "genis_km_payi": 0.50, "dar_min_n": 8}
+    assert r["radar"]["fiyat_dusus_orani"] == 0.03
+    assert r["teklif"]["lokal_boyali"] == 0.01 and r["teklif"]["degisen"] == 0.04 and r["teklif"]["max_indirim"] == 0.15
+
+
+def test_engine_reads_bands_from_yaml(monkeypatch):
+    import copy
+    from arac_eksper.analysis import rules_engine
+    from tests.test_hard_fails import _detail, _findings, MKT
+    base = rules_engine.load_rules()
+    d = _detail(fiyat=900000)
+    f = _findings(tramer_tutari=60000)       # %6,7 → varsayılan bantta tramer_5_10
+    assert any("Tramer" in t["kural"] and t["puan"] == -1.0 for t in determine_verdict(d, f, MKT).trace)
+    changed = copy.deepcopy(base); changed["bantlar"]["tramer_orani_alt"] = 0.10
+    monkeypatch.setattr(rules_engine, "load_rules", lambda: changed)
+    assert any("Tramer" in t["kural"] and t["puan"] == -0.3 for t in determine_verdict(d, f, MKT).trace)

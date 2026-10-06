@@ -41,3 +41,45 @@ rules:
     sapma_eksi_20: 0.0
 
     kronik_ariza: -0.5   # models_kb.yaml'da eşleşen her kayıt için
+
+  # Daha önce kodda gömülü olan bant/eşik/oranlar. DEĞERLER DEĞİŞMEDİ, yalnızca buraya taşındı;
+  # bundan sonra ayarlanacaksa tek yer burasıdır (kural 7).
+  bantlar:
+    tramer_orani_alt: 0.05        # tramer/fiyat <= bu: tramer_0_5
+    tramer_orani_ust: 0.10        # <= bu: tramer_5_10, üstü: tramer_10_plus
+    yillik_km_orta: 25000         # [orta, yuksek) arası yillik_km_25_35
+    yillik_km_yuksek: 35000       # [yuksek, hard fail] arası yillik_km_35_45
+    yillik_km_suphe_alt: 4000     # altı + aşağıdaki yaşta: km düşürme şüphesi
+    yillik_km_suphe_min_yas: 5
+    sapma_bonus_alt: -0.15        # [alt, ust] arası sapma_eksi_5_15 bonusu
+    sapma_bonus_ust: -0.05
+    sapma_ucuz_uyari: -0.20       # bunun altı: "neden bu kadar ucuz?" uyarısı
+
+  tamlik:
+    parca_yok: 0.3                # hiç bilinen parça yoksa düşülür
+    tramer_bilinmiyor: 0.1
+    piyasa_yetersiz: 0.3
+
+  piyasa:
+    gun: 30
+    dar_km_payi: 0.30
+    genis_km_payi: 0.50
+    dar_min_n: 8                  # bunun altında bir sonraki aşamaya genişletilir
+
+  teklif:
+    lokal_boyali: 0.01
+    boyali: 0.02
+    degisen: 0.04
+    tramer_payi: 0.5
+    km_orta_esik: 25000
+    km_orta_indirim: 0.02
+    km_yuksek_esik: 35000
+    km_yuksek_indirim: 0.03
+    max_indirim: 0.15
+    taban_orani: 0.85
+    pazarlik_dusuk_skor: 0.04     # skor < pazarlik_skor_esik
+    pazarlik_yuksek_skor: 0.02
+    pazarlik_skor_esik: 7.0
+
+  radar:
+    fiyat_dusus_orani: 0.03

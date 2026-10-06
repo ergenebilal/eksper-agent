@@ -4,10 +4,7 @@ from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, Par
 from arac_eksper.analysis.market import MarketStats
 from arac_eksper.analysis.models_kb import kronik_arizalar
 
-def load_rules():
-    path = Path(__file__).parent.parent / "config" / "rules.yaml"
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)["rules"]
+from arac_eksper.config.rules_loader import load_rules  # noqa: F401  (yeniden dışa aktarım)
 
 def _sapma(detail: ListingDetail, market: MarketStats) -> float:
     if market and market.medyan > 0:
@@ -79,6 +76,7 @@ def evaluate_score_trace(detail: ListingDetail, findings: DescriptionFindings, m
                          rules: dict, kronik: list[dict] | None = None) -> tuple[float, list[dict]]:
     """10 üzerinden skor + karar dökümü ([{kural, puan}]). `arac explain` bunu basar."""
     sc = rules["scoring"]
+    bt = rules["bantlar"]
     trace: list[dict] = []
 
     def add(kural: str, puan: float):
@@ -116,17 +114,18 @@ def evaluate_score_trace(detail: ListingDetail, findings: DescriptionFindings, m
         add("Tramer bilinmiyor", sc["tramer_bilinmiyor"])
     elif tramer > 0 and detail.fiyat > 0:
         oran = tramer / detail.fiyat
-        key = "tramer_0_5" if oran <= 0.05 else "tramer_5_10" if oran <= 0.10 else "tramer_10_plus"
+        key = ("tramer_0_5" if oran <= bt["tramer_orani_alt"] else "tramer_5_10" if oran <= bt["tramer_orani_ust"]
+               else "tramer_10_plus")
         add(f"Tramer %{oran*100:.1f} ({tramer:,} TL)".replace(",", "."), sc[key])
 
     # Yıllık KM
     yillik_km = _yillik_km(detail)
     yas = max(detail.fetched_at.year - detail.yil, 1)
-    if 25000 <= yillik_km < 35000:
+    if bt["yillik_km_orta"] <= yillik_km < bt["yillik_km_yuksek"]:
         add(f"Yıllık km {yillik_km:,.0f}".replace(",", "."), sc["yillik_km_25_35"])
-    elif 35000 <= yillik_km <= 45000:
+    elif bt["yillik_km_yuksek"] <= yillik_km <= rules["hard_fails"]["max_yillik_km"]:
         add(f"Yıllık km {yillik_km:,.0f}".replace(",", "."), sc["yillik_km_35_45"])
-    if yillik_km < 4000 and yas >= 5:
+    if yillik_km < bt["yillik_km_suphe_alt"] and yas >= bt["yillik_km_suphe_min_yas"]:
         add(f"Yıllık km çok düşük ({yillik_km:,.0f}) — km düşürme şüphesi".replace(",", "."), sc["yillik_km_suphe"])
 
     # Bulgular
@@ -137,7 +136,7 @@ def evaluate_score_trace(detail: ListingDetail, findings: DescriptionFindings, m
 
     # Fiyat avantajı
     sapma = _sapma(detail, market)
-    if market and market.medyan > 0 and -0.15 <= sapma <= -0.05:
+    if market and market.medyan > 0 and bt["sapma_bonus_alt"] <= sapma <= bt["sapma_bonus_ust"]:
         add(f"Fiyat piyasanın %{abs(sapma)*100:.0f} altında", sc["sapma_eksi_5_15"])
 
     # Model bazlı kronik arızalar
@@ -165,13 +164,13 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
     # Veri tamlığı
     tamlik = 1.0
     if not _bilinen_parca(detail):
-        tamlik -= 0.3
+        tamlik -= rules["tamlik"]["parca_yok"]
     if findings.tramer_tutari is None and detail.tramer_tutari_yapilandirilmis is None:
-        tamlik -= 0.1
+        tamlik -= rules["tamlik"]["tramer_bilinmiyor"]
     et = rules["etiket"]
     yetersiz_piyasa = not market or market.n < et["min_emsal"]
     if yetersiz_piyasa:
-        tamlik -= 0.3
+        tamlik -= rules["tamlik"]["piyasa_yetersiz"]
     tamlik = max(0.0, tamlik)
 
     engeller = alinir_engelleri(detail, findings)
@@ -190,7 +189,7 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
     eksiler = hard_fails.copy() + [s.etiket for s in findings.olumsuz_sinyaller if s.etiket]
     if findings.tramer_tutari:
         eksiler.append(f"{findings.tramer_tutari:,} TL Tramer".replace(",", "."))
-    if market and market.medyan > 0 and sapma < -0.20:
+    if market and market.medyan > 0 and sapma < rules["bantlar"]["sapma_ucuz_uyari"]:
         eksiler.append(f"Piyasadan %{abs(sapma)*100:.0f} ucuz: neden bu kadar ucuz? (gizli hasar / dolandırıcılık kontrolü)")
     if findings.km_degisimi_suphesi:
         eksiler.append("Km değişimi şüphesi (açıklamadan)")
