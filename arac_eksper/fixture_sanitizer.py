@@ -11,9 +11,11 @@ from bs4 import BeautifulSoup, Comment
 from arac_eksper.privacy import mask_phones
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-# Türk plakası: il kodu 01-81, 1-3 harf, 2-4 rakam ("34 ABC 123", "16AB1234")
-_PLATE = re.compile(r"(?<![\w.])(0[1-9]|[1-7]\d|8[01])\s?[A-PR-VYZ]{1,3}\s?\d{2,4}(?!\w|\.\w)")
+# Türk plakası: il kodu 01-81, 1-3 harf, 2-4 rakam ("34 ABC 123", "16AB1234"); "/" sonrası değil (lastik 205/55 R16)
+_PLATE = re.compile(r"(?<![\w./])(0[1-9]|[1-7]\d|8[01])\s?[A-PR-VYZ]{1,3}\s?\d{2,4}(?!\w|\.\w)")
 _DROP_TAGS = ("script", "noscript", "iframe", "object", "embed", "template")
+# Harita/konum öznitelikleri (satıcının konumu olabilir): değeriyle birlikte silinir
+_GEO_ATTR = re.compile(r"(^|[-_])(lat|lon|lng|latitude|longitude|coords?|geo)($|[-_])", re.I)
 _SUSPECT = re.compile(r"user|seller|owner|member|profile|username|store|magaza|iletisim|contact|phone|telefon|"
                       r"avatar|login|account|hesap", re.I)
 
@@ -54,6 +56,10 @@ def sanitize(html: str, remove: list[str] | None = None) -> tuple[str, dict]:
             s.replace_with(new)
     for el in soup.find_all(True):
         for attr, val in list(el.attrs.items()):
+            if _GEO_ATTR.search(attr):
+                del el.attrs[attr]
+                rep["silinen_konum"] = rep.get("silinen_konum", 0) + 1
+                continue
             if attr == "href" and isinstance(val, str) and val.lower().startswith(("tel:", "mailto:")):
                 del el.attrs[attr]
                 continue

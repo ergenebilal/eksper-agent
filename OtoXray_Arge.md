@@ -118,6 +118,23 @@ dürüst sınırlarla, düşük güvenle başlamalı.
 - **H · Karar sonrası döngü:** "Ekspertize gittim → sonuç", "aldım/almadım" → hem kalibrasyon hem likidite verisi. Geri bildirim altyapısı var; Savaş Odası'na "durum" alanı olarak bağlanır.
 - **I · Gerçek ilan doğrulaması (ÖNKOŞUL):** Yukarıdaki her şey eklentinin gerçek sayfayı doğru okumasına bağlı. Seçiciler hâlâ sentetik sayfalarla test ediliyor. **Bu, R0 paketidir ve her şeyden önce gelir.**
 
+## 3b. Gerçek sayfa bulguları (R0, 2026-10-07 — 13 ilan)
+
+- **Bilgi satırları:** `dl.classifiedInfoList > .classifiedInfoItem > dt/dd`; 20 etiket 13/13 sayfada aynı: İlan No, **İlan Tarihi**,
+  Marka, Seri, Model, Yıl, Yakıt / Motor Tipi, Vites, Araç Durumu, KM, Kasa Tipi, Motor Gücü, Motor Hacmi, Çekiş, Renk,
+  Servis Garantisi, Ağır Hasar Kayıtlı, Plaka / Uyruk, **Kimden** (`dd.fromOwner`), Takas.
+- **Hasar şeması:** `.car-parts > div` → 1. sınıf parça (`front-hood`, `roof`, `rear-right-mudguard`…, 13 parça), 2. sınıf durum
+  (`original-new`, `painted-new`, `localpainted-new`, `changed-new`). **Eski seçiciler bunu hiç okumuyordu → canlıda hiçbir
+  gerçek ilan 🟢 alamıyordu** ("parça diyagramı yok" engeli). Düzeltildi (`extension/lib/selectors.js`, `extract-detail.js`).
+  Açık soru: satıcı şemayı doldurmadığında site ne gösteriyor (hepsi "orijinal" mi, ayrı sınıf mı)? → "belirtilmemiş" örnek ilan gerekli.
+- **Şanzıman türü** (EDC, DSG, Powershift, DCT, CVT…) ilanın hiçbir alanında yok → KB şanzıman maddeleri vites + model + yıl ile eşleşir (varsayım, KB başında not).
+- **Fiyat geçmişi:** `#price-history-dropdown` yalnız boş şablon; veriyi site tıklamayla ayrıca çeker. `input#priceHistoryFlag` (true/false)
+  fiyatın değişip değişmediğini söyler → istek atmadan okunabilir. Ayrıntılı tarihçe yalnız kullanıcı açınca, sitenin doldurduğu
+  DOM'dan pasif okunabilir. **Tarihçeyi kendimiz istemek kural 1 ihlalidir.**
+- **Temizleme:** satıcı kutusu, giriş menüsü, bildirimler silinir; harita koordinatları (`data-lat/lon`) satıcı konumu olabileceği için
+  silinir; lastik ölçüsü (`205/55 R16`) plaka sanılıyordu, düzeltildi. Ham sayfalar `data/samples/` (git dışı).
+- **Python ayrıştırıcı** (kişisel araç, `parser/`) hâlâ eski sentetik seçicilerde; ürünü etkilemez → R0.4.
+
 ## 4. Mimari ilkeler (yeni özellikler için)
 
 - **Veri yeri:** Havuz, snapshot (görülen fiyat/tarih), karşılaştırma sonuçları → `chrome.storage.local` (kullanıcı silebilir, 30-90 gün TTL). Sunucu: yalnız hesap, sayaç, hash.
@@ -134,9 +151,10 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 ### R0 — Önkoşul: gerçek sayfa doğrulaması
 | ID | Paket | Durum | Kabul ölçütü | Dosyalar |
 |---|---|---|---|---|
-| R0.1 | 15-20 gerçek ilan sayfası (farklı marka, galeri/sahibinden, diyagramlı/diyagramsız) + 3 arama sayfası | 👤 | Kullanıcı "Farklı kaydet" ile **`data/samples/`** klasörüne koyar (git'e girmez, ham kalır); ajan `arac fixture sanitize data/samples/*.html` ile temizleyip `tests/fixtures/real/`'a alır | `fixture_sanitizer.py` |
-| R0.2 | Eklenti seçicilerini gerçek fixture'lardan çıkar (UNVERIFIED işaretlerini kaldır) + **ilan tarihi** alanı | ⬜ | Tüm gerçek fixture'larda zorunlu alanlar %100 okunur; e2e gerçek fixture ile koşar | `extension/lib/selectors.js`, `extract-*.js`, `tests/test_extension_e2e.py` |
-| R0.3 | Gerçek açıklamalardan 100+ etiketli vaka (`kaynak: gercek`) | 👤/⬜ | `arac eval` recall ≥ %90, temiz vakada 🟢 engeli ≤ %5 | `tests/data/aciklamalar.jsonl` |
+| R0.1 | 15-20 gerçek ilan sayfası (farklı marka, galeri/sahibinden, diyagramlı/diyagramsız) + 3 arama sayfası | 🔄 13 detay geldi · 👤 3 arama + birkaç **galeriden** ve **boya/değişen belirtilmemiş** ilan eksik | Kullanıcı "Farklı kaydet" ile **`data/samples/`** klasörüne koyar (git'e girmez, ham kalır); ajan `arac fixture sanitize data/samples/*.html` ile temizleyip `tests/fixtures/real/`'a alır | `fixture_sanitizer.py` |
+| R0.2 | Eklenti seçicilerini gerçek fixture'lardan çıkar (UNVERIFIED işaretlerini kaldır) + **ilan tarihi** alanı | 🔄 detay ✅ (13/13, `tests/test_real_pages.py`) · arama sayfası ⬜ (örnek bekliyor) · ilan tarihi okuma ⬜ | Tüm gerçek fixture'larda zorunlu alanlar %100 okunur; e2e gerçek fixture ile koşar | `extension/lib/selectors.js`, `extract-*.js`, `tests/test_extension_e2e.py` |
+| R0.3 | Gerçek açıklamalardan 100+ etiketli vaka (`kaynak: gercek`) | 👤/⬜ | `arac eval` recall ≥ %90, temiz vakada 🟢 engeli ≤ %5. Başlangıç: 13 gerçek açıklama için ajan etiket taslağı → kullanıcı onayı | `tests/data/aciklamalar.jsonl` |
+| R0.4 | Python ayrıştırıcıyı (`parser/selectors.py`, `damage_parser.py`) gerçek yapıya geçir (kişisel araç) | ⬜ | `tests/fixtures/real` ile alan doğruluğu %100 | `parser/` |
 
 ### R1 — Hızlı kazanımlar (mevcut veriden)
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
@@ -240,4 +258,5 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
+| 2026-10-07 | Claude (5d82b169) | R0.1, R0.2 | 13 gerçek ilan temizlenip `tests/fixtures/real`'e alındı (satıcı/hesap blokları, telefon, plaka, harita koordinatı silindi; hesap adı 0 eşleşme). Eklenti detay okuması 13/13 doğrulandı; **hasar şeması okunmuyordu (tüm gerçek ilanlar 🟢 alamıyordu) → düzeltildi**. KB şanzıman maddeleri vites+model+yıl eşleşmesine geçti. `tests/test_real_pages.py` (19 test). 324 test. Bulgular §3b. Sıradaki: kullanıcıdan 3 arama sayfası + galeriden/belirtilmemiş örnekler; R0.3 için 13 açıklamanın etiket taslağı; ilan tarihi okuma. |
 | 2026-10-07 | Claude (5d82b169) | R1.1, R1.2, R1.3 | Kararlar §8'e işlendi. R1.1: `models_kb.yaml` 32 model/59 madde taslak (hepsi onaysız → etkisiz). Yükleyici yeniden yazıldı (onay filtresi, Türkçe harf katlama, motor/vites/yakıt/yıl, km eşiği, bakım). Puan: yalnız yüksek ciddiyet + tetiklenmiş kronik (eskiden her eşleşme -0.5). R1.3: `alim_gunu.yaml` + `/api/v1/rehber` + panel bölümü. `arac kb kontrol` eklendi. 303 test. **Sıradaki ajan için:** kullanıcı onaylarını bekle; onay gelince `arac kb kontrol` → yayın. R0.1 sayfaları gelince R0.2'ye geç. Bekleme sırasında yapılabilecek: R2.1 `masraf_kb.yaml` taslağı (aralıklar, kaynak/tarih, onaysız). |

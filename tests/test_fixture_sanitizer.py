@@ -47,3 +47,15 @@ def test_cli_writes_to_out_dir_and_never_overwrites_source(tmp_path):
     assert "0532 111 22 33" not in (out / "ilan.html").read_text(encoding="utf-8")
     assert "şüpheli blok" in r.output and "Ahmet" not in r.output
     assert runner.invoke(cli.app, ["fixture", "sanitize", str(src), "--out", str(tmp_path)]).exit_code == 3
+
+
+def test_tyre_size_is_not_mistaken_for_a_plate():
+    html, rep = sanitize("<table><tr><td>Lastik Ölçüleri</td><td class='value'>205/55 R16</td></tr></table><p>Plaka 34 ABC 123</p>")
+    assert "205/55 R16" in html and "[plaka]" in html and rep["maskelenen"]["plaka"] == 1
+
+
+def test_map_coordinates_are_removed():
+    html, rep = sanitize('<div class="map" data-lat="40.1885" data-lon="29.0610" data-zoom="14">Harita</div>'
+                         '<meta itemprop="latitude" data-latitude="40.1">')
+    assert "40.1885" not in html and "29.0610" not in html and "40.1" not in html
+    assert 'data-zoom="14"' in html and rep["silinen_konum"] == 3
