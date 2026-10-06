@@ -1,4 +1,12 @@
+from pathlib import Path
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Göreli yollar çalıştırma dizinine değil proje köküne bağlanır: aksi halde başka dizinden (cron/Jeff)
+# çalıştırınca ayrı DB, ayrı kilit ve ayrı saatlik limit oluşurdu.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = PROJECT_ROOT / "data"
 
 class Settings(BaseSettings):
     max_pages_per_hour: int = 40
@@ -34,6 +42,22 @@ class Settings(BaseSettings):
     search_pages: int = 2
     lock_stale_minutes: int = 45
     
+    @field_validator("database_url")
+    @classmethod
+    def _abs_sqlite(cls, v: str) -> str:
+        prefix = "sqlite:///"
+        if v.startswith(prefix) and v != "sqlite:///:memory:":
+            path = Path(v[len(prefix):])
+            if not path.is_absolute():
+                return prefix + (PROJECT_ROOT / path).as_posix()
+        return v
+
+    @field_validator("browser_profile_dir")
+    @classmethod
+    def _abs_profile(cls, v: str) -> str:
+        path = Path(v)
+        return v if path.is_absolute() else str(PROJECT_ROOT / path)
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

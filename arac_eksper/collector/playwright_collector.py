@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from arac_eksper.collector import guard
 from arac_eksper.collector.base import Collector, FetchResult
-from arac_eksper.config.settings import settings
+from arac_eksper.config.settings import DATA_DIR, settings
 from arac_eksper.parser.selectors import Selectors, BLOCK_MARKERS
 from arac_eksper.storage.models import FetchLog
 from bs4 import BeautifulSoup
@@ -39,7 +39,7 @@ class PlaywrightCollector(Collector):
         self.db = db
         self.profile_dir = settings.browser_profile_dir
         Path(self.profile_dir).mkdir(parents=True, exist_ok=True)
-        Path("data/raw").mkdir(parents=True, exist_ok=True)
+        (DATA_DIR / "raw").mkdir(parents=True, exist_ok=True)
 
     def _check_rate_limit(self) -> bool:
         one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -107,7 +107,7 @@ class PlaywrightCollector(Collector):
         if is_detail:
             m = re.search(r"-?(\d{6,})(?:/|\?|$)", url)
             ilan_no = m.group(1) if m else "detail"
-        save_dir = Path("data/raw") / ilan_no
+        save_dir = (DATA_DIR / "raw") / ilan_no
         save_dir.mkdir(parents=True, exist_ok=True)
         save_path = save_dir / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.html.gz"
         with gzip.open(save_path, "wt", encoding="utf-8") as f:

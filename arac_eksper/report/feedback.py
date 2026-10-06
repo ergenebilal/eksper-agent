@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from arac_eksper.config.settings import settings
 from arac_eksper.storage import repo
 
-OFFSET_FILE = Path("data/telegram_offset")
+from arac_eksper.config.settings import DATA_DIR
+OFFSET_FILE = DATA_DIR / "telegram_offset"
 
 
 def process_callback(db: Session, data: str) -> bool:

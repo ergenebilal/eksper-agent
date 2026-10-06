@@ -310,7 +310,7 @@ def watch_run(
 
     runs, worst = [], EXIT_OK
     for wid in ids:
-        r = scheduler.run_watch_once(wid, force=force)
+        r = scheduler.run_watch_once(wid, force=force, enforce_interval=True)
         if r is None:
             continue
         runs.append(r)

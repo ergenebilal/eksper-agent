@@ -4,9 +4,9 @@ import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from arac_eksper.config.settings import settings
+from arac_eksper.config.settings import DATA_DIR, settings
 
-LOCK_PATH = Path("data/collect.lock")
+LOCK_PATH = DATA_DIR / "collect.lock"
 
 
 class CollectionBusy(Exception):
