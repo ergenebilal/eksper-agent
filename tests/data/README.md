@@ -18,10 +18,8 @@
 - Olumsuzlama bayrak değildir: "pert değildir", "airbag açmamış" → bayraksız.
 - Şüpheli vakada iki kişi bağımsız etiketlesin. Anlaşamazsanız vakayı `not` ile işaretleyip dışarıda bırakın.
 
-## Gerçek vaka taslakları
-`aciklamalar_gercek_taslak.jsonl`: 18 gerçek ilanın (tests/fixtures/real) **taslak** etiketleri (Claude, 2026-10-07). Kullanıcı onaylayınca
-`not` alanındaki "TASLAK" ifadesi kaldırılıp satırlar `aciklamalar.jsonl`a taşınır. Sınırda vakalar `not` alanında "SINIRDA" ile işaretli.
-Taslakla ölçüm: `uv run arac eval --dataset tests/data/aciklamalar_gercek_taslak.jsonl`
+## Gerçek vakalar
+`g001`–`g018`: 18 gerçek ilan (tests/fixtures/real); etiketler Claude taslağı, kullanıcı 2026-10-07'de onayladı. Sınırda vakalar `not` alanında "SINIRDA" ile işaretli.
 
 ## Gerçek vaka ekleme (hedef: ≥150 gerçek vaka)
 1. Açıklamayı ilandan kopyalayın. **Satıcı adı, telefon, plaka, şasi no, adres, e-posta silinsin** (testler telefonu denetler, diğerleri size kalmış).

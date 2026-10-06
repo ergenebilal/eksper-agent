@@ -121,14 +121,10 @@ def test_jargon_corrections_reach_the_prompt():
     assert "tavan hariç komple boyalı DEMEK DEĞİLDİR" in j
 
 
-def test_real_draft_cases_load_and_stay_out_of_default_set():
-    """R0.3: 18 gerçek açıklamanın TASLAK etiketleri ayrı dosyada; kullanıcı onayına kadar varsayılan eval setine girmez."""
-    from pathlib import Path
-
+def test_approved_real_cases_are_in_the_default_set():
+    """R0.3: 18 gerçek açıklamanın etiketleri kullanıcı onayıyla (2026-10-07) varsayılan eval setinde."""
     from arac_eksper.analysis import evaluation
-    p = Path(__file__).parent / "data" / "aciklamalar_gercek_taslak.jsonl"
-    cases = evaluation.load_dataset(p)
-    assert len(cases) == 18 and all(c.kaynak == "gercek" and "TASLAK" in (c.not_ or "") for c in cases)
-    assert not any(c.kaynak == "gercek" for c in evaluation.load_dataset())
+    cases = [c for c in evaluation.load_dataset() if c.kaynak == "gercek"]
+    assert len(cases) == 18 and all("Onay: kullanıcı" in (c.not_ or "") for c in cases)
     import re
     assert not any(re.search(r"0?5\d{2}\s?\d{3}\s?\d{2}\s?\d{2}", c.aciklama) for c in cases)      # telefon yok

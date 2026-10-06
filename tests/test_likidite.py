@@ -21,9 +21,17 @@ def test_first_matching_rule_wins_and_conditions_combine():
     assert lq.likidite(dict(d, yakit="Benzin", motor_hacmi="1801 - 2000 cm3"), kural_listesi=k)["bant"] is None
 
 
-def test_unapproved_rules_have_no_effect_but_are_reported():
+def test_unapproved_rules_have_no_effect_but_are_reported(tmp_path, monkeypatch):
+    kopya = tmp_path / "likidite_kb.yaml"                        # kural 10: onaysız kopya ile denetlenir
+    kopya.write_text(lq.KB_PATH.read_text(encoding="utf-8").replace("onayli: true", "onayli: false"), encoding="utf-8")
+    monkeypatch.setattr(lq, "KB_PATH", kopya)
     r = lq.likidite({"marka": "Fiat", "seri": "Egea", "yakit": "Dizel", "vites": "Manuel", "yil": 2019})
-    assert r["bant"] is None and r["onay_bekliyor"] is True       # taslak KB: tüm kurallar onaysız
+    assert r["bant"] is None and r["onay_bekliyor"] is True
+
+
+def test_approved_kb_gives_a_band_with_reason():
+    r = lq.likidite({"marka": "Fiat", "seri": "Egea", "yakit": "Dizel", "vites": "Manuel", "yil": 2019})
+    assert r["bant"] == "hizli" and r["gerekce"] and r["onay_bekliyor"] is False
 
 
 def test_user_data_only_adds_notes_never_days_estimate():
@@ -32,7 +40,7 @@ def test_user_data_only_adds_notes_never_days_estimate():
     assert "tahmini değildir" in r["uyari"]
 
 
-def test_kb_file_is_valid_and_all_draft():
+def test_kb_file_is_valid_and_approved():
     errs, warns = lq.validate()
-    assert errs == [] and warns
-    assert lq.kurallar() == []                     # kullanıcı onayına kadar
+    assert errs == [] and warns == []              # kullanıcı 2026-10-07'de 10 kuralın tamamını onayladı
+    assert len(lq.kurallar()) == 10

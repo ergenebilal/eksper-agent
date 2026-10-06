@@ -20,14 +20,15 @@ BANTLAR = ("hizli", "orta", "yavas")
 BANT_AD = {"hizli": "Hızlı", "orta": "Orta", "yavas": "Yavaş"}
 
 
-def load(path: Path = KB_PATH) -> dict:
+def load(path: Path | None = None) -> dict:
+    path = path or KB_PATH                       # çağrı anında okunur (testler geçici kopya verebilir)
     if not path.exists():
         return {}
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
-def kurallar(include_unapproved: bool = False, path: Path = KB_PATH) -> list[dict]:
+def kurallar(include_unapproved: bool = False, path: Path | None = None) -> list[dict]:
     return [k for k in load(path).get("kurallar") or [] if include_unapproved or k.get("onayli") is True]
 
 
@@ -83,7 +84,7 @@ def likidite(d: dict, emsal_n: int | None = None, ilan_tarihi: date | None = Non
             "onay_bekliyor": bool(taslak), "uyari": "Satış süresi tahmini değildir; genel piyasa gözlemidir."}
 
 
-def validate(path: Path = KB_PATH) -> tuple[list[str], list[str]]:
+def validate(path: Path | None = None) -> tuple[list[str], list[str]]:
     d, errs = load(path), []
     if not d:
         return ["likidite_kb.yaml bulunamadı ya da boş"], []

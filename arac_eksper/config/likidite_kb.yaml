@@ -1,6 +1,6 @@
 # Likidite (piyasa hızı) bilgi tabanı — R4.3 v0 (CyberOto_Arge.md §3 2D)
 #
-# ⚠ TASLAK: Claude, 2026-10-07. Türkiye ikinci el piyasası için GENEL gözlem; satış süresi verisi DEĞİLDİR.
+# Taslak: Claude, 2026-10-07. Onay: kullanıcı, 2026-10-07 (sohbette, toplu): 10 kuralın TAMAMI onaylı. Türkiye ikinci el piyasası için GENEL gözlem; satış süresi verisi DEĞİLDİR.
 #   Gün sayısı söylenmez: yalnız 3 bant (hizli / orta / yavas) + gerekçe. Kural 10: `onayli: false` kural kullanılmaz.
 #   Kullanıcı kuralları düzeltir, `onayli: true` yapar. Doğrulama: `uv run arac kb kontrol`
 #
@@ -9,56 +9,56 @@
 #   yakit / vites / kasa: ilan alanının İÇİNDE geçen kelimeler (Türkçe harf farkı yok sayılır)
 #   motor_cc_min: motor hacmi bundan büyükse (cc)
 #   yas_min: araç yaşı bundan büyükse
-kaynak: "Taslak (Claude, 2026-10-07): genel piyasa gözlemi; satış süresi verisi değildir, kullanıcı onayı bekliyor"
+kaynak: "Taslak (Claude, 2026-10-07): genel piyasa gözlemi; satış süresi verisi değildir, Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
 
 kurallar:
   - kod: lpg
     kosul: {yakit: [lpg]}
     bant: orta
     gerekce: "LPG'li araçlarda alıcı kitlesi daralır (montaj kalitesi ve ruhsat işlemi soruları)"
-    onayli: false
+    onayli: true
   - kod: buyuk_motor_benzin
     kosul: {yakit: [benzin], motor_cc_min: 2000}
     bant: yavas
     gerekce: "2.0 üstü benzinli motorlar yüksek vergi ve yakıt maliyeti nedeniyle daha dar bir alıcı kitlesine hitap eder"
-    onayli: false
+    onayli: true
   - kod: premium_yasli
     kosul: {segment: [premium], yas_min: 12}
     bant: yavas
     gerekce: "Yaşlı premium araçlarda yüksek bakım maliyeti alıcı kitlesini daraltır"
-    onayli: false
+    onayli: true
   - kod: station_benzin_manuel
     kosul: {kasa: [station], yakit: [benzin], vites: [manuel]}
     bant: yavas
     gerekce: "Benzinli manuel station wagon talebi sınırlıdır"
-    onayli: false
+    onayli: true
   - kod: kabrio_coupe
     kosul: {kasa: [cabrio, coupe, roadster]}
     bant: yavas
     gerekce: "Kabrio/coupe kasalar niş bir alıcı kitlesine hitap eder"
-    onayli: false
+    onayli: true
   - kod: ekonomik_dizel
     kosul: {segment: [ekonomik], yakit: [dizel]}
     bant: hizli
     gerekce: "Ekonomik segment dizel araçlar geniş bir alıcı kitlesine sahiptir (yakıt ekonomisi, düşük parça maliyeti)"
-    onayli: false
+    onayli: true
   - kod: orta_dizel_otomatik
     kosul: {segment: [orta], yakit: [dizel], vites: [otomatik, yari otomatik]}
     bant: hizli
     gerekce: "C segment dizel otomatik araçlar piyasanın en çok aranan grubundadır"
-    onayli: false
+    onayli: true
   - kod: ekonomik_benzin
     kosul: {segment: [ekonomik], yakit: [benzin]}
     bant: orta
     gerekce: "Ekonomik segment benzinli araçlarda talep süreklidir ama dizele göre daha yavaştır"
-    onayli: false
+    onayli: true
   - kod: hibrit_elektrik
     kosul: {yakit: [hibrit, elektrik]}
     bant: orta
     gerekce: "Hibrit/elektrikli araçlarda alıcı kitlesi büyüyor ama batarya durumu sorusu satışı uzatabilir"
-    onayli: false
+    onayli: true
   - kod: suv_dizel_otomatik
     kosul: {kasa: [suv, arazi], yakit: [dizel], vites: [otomatik, yari otomatik]}
     bant: hizli
     gerekce: "Dizel otomatik SUV'lar yüksek talep gören bir gruptur"
-    onayli: false
+    onayli: true
