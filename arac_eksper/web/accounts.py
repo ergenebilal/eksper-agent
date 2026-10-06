@@ -318,6 +318,26 @@ def list_feedback(limit: int = 200) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# Saklama süreleri (KVKK aydınlatma metni taslağı ile aynı; docs/legal/). Süresi dolan kayıtlar prune() ile silinir.
+SAKLAMA = {"charges_gun": 30, "usage_gun": 400, "code_sends_gun": 2}
+
+
+def prune(now: float | None = None) -> dict:
+    """Süresi dolan teknik kayıtları siler: giriş kodları, kod gönderim izleri, yönetim oturumları, tekrar-ücretsiz
+    özetleri (charges), eski sayaçlar. Üye, anahtar ve geri bildirim kayıtlarına dokunmaz (üye silinince ayrıca silinir)."""
+    t = time.time() if now is None else now
+    gun = lambda n: t - n * 86400
+    usage_sinir = datetime.fromtimestamp(gun(SAKLAMA["usage_gun"]), timezone.utc).strftime("%Y-%m-%d")
+    with closing(_conn()) as c, c:
+        return {
+            "login_codes": c.execute("DELETE FROM login_codes WHERE expires_at < ?", (t,)).rowcount,
+            "code_sends": c.execute("DELETE FROM code_sends WHERE ts < ?", (gun(SAKLAMA["code_sends_gun"]),)).rowcount,
+            "admin_sessions": c.execute("DELETE FROM admin_sessions WHERE expires_at < ?", (t,)).rowcount,
+            "charges": c.execute("DELETE FROM charges WHERE ts < ?", (gun(SAKLAMA["charges_gun"]),)).rowcount,
+            "usage": c.execute("DELETE FROM usage WHERE gun < ?", (usage_sinir,)).rowcount,
+        }
+
+
 def kalibrasyon() -> dict:
     """R5.3: etiket × gerçek sonuç tablosu. Her (üye, ilan) için SONUÇLU son geri bildirim sayılır (tekrar oy şişirmez).
     Kural bazında döküm yoktur: kural izi (trace) sunucuda saklanmaz (durumsuz API); yalnız etiket düzeyi."""

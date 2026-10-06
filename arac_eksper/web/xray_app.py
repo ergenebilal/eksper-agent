@@ -1,12 +1,14 @@
 """otoXray AI API'sinin ayrı uygulaması: yalnızca /api/v1 + /healthz. Panel, toplayıcı (collector), veritabanı ve
 zamanlayıcı kodlarını İÇE AKTARMAZ (testle denetlenir): sunucu tarafında ilan sayfası çeken hiçbir kod yoktur."""
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from arac_eksper.config.settings import settings
-from arac_eksper.web import api, security, yonetim
+from arac_eksper.web import accounts, api, security, yonetim
 
 
 @asynccontextmanager
@@ -14,7 +16,16 @@ async def lifespan(app: FastAPI):
     problem = security.extension_problem()
     if problem:
         raise RuntimeError(problem)      # token yoksa/zayıfsa sunucu ayağa kalkmaz
+
+    async def temizlik():                # saklama süresi dolan teknik kayıtlar: açılışta ve günde bir
+        while True:
+            with contextlib.suppress(Exception):
+                await asyncio.to_thread(accounts.prune)
+            await asyncio.sleep(86400)
+
+    task = asyncio.create_task(temizlik())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="otoXray AI API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)

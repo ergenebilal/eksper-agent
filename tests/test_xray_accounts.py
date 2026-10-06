@@ -510,3 +510,17 @@ def test_calibration_report_counts_latest_outcome_per_member_and_listing(client,
     _, h = member("k3@ornek.com")
     assert client.post("/api/v1/feedback", json={"ilan_no": "9", "etiket": "ALINIR", "sonuc": "almadim"},
                        headers=h).status_code == 200
+
+
+def test_prune_removes_only_expired_technical_records(client):
+    import time as _t
+    mid = accounts.create_member("p@ornek.com")
+    accounts.add_charge(mid, "eski")
+    accounts.add_charge(mid, "yeni")
+    accounts.add_feedback(mid, "1", "ALINIR", 8.0, "pos", None, None)
+    with accounts.closing(accounts._conn()) as c, c:
+        c.execute("UPDATE charges SET ts = ? WHERE h = 'eski'", (_t.time() - 40 * 86400,))
+        c.execute("INSERT INTO usage (member_id, gun, tur, n) VALUES (?, '2020-01-01', 'analyze', 3)", (mid,))
+    r = accounts.prune()
+    assert r["charges"] == 1 and r["usage"] == 1
+    assert accounts.charged_recently(mid, "yeni") and accounts.get_member(mid) and accounts.list_feedback()
