@@ -14,7 +14,7 @@ from arac_eksper.storage.models import Base, Event, FetchLog, Feedback, Notifica
 from arac_eksper.watcher import diff, runner
 from tests.helpers import FakeCollector, FakeLLM, DownLLM, list_html, detail_html, ok, blocked
 
-MARKET = [(f"20{i:02d}", 900_000 + i * 2_000, "Megane") for i in range(7)]
+MARKET = [(f"20{i:02d}", 900_000 + i * 2_000, f"Megane {i}") for i in range(7)]
 PRICES = {no: fiyat for no, fiyat, _ in MARKET}
 
 

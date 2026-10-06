@@ -1,5 +1,5 @@
 import numpy as np
-from sqlalchemy import or_, func
+from sqlalchemy import and_, or_, func
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from arac_eksper.storage.models import Listing
@@ -13,15 +13,26 @@ def _tolerant_eq(column, value):
     return or_(column.is_(None), func.lower(column) == str(value).lower())
 
 
-def _base_filters(target: ListingDetail, thirty_days_ago):
+def _strict_eq(column, value):
+    """Bilinen değerle tam eşleşme; NULL (liste kaydı, vites/yakıt bilinmiyor) EŞLEŞMEZ."""
+    if value is None or value == "":
+        return None
+    return func.lower(column) == str(value).lower()
+
+
+def _base_filters(target: ListingDetail, thirty_days_ago, strict: bool = False):
+    eq = _strict_eq if strict else _tolerant_eq
     filters = [
         func.lower(Listing.marka) == (target.marka or "").lower(),
         func.lower(Listing.model) == (target.model or "").lower(),
         Listing.ilan_no != target.ilan_no,
         Listing.fetched_at >= thirty_days_ago,
+        # Aynı aracın yeniden yayını (farklı ilan no, aynı başlık+yıl+km) kendi emsali olamaz
+        ~and_(Listing.km == target.km, Listing.yil == target.yil,
+              func.lower(Listing.baslik) == (target.baslik or "").lower()),
     ]
     for col, val in ((Listing.seri, target.seri), (Listing.vites, target.vites), (Listing.yakit, target.yakit)):
-        cond = _tolerant_eq(col, val)
+        cond = eq(col, val)
         if cond is not None:
             filters.append(cond)
     return filters
@@ -35,37 +46,32 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
         # Marka/model bilinmiyorsa emsal aranamaz; yanlış kümeyle kıyaslamaktansa "yok" dön.
         return MarketStats(n=0, medyan=0, p25=0, p75=0, guven="yok")
 
-    # 1. Aşama: Dar arama
     km_margin = target.km * 0.30
-    base = _base_filters(target, thirty_days_ago)
 
-    query = db.query(Listing).filter(
-        *base,
-        Listing.yil >= target.yil - 1,
-        Listing.yil <= target.yil + 1,
-        Listing.km >= max(0, target.km - km_margin),
-        Listing.km <= target.km + km_margin,
-    )
+    def narrow(strict: bool):
+        return [p.fiyat for p in db.query(Listing).filter(
+            *_base_filters(target, thirty_days_ago, strict=strict),
+            Listing.yil >= target.yil - 1, Listing.yil <= target.yil + 1,
+            Listing.km >= max(0, target.km - km_margin), Listing.km <= target.km + km_margin).all()]
 
-    prices = [p.fiyat for p in query.all()]
+    # 1. Aşama: dar arama, vites/yakıt/seri BİLİNEN kayıtlarla (liste kayıtlarındaki NULL'lar karışmasın)
+    prices = narrow(strict=True)
     confidence = "yuksek"
-    
-    # 2. Aşama: Geniş arama (Yetersiz veri)
+
+    # 2. Aşama: bilinmeyen (NULL) vites/yakıt/seri kabul edilir → güven düşer
+    if len(prices) < 8:
+        prices = narrow(strict=False)
+        confidence = "dusuk"
+
+    # 3. Aşama: geniş arama (yıl ±2, km ±%50)
     if len(prices) < 8:
         km_margin_wide = target.km * 0.50
-        min_km_wide = max(0, target.km - km_margin_wide)
-        max_km_wide = target.km + km_margin_wide
-        
-        query_wide = db.query(Listing).filter(
-            *base,
-            Listing.yil >= target.yil - 2,
-            Listing.yil <= target.yil + 2,
-            Listing.km >= min_km_wide,
-            Listing.km <= max_km_wide
-        )
-        prices = [p.fiyat for p in query_wide.all()]
+        prices = [p.fiyat for p in db.query(Listing).filter(
+            *_base_filters(target, thirty_days_ago),
+            Listing.yil >= target.yil - 2, Listing.yil <= target.yil + 2,
+            Listing.km >= max(0, target.km - km_margin_wide), Listing.km <= target.km + km_margin_wide).all()]
         confidence = "dusuk"
-        
+
     if not prices:
         return MarketStats(n=0, medyan=0, p25=0, p75=0, guven="yok")
         

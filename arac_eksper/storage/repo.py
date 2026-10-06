@@ -62,7 +62,8 @@ def create_or_update_listing_summary(db: Session, summary, marka: str, model: st
         # Fiyat güncellendiyse list'ten de gelse güncelle
         if db_listing.fiyat != summary.fiyat:
             db_listing.fiyat = summary.fiyat
-            db_listing.fetched_at = now_utc
+        # fetched_at = "son görülme": ilan listede durdukça taze kalır (piyasa 30 gün penceresi için)
+        db_listing.fetched_at = now_utc
             
     snapshot = ListingSnapshot(
         ilan_no=summary.ilan_no,

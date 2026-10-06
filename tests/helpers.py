@@ -14,8 +14,9 @@ def list_html(items):
     return f"<html><body>{rows}</body></html>"
 
 
-def detail_html(no, fiyat, baslik="Temiz Megane", aciklama="Araç ilk sahibinden, bakımlı.", tavan="orijinal",
+def detail_html(no, fiyat, baslik=None, aciklama="Araç ilk sahibinden, bakımlı.", tavan="orijinal",
                 hasar="Hayır"):
+    baslik = baslik or f"Temiz Megane {no}"   # aynı başlık+yıl+km = aynı araç sayılır (yeniden yayın)
     info = {"İl / İlçe": "Bursa / Nilüfer", "İlan Tarihi": "5 Ekim 2026", "Marka": "Renault", "Seri": "Megane",
             "Model": "1.5 dCi Touch", "Yıl": "2022", "Kilometre": "60.000", "Vites": "Otomatik",
             "Yakıt Tipi": "Dizel", "Kimden": "Sahibinden", "Ağır Hasar Kayıtlı": hasar}
