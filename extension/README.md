@@ -38,6 +38,16 @@ Kod değişince `chrome://extensions` üzerinden eklentiyi yenileyin (↻). Serv
   Sayfada gördüğünüz satırlar tarayıcınızda **yerel emsal** olarak birikir; aynı modeli gezdikçe kıyas iyileşir.
 - **Teklif metni:** yan panelden kopyalanır; göndermeyi siz yaparsınız. Üst sınır metne girmez.
 
+## 3b. Hız
+
+Analizin süresi neredeyse tamamen LLM havuzunun gecikmesidir (ölçüm: içeriksiz tek satırlık çağrı bile ~9-15 sn; her
+tam geçiş ~15-25 sn). Bu yüzden:
+- **Ön hesap** (`/quick`, LLM'siz, <1 sn): piyasa ortalaması, yapıdan elenme nedenleri (bütçe, tavan, yıllık km…) ve ön teklif,
+  LLM röntgeni beklenirken yan panelde hemen görünür; bekleme sayacı çalışır.
+- **İkinci geçiş** varsayılan olarak yalnız 🔴 nedeni olabilecek iddialarda (şase/airbag/motor/pert) çalışır
+  (`XRAY_SECOND_PASS=hard`); `off` ile tamamen kapatılabilir, `all` eski davranıştır.
+- Aynı ilan 12 saat boyunca tarayıcıda önbelleklenir (ikinci açılış anında).
+
 ## 4. Test
 
 ```bash

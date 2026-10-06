@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Chrome eklentisi API'si (/api/v1): ayrı token; boşsa/16 karakterden kısaysa API KAPALI
     extension_token: str = ""
+    xray_second_pass: str = "hard"     # all | hard | off: güçlü modelle ikinci geçiş (her geçiş ~15-25 sn). hard = yalnız 🔴 nedeni olabilecek iddialarda
     analyze_daily_limit: int = 300      # 24 saatte en fazla bu kadar YENİ LLM çözümlemesi (önbellek isabeti sayılmaz)
 
     # Toplama güvenliği (CLAUDE.md kural 1-2)

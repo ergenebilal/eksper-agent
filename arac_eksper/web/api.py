@@ -19,7 +19,7 @@ from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
 from arac_eksper.privacy import mask_phones
 from arac_eksper.report.legal import DISCLAIMER
 from arac_eksper.report.offer_text import whatsapp_text
-from arac_eksper.schemas import ListingDetail, MarketStats, PartState
+from arac_eksper.schemas import DescriptionFindings, ListingDetail, MarketStats, PartState, Verdict
 from arac_eksper.web import security
 
 router = APIRouter(prefix="/api/v1", dependencies=[Depends(security.require_extension_auth)])
@@ -153,6 +153,24 @@ def ping():
     return {"ok": True, "surum": 2, "durumsuz": True, "yasal_uyari": DISCLAIMER}
 
 
+@router.post("/quick")
+def quick(req: AnalyzeRequest):
+    """LLM'siz ANINDA ön hesap: piyasa, yapıdan elenme nedenleri ve ön teklif. LLM röntgeni beklenirken gösterilir;
+    etiket ÜRETMEZ (açıklama analizi olmadan karar verilmez). LLM bütçesinden düşmez, hiçbir şey saklanmaz."""
+    detail = _detail(req)
+    stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
+    empty = DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz",
+                                km_degisimi_suphesi=False)
+    rules = load_rules()
+    hard = rules_engine.evaluate_hard_fails(detail, empty, stats, rules, req.max_butce)
+    pending = Verdict(ilan_no=req.ilan_no, etiket="DUSUNULEBILIR", guven_skoru=0.0, veri_tamlik=0.0, piyasa=stats)
+    b = None if hard else offer_calc.breakdown(detail, empty, pending, allow_no_market=True)
+    return {"ilan_no": req.ilan_no, "on_hesap": True, "elenme_nedenleri": hard,
+            "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
+                       "min_emsal": rules["etiket"]["min_emsal"]},
+            "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER}
+
+
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
     if not _llm_budget_ok():
@@ -160,7 +178,8 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
     detail = _detail(req)
     stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     try:
-        findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama)   # db yok → önbellek yok
+        findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama,    # db yok → önbellek yok
+                                                      second_pass=settings.xray_second_pass)
     except (LLMUnavailable, ValueError):       # pydantic.ValidationError bir ValueError'dır
         return _pending(req)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)

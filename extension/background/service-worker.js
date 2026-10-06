@@ -144,9 +144,17 @@ async function handle(msg, sender) {
         await setResult(tabId, { status: 'ok', meta, data: hit.data });
         return { ok: true, data: hit.data, cached: true };
       }
-      await setResult(tabId, { status: 'loading', meta });
+      const since = Date.now();
+      await setResult(tabId, { status: 'loading', meta, since });
       const emsal = group && mk.groups[group] ? nearby(toComps(mk.groups[group]), p.yil, p.km) : [];
-      const res = await api('/api/v1/analyze', { body: { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) } });
+      const body = { ...p, emsal, ...(s.maxButce ? { max_butce: s.maxButce } : {}) };
+      // ÖN HESAP (LLM'siz, anında): piyasa + yapıdan elenme nedenleri + ön teklif; LLM röntgeni beklenirken gösterilir.
+      let finished = false;
+      api('/api/v1/quick', { body }).then(async (q) => {
+        if (q.ok && !finished) await setResult(tabId, { status: 'loading', meta, since, quick: q.data });
+      });
+      const res = await api('/api/v1/analyze', { body });
+      finished = true;
       await setResult(tabId, res.ok ? { status: 'ok', meta, data: res.data }
                                     : { status: 'error', meta, code: res.code, message: res.message });
       if (res.ok) {

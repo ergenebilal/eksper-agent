@@ -36,10 +36,13 @@ class ScriptedLLM:
     """Açıklamadaki gerçek ifadeleri alıntılayan deterministik sahte LLM; gördüğü metni kaydeder."""
     calls = 0
     last_prompt = ""
+    delay = 0.0          # yapay LLM gecikmesi (ön hesap testi için)
 
     def parse_structured(self, system_prompt, user_prompt, response_model, model_name=None):
         ScriptedLLM.calls += 1
         ScriptedLLM.last_prompt = user_prompt
+        if ScriptedLLM.delay:
+            time.sleep(ScriptedLLM.delay)
         return DescriptionFindings(
             sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz", km_degisimi_suphesi=False,
             tramer_tutari=0,
@@ -340,6 +343,41 @@ def test_no_market_card_is_honest_and_still_offers_a_labelled_price(browser_ctx)
     assert "Açılış teklifi" in offer and "yalnızca ilan fiyatı" in offer
     panel.close()
     page.close()
+
+
+def test_instant_pre_calculation_is_shown_while_the_llm_is_still_working(browser_ctx):
+    """LLM yavaşken (burada 6 sn) piyasa + teklif ön hesabı ANINDA görünür; röntgen bitince tam karne gelir."""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    now = int(time.time() * 1000)
+    mk = {"groups": {"m:nissan qashqai": {f"Q{i}": {"y": 2014, "k": 159000 + i * 500, "f": 1_200_000 + i * 2000, "t": now,
+                                                    "s": "Qashqai"} for i in range(6)}}, "idx": {}}
+    sw.evaluate("""async (mk) => { const all = await chrome.storage.local.get(null);
+        await chrome.storage.local.remove(Object.keys(all).filter(k => k.startsWith('ac:')));
+        await chrome.storage.local.set({mk}); }""", mk)
+    ScriptedLLM.delay = 6.0
+    try:
+        page = ctx.new_page()
+        page.goto(REAL_URL)
+        key = None
+        deadline = time.time() + 5
+        while time.time() < deadline and key is None:      # LLM bitmeden (6 sn) 'loading + quick' görünmeli
+            for k, v in session_state(sw).items():
+                if v.get("meta", {}).get("ilan_no") == "1343960581" and v.get("status") == "loading" and v.get("quick"):
+                    key = k
+            time.sleep(0.2)
+        assert key, "ön hesap LLM bitmeden gelmedi"
+        panel = ctx.new_page()
+        panel.goto(f"chrome-extension://{browser_ctx['id']}/sidepanel/sidepanel.html?tabId={key[2:]}")
+        panel.wait_for_selector("#waiting", timeout=10000)
+        text = panel.text_content("#app")
+        assert "Açıklama röntgeni yapılıyor" in text and "Piyasa ortalaması" in text and "ön hesap" in text.lower()
+        assert panel.locator("#verdict").count() == 0                    # henüz etiket YOK
+        panel.wait_for_selector("#verdict", timeout=40000)               # LLM bitince tam karne
+        assert panel.locator("#waiting").count() == 0
+        panel.close()
+        page.close()
+    finally:
+        ScriptedLLM.delay = 0.0
 
 
 def test_extension_never_requests_the_site_by_itself(browser_ctx):

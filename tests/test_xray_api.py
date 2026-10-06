@@ -336,3 +336,56 @@ def test_serve_explains_a_busy_port_instead_of_a_raw_socket_error(monkeypatch, c
             xray_app.serve()
     assert e.value.code == 4
     assert "kullanılıyor" in capsys.readouterr().err
+
+
+# ------------------------------------------------------------------ hız: ön hesap + ikinci geçiş ayarı
+def test_quick_is_instant_llm_free_and_gives_market_and_offer(client):
+    class Boom:
+        def parse_structured(self, *a, **k):
+            raise AssertionError("quick LLM çağırmamalı")
+    xray_app.app.dependency_overrides[api.get_llm] = lambda: Boom()
+    r = client.post("/api/v1/quick", json=payload(), headers=H)
+    d = r.json()
+    assert r.status_code == 200 and d["on_hesap"] is True and "etiket" not in d            # etiket ÜRETMEZ
+    assert d["piyasa"]["n"] >= 5 and d["piyasa"]["medyan"] > 0 and d["teklif"]["kaynak"] == "piyasa"
+    assert d["teklif"]["acilis"] <= d["teklif"]["anlasma"] <= d["teklif"]["ust_sinir"] <= 820_000
+    assert d["yasal_uyari"] == EXACT and d["elenme_nedenleri"] == []
+
+
+def test_quick_finds_structural_rejections_immediately_and_offers_nothing(client):
+    over_budget = client.post("/api/v1/quick", json=payload(max_butce=500_000), headers=H).json()
+    assert any("bütçe" in h.lower() for h in over_budget["elenme_nedenleri"]) and over_budget["teklif"] is None
+    high_km = client.post("/api/v1/quick", json=payload(km=900_000), headers=H).json()
+    assert any("km" in h.lower() for h in high_km["elenme_nedenleri"])
+    roof = client.post("/api/v1/quick", json=payload(parts={"tavan": "boyali"}), headers=H).json()
+    assert any("Tavan" in h for h in roof["elenme_nedenleri"])
+
+
+def test_quick_does_not_use_the_daily_llm_budget_and_requires_auth(client, monkeypatch):
+    monkeypatch.setattr(settings, "analyze_daily_limit", 1)
+    for _ in range(5):
+        assert client.post("/api/v1/quick", json=payload(), headers=H).status_code == 200
+    assert not api._calls
+    assert client.post("/api/v1/quick", json=payload()).status_code == 401
+    assert client.post("/api/v1/quick", json=payload(fiyat=-1), headers=H).status_code == 422
+
+
+def test_analyze_honours_second_pass_setting(client, monkeypatch):
+    from arac_eksper.schemas import DescriptionFindings, Evidence
+
+    class Soft:
+        calls = 0
+
+        def parse_structured(self, s, u, m, model_name=None):
+            Soft.calls += 1
+            return DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="belirsiz", motor_sanziman="belirsiz",
+                                       km_degisimi_suphesi=False, tramer_tutari=0,
+                                       olumsuz_sinyaller=[Evidence(etiket="x", alinti="ilk sahibinden")])
+    xray_app.app.dependency_overrides[api.get_llm] = lambda: Soft()
+    monkeypatch.setattr(settings, "xray_second_pass", "hard")
+    client.post("/api/v1/analyze", json=payload(), headers=H)
+    assert Soft.calls == 1                                  # yumuşak sinyal: tek geçiş
+    Soft.calls = 0
+    monkeypatch.setattr(settings, "xray_second_pass", "all")
+    client.post("/api/v1/analyze", json=payload(), headers=H)
+    assert Soft.calls == 2

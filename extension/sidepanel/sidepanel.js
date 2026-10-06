@@ -31,13 +31,33 @@ const VERDICT = {
   ALINMAZ: ['🔴', 'ALINMAZ', 'Elenen ilan']
 };
 
+function loadingView(st) {
+  const out = [head(st.meta)];
+  const q = st.quick;
+  const wait = card();
+  wait.id = 'waiting';
+  const secs = Math.max(0, Math.round((Date.now() - (st.since || st.at || Date.now())) / 1000));
+  wait.append(el('p', '', `⏳ Açıklama röntgeni yapılıyor… ${secs} sn`),
+              el('p', 'small mute', 'Yapay zeka analizi genelde 15-40 saniye sürer. Aşağıdaki piyasa ve teklif ön hesabı bu sırada hazırdır.'));
+  out.push(wait);
+  if (q) {
+    if (q.elenme_nedenleri && q.elenme_nedenleri.length) {
+      const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri (anında tespit)'));
+      const ul = el('ul'); q.elenme_nedenleri.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
+    }
+    out.push(marketCard(q, st.meta));
+    const oc = offerCard(q, true); if (oc) out.push(oc);
+  }
+  return out;
+}
+
 function view(st, tabId) {
   if (!st) {
     const c = card();
     c.append(el('p', 'mute', 'Bir araç ilanı sayfası açın; analiz burada görünür.'), settingsBtn());
     return [c];
   }
-  if (st.status === 'loading') return [head(st.meta), (() => { const c = card(); c.append(el('p', '', '⏳ Analiz ediliyor… (açıklama röntgeni birkaç saniye sürebilir)')); return c; })()];
+  if (st.status === 'loading') return loadingView(st);
   if (st.status === 'unreadable') return [unreadable(st, tabId)];
   if (st.status === 'error') return [head(st.meta), errorCard(st)];
   return renderOk(st, tabId);
@@ -83,30 +103,12 @@ function diagBtn(tabId) {
   return b;
 }
 
-function renderOk(st, tabId) {
-  const d = st.data, out = [];
-
-  // 1) Karne başlığı
-  const [emo, name, sub] = d.beklemede ? ['⏳', 'ANALİZ BEKLİYOR', 'LLM erişilemedi; temiz sayılmaz'] : VERDICT[d.etiket];
-  const v = el('section', 'card verdict v-' + (d.beklemede ? 'WAIT' : d.etiket));
-  v.id = 'verdict';
-  v.append(el('span', 'emo', emo));
-  const t = el('div'); t.append(el('b', '', name), el('span', 'mute small', sub));
-  v.append(t);
-  if (!d.beklemede) { const s = el('div', 'score', `${d.skor}/10`); s.append(el('div', 'mute small', `veri tamlığı %${Math.round(d.veri_tamlik * 100)}`)); v.append(s); }
-  out.push(head(st.meta), v);
-
-  // 2) Elenme nedenleri
-  if (d.hard_fails && d.hard_fails.length) {
-    const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri'));
-    const ul = el('ul'); d.hard_fails.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
-  }
-
-  // 3) Piyasa: ortalama (ilan medyanı), tipik aralık, sapma ve emsal sayısı
+function marketCard(d, meta) {
+  // Piyasa: ortalama (ilan medyanı), tipik aralık, sapma ve emsal sayısı
   const m = card('Piyasa özeti');
   m.id = 'market';
   const p = d.piyasa;
-  m.append(row('İlan fiyatı', tl(st.meta.fiyat), 'big'));
+  m.append(row('İlan fiyatı', tl(meta.fiyat), 'big'));
   if (p && p.medyan > 0) {
     const avg = row('Piyasa ortalaması (ilan medyanı)', tl(p.medyan), 'big'); avg.id = 'avg'; m.append(avg);
     if (p.p25 && p.p75) m.append(row('Tipik aralık', `${tl(p.p25)} – ${tl(p.p75)}`));
@@ -123,25 +125,15 @@ function renderOk(st, tabId) {
     none.id = 'no-market'; m.append(none);
   }
   m.append(el('p', 'disc', 'Bunlar talep (ilan) fiyatlarıdır; gerçek satış fiyatı değildir.'));
-  out.push(m);
+  return m;
+}
 
-  // 4) Gizli kusur röntgeni
-  const x = card('Gizli kusur röntgeni');
-  x.id = 'xray';
-  if (d.beklemede) x.append(el('p', 'mute', 'Açıklama analizi bekliyor.'));
-  else if (!d.kanitlar.length) x.append(el('p', 'mute', 'Açıklamada kanıtlı bulgu yok. (Bu, sorun olmadığı anlamına gelmez.)'));
-  d.kanitlar.forEach((k) => {
-    const e = el('div', 'ev'); e.append(el('span', 'dot ' + (k.tur === 'dolandiricilik' ? 'olumsuz' : k.tur)));
-    const b = el('div'); b.append(el('b', '', k.etiket), document.createElement('br'), el('q', 'small', k.alinti));
-    e.append(b); x.append(e);
-  });
-  [['⚠️', d.eksiler], ['✅', d.artilar]].forEach(([ic, list]) => (list || []).forEach((s) => x.append(el('div', 'small', `${ic} ${s}${ic === '✅' ? ' (beyan)' : ''}`))));
-  out.push(x);
-
-  // 5) Teklif kutusu: açılış, hedef anlaşma, üst sınır + hesabın dayanağı
+function offerCard(d, onhesap) {
+  // Teklif kutusu: açılış, hedef anlaşma, üst sınır + hesabın dayanağı
   const tk = d.teklif;
   if (tk || d.tavsiye_teklif) {
-    const o = card('Teklif & pazarlık'); o.id = 'offer';
+    const o = card(onhesap ? 'Teklif & pazarlık (ön hesap)' : 'Teklif & pazarlık'); o.id = 'offer';
+    if (onhesap) o.append(el('p', 'small warnbox', 'Ön hesap: açıklama analizi (tramer, kusur) bitince kesinleşir.'));
     const w = el('div', 'offer');
     const acilis = tk ? tk.acilis : d.tavsiye_teklif, ust = tk ? tk.ust_sinir : d.ust_sinir;
     w.append(row('Açılış teklifi', tl(acilis), 'big'));
@@ -166,8 +158,48 @@ function renderOk(st, tabId) {
       });
       w.append(b, el('p', 'disc', 'Metin yalnız kopyalanır; göndermeyi sen yaparsın. Üst sınır metne girmez.'));
     }
-    o.append(w); out.push(o);
+    o.append(w);
+    return o;
   }
+  return null;
+}
+
+
+function renderOk(st, tabId) {
+  const d = st.data, out = [];
+
+  // 1) Karne başlığı
+  const [emo, name, sub] = d.beklemede ? ['⏳', 'ANALİZ BEKLİYOR', 'LLM erişilemedi; temiz sayılmaz'] : VERDICT[d.etiket];
+  const v = el('section', 'card verdict v-' + (d.beklemede ? 'WAIT' : d.etiket));
+  v.id = 'verdict';
+  v.append(el('span', 'emo', emo));
+  const t = el('div'); t.append(el('b', '', name), el('span', 'mute small', sub));
+  v.append(t);
+  if (!d.beklemede) { const s = el('div', 'score', `${d.skor}/10`); s.append(el('div', 'mute small', `veri tamlığı %${Math.round(d.veri_tamlik * 100)}`)); v.append(s); }
+  out.push(head(st.meta), v);
+
+  // 2) Elenme nedenleri
+  if (d.hard_fails && d.hard_fails.length) {
+    const c = el('section', 'alert'); c.append(el('b', '', 'Elenme nedenleri'));
+    const ul = el('ul'); d.hard_fails.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
+  }
+
+  out.push(marketCard(d, st.meta));
+
+  // 4) Gizli kusur röntgeni
+  const x = card('Gizli kusur röntgeni');
+  x.id = 'xray';
+  if (d.beklemede) x.append(el('p', 'mute', 'Açıklama analizi bekliyor.'));
+  else if (!d.kanitlar.length) x.append(el('p', 'mute', 'Açıklamada kanıtlı bulgu yok. (Bu, sorun olmadığı anlamına gelmez.)'));
+  d.kanitlar.forEach((k) => {
+    const e = el('div', 'ev'); e.append(el('span', 'dot ' + (k.tur === 'dolandiricilik' ? 'olumsuz' : k.tur)));
+    const b = el('div'); b.append(el('b', '', k.etiket), document.createElement('br'), el('q', 'small', k.alinti));
+    e.append(b); x.append(e);
+  });
+  [['⚠️', d.eksiler], ['✅', d.artilar]].forEach(([ic, list]) => (list || []).forEach((s) => x.append(el('div', 'small', `${ic} ${s}${ic === '✅' ? ' (beyan)' : ''}`))));
+  out.push(x);
+
+  { const oc = offerCard(d, false); if (oc) out.push(oc); }
 
   // 6) Ekspertiz kontrol listesi
   const k = card('Ekspertiz kontrol listesi');
@@ -188,6 +220,7 @@ function row(label, value, cls) {
 }
 
 chrome.storage.onChanged.addListener((_c, area) => { if (area === 'session') render(); });
+setInterval(() => { if (document.getElementById('waiting')) render(); }, 1000);   // bekleme sayacı
 chrome.tabs.onActivated.addListener(render);
 chrome.tabs.onUpdated.addListener((_id, ch) => { if (ch.status) render(); });
 render();
