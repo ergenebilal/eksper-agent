@@ -630,3 +630,26 @@ def test_document_xray_tramer_paste(browser_ctx):
     txt = panel.text_content("#belge-sonuc")
     assert "Hasar kaydı" in txt and "64.000" in txt
     panel.close(); page.close()
+
+
+def test_old_domain_setting_migrates_and_keeps_the_login(browser_ctx):
+    """2026-10-07 alan adı taşıması: eski varsayılan adres kayıtlıysa, yeni adres sağlıklıysa ona geçer; değilse eskide
+    kalır. Cihaz anahtarı korunur. (Testte ağ yok: yeni adresin /healthz yanıtı route ile verilir.)"""
+    ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
+    eski = sw.evaluate("async () => chrome.storage.local.get(['apiBase', 'token'])")
+    try:
+        sw.evaluate("async () => chrome.storage.local.set({apiBase: 'https://otoxray.cybergene.co'})")
+        sw.evaluate("() => { gecisDenendi = 0; }")
+        ctx.route("https://cyberoto.cybergene.co/healthz", lambda r: r.fulfill(status=503, body="{}"))
+        assert sw.evaluate("async () => getSettings()")["apiBase"] == "https://otoxray.cybergene.co"   # yeni adres hazır değil
+        ctx.unroute("https://cyberoto.cybergene.co/healthz")
+        ctx.route("https://cyberoto.cybergene.co/healthz", lambda r: r.fulfill(status=200, content_type="application/json", body='{"ok":true}'))
+        sw.evaluate("() => { gecisDenendi = 0; }")
+        s = sw.evaluate("async () => getSettings()")
+        assert s["apiBase"] == "https://cyberoto.cybergene.co" and s["token"] == eski["token"]
+        assert sw.evaluate("async () => (await chrome.storage.local.get('apiBase')).apiBase") == "https://cyberoto.cybergene.co"
+        sw.evaluate("async () => chrome.storage.local.set({apiBase: 'https://ozel.sunucu.example'})")
+        assert sw.evaluate("async () => getSettings()")["apiBase"] == "https://ozel.sunucu.example"   # özel adrese dokunulmaz
+    finally:
+        ctx.unroute("https://cyberoto.cybergene.co/healthz")
+        sw.evaluate("async (v) => chrome.storage.local.set(v)", eski)

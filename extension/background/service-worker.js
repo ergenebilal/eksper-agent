@@ -5,15 +5,35 @@
 importScripts('../lib/site.js');
 
 // autoAnalyze varsayılan KAPALI: ilan açmak hak harcamaz; yapay zeka röntgeni paneldeki düğmeyle çalışır
-const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
+const DEFAULTS = { apiBase: 'https://cyberoto.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
 const TIMEOUT_MS = 120000;                    // LLM çözümlemesi uzun sürebilir
 const KEY = (tabId) => `r:${tabId}`;
 const MK = 'mk';                              // yerel piyasa deposu (emsaller): yalnız sayısal nitelikler
 const MK_TTL = 30 * 86400000, MK_GROUPS = 40, MK_PER_GROUP = 300;
 const CACHE_TTL = 12 * 3600000, CACHE_MAX = 100;
 
+// 2026-10-07 alan adı taşıması: eski varsayılan adresi kayıtlı kurulumlar, yeni adres sağlıklı yanıt verdiği anda ona
+// geçer (yeni adres henüz yayında değilse eskisiyle çalışmaya devam eder). Cihaz anahtarı (Bearer) alan adından
+// bağımsızdır: oturum korunur, yeniden giriş gerekmez. Deneme en fazla 10 dakikada bir.
+const ESKI_ADRESLER = ['https://otoxray.cybergene.co'];
+let gecisDenendi = 0;
+
+async function yeniAdresHazir() {
+  if (Date.now() - gecisDenendi < 600000) return false;
+  gecisDenendi = Date.now();
+  try {
+    const r = await fetch(DEFAULTS.apiBase + '/healthz', { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(5000) });
+    return r.ok;
+  } catch (_) { return false; }
+}
+
 async function getSettings() {
-  return { ...DEFAULTS, ...(await chrome.storage.local.get(Object.keys(DEFAULTS))) };
+  const s = { ...DEFAULTS, ...(await chrome.storage.local.get(Object.keys(DEFAULTS))) };
+  if (ESKI_ADRESLER.includes(s.apiBase) && await yeniAdresHazir()) {
+    s.apiBase = DEFAULTS.apiBase;
+    await chrome.storage.local.set({ apiBase: s.apiBase });
+  }
+  return s;
 }
 
 function isLoopbackOrPrivate(host) {

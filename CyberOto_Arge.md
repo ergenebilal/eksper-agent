@@ -12,10 +12,10 @@ Son güncelleme: 2026-10-07 (R0–R5 yazılım işleri tamam) · Hazırlayan: Cl
 
 1. `git status`, `git log --oneline -5`. Çalışma dalı: **`feat/f0-eval`** (main'e göre ~50 commit önde, **push edilmedi**, push kullanıcıya ait).
 2. Testler: `uv run pytest -q` (≈4 dk, 450 test; `tests/test_extension_e2e.py` gerçek Chromium ister: `uv run playwright install chromium`).
-3. Canlı sistem: `https://otoxray.cybergene.co` (sağlık: `/healthz`). Yayın: `bash deploy/redeploy.sh` (yalnız **commit edilmiş** kodu gönderir).
+3. Canlı sistem: `https://cyberoto.cybergene.co` (sağlık: `/healthz`; eski `otoxray.cybergene.co` geçiş döneminde API'yi sunar). Yayın: `bash deploy/redeploy.sh` (yalnız **commit edilmiş** kodu gönderir).
 4. Ayrıntılı altyapı: [deploy/README.md](deploy/README.md) · ürün kararları: [PLAN.md](PLAN.md) · tasarım tokenları: [design/cybergene-dna.json](design/cybergene-dna.json).
 5. Bir sonraki iş: R0–R5 yazılım işleri bitti (2026-10-07). Kalanlar **kullanıcı girdisi** bekliyor → **§7 Açık kararlar**. Girdi gelince ilgili pakete dön.
-6. Ürün adı **CyberOto AI** (eski: otoXray). Teknik kimlikler bilerek değişmedi: alan adı `otoxray.cybergene.co`, systemd `otoxray`, anahtar öneki `oxr_`.
+6. Ürün adı **CyberOto AI** (eski: otoXray). Alan adı `cyberoto.cybergene.co` (P.7). İç teknik adlar bilerek değişmedi: systemd `otoxray`, `/opt/otoxray`, anahtar öneki `oxr_`.
 
 ## 1. Ürün ve mevcut durum (6 Ekim 2026)
 
@@ -221,7 +221,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 | P.4 | Kanıt listesinde aynı bulgunun iki kez görünmesi (olumsuz sinyal + hard-claim) | ✅ c1bdce1 | Küçük UX düzeltmesi, `api.py:_kanitlar` |
 | P.5 | Gmail/Outlook'ta HTML e-posta görünümü kontrolü (koyu mod dönüşümü) | 👤 | Kullanıcı ekran görüntüsü gönderir |
 | P.6 | **CyberOto AI** yeniden adlandırma + logo | ✅ 31e42d3: tüm kullanıcıya görünen adlar, wordmark (Cyber beyaz + Oto #FF9A24), `design/brand/`. Teknik kimlikler değişmedi | — |
-| P.7 | Alan adını `cyberoto.cybergene.co`'ya taşıma (isteğe bağlı) | 👤 karar | DNS + sertifika + eklenti `host_permissions` + mevcut kullanıcıların sunucu adresi; eski adres yönlendirmeyle korunmalı |
+| P.7 | Alan adını `cyberoto.cybergene.co`'ya taşıma | 🔄 kod + sunucu hazır · 👤 DNS A kaydı | Kod: eklenti 0.2.0 (varsayılan adres, yeni adres sağlıklıysa kayıtlı eski adresten otomatik geçiş, anahtar korunur), `PUBLIC_URL`. Sunucu: `PANEL_ALLOWED_HOSTS` iki ad, `PUBLIC_URL` geçişe kadar eski. DNS gelince `bash deploy/alan-adi-gecisi.sh` (DNS yoksa dokunmadan durur; denendi). Eski adres API'yi sunmaya devam eder, tarayıcıyı 301 ile yönlendirir |
 
 ## 6. Hak (kredi) ekonomisi — yeni özellikler
 
@@ -237,14 +237,12 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 
 ## 7. Açık kararlar (kullanıcıya sorulacak — tahmin etme)
 
-1. **`masraf_kb.yaml` onayı** (42 kalem): onaylanana kadar gerçek maliyet ve belge onarımlarında "tutar onayı bekliyor" görünür.
-2. **`likidite_kb.yaml` onayı** (10 kural): onaylanana kadar piyasa hızı bandı gösterilmez.
-3. **R0.3 taslak etiketleri** (18 vaka; 3 SINIRDA: g007 baskı balatası, g015 bedelsiz tramer kaydı, g017 arka panel işlemi): onaylanınca ana eval setine taşınır.
-4. **`rules.yaml` yeni anahtarları** (R4): `sinyal.*` eşikleri ve `teklif.aciliyet_ek_orta/yuksek` (%1/%2). Dosya başlığı "eşikleri yalnızca kullanıcı değiştirir" diyor: değerleri onaylayın ya da değiştirin.
-5. **Gerçek belgeler**: 3-5 farklı firmanın ekspertiz raporu + 2-3 tramer sorgu metni (maskelemeyi ajan yapar) → R5.1/R5.4 gerçek fixture testi.
-6. **Alan adı** (P.7): `otoxray.cybergene.co` kalsın mı, `cyberoto.cybergene.co`'ya mı taşınsın?
-7. **Yasal metinler** (P.2): `[...]` alanları (unvan, adres, LLM sağlayıcısı ve konumu) + avukat incelemesi.
-8. Push, Chrome Web Store "Özel" yayın, e-posta görünüm kontrolü (P.1, P.3, P.5).
+1. **DNS:** `cyberoto.cybergene.co` A kaydı → `13.140.183.88`. Sonra `bash deploy/alan-adi-gecisi.sh` (ajan ya da kullanıcı çalıştırır) ve eklenti 0.2.0 dağıtımı.
+2. **Gerçek belgeler**: farklı firmaların ekspertiz raporu fotoğrafları + tramer ekran görüntüleri (kullanıcı arıyor). Not: fotoğraf/ekran görüntüsü okumak görsel analiz ister (R5.2); bugünkü belge röntgeni metin ve metin katmanlı PDF okur.
+3. **Yasal metinler** (P.2): `[...]` alanları + avukat (kullanıcıda).
+4. Push, Chrome Web Store "Özel" yayın, e-posta görünüm kontrolü (P.1, P.3, P.5).
+
+Onaylananlar (2026-10-07, sohbette): masraf_kb 42 kalem, likidite_kb 10 kural, R0.3 18 vaka (3 sınırda dahil), rules.yaml %1/%2 açılış indirimi, alan adı taşıma.
 
 (7 Ekim 2026 öncesi kararlar → §8.)
 
@@ -274,6 +272,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | 2026-10-07 | Aciliyet dili finansal/analitik/objektif (§7 dil kılavuzu) | Kullanıcı |
 | 2026-10-07 | Görsel analiz (R5.2) bütçesi askıda; metin tabanlı analizler bitince değerlendirilecek | Kullanıcı |
 | 2026-10-07 | Ham örnek sayfalar `data/samples/` (git dışı); temizlenmiş fixture `tests/fixtures/real/` | Claude, kullanıcı ile |
+| 2026-10-07 | KB'ler (masraf 42, likidite 10), R0.3 18 vaka, R4 eşikleri onaylandı; alan adı `cyberoto.cybergene.co` | Kullanıcı |
 | 2026-10-07 | Ekspertiz raporu analizi plana alındı (R5.4), Tramer ile tek "Belge röntgeni"; kalan tüm işler otonom tamamlansın | Kullanıcı |
 | 2026-10-07 | Ürün adı **CyberOto AI** (kısa: CyberOto); CyberGene projeleri "Cyber + alan" kalıbıyla adlandırılır. Yeniden adlandırma altyapı bitince yapılır; alan adı değişikliği kullanıcıya sorulur; logo kullanıcıdan gelecek | Kullanıcı |
 
@@ -290,6 +289,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
+| 2026-10-07 | Claude (5d82b169) | Onaylar + alan adı hazırlığı | 7f3e6b4 KB/eval onayları yayında (tutarlar ve piyasa hızı bandı etkin). Alan adı: eklenti 0.2.0 + `deploy/alan-adi-gecisi.sh` + nginx şablonları; sunucu `.env` iki adı kabul eder. Canlı hata bulundu ve düzeltildi: nginx gövde sınırı 256k idi, belge röntgeni PDF'leri 413 alırdı → 8m. **Bekleyen:** DNS A kaydı. |
 | 2026-10-07 | Claude (5d82b169) | R4, R5, R0.3/R0.4, R2.2b, P.2/P.4, yeniden adlandırma ✅ | 1008db6 R4 sinyaller + likidite · 6dd51ee belge röntgeni (pypdf) · c1bdce1 kalibrasyon + kanıt tekrarı · f9c1c3b Python ayrıştırıcı gerçek yapıda · e94011f gerçek vaka taslakları · b618df2 LLM masraf kalemleri · 643d158/6363cb2 saklama temizliği + yasal taslaklar · 31e42d3 CyberOto AI. 450 test, 31e42d3 yayında. Eval (canlı LLM): ana 50 vaka 1,0/1,0; gerçek taslak 18 vaka 1,0/1,0. Not: kullanıcının `rapor.md` dosyası yanlışlıkla bir commit'e girdi; commit'ten ve sunucudan çıkarıldı (yerelde duruyor, izlenmiyor). **Sıradaki:** §7 kullanıcı girdileri. |
 | 2026-10-07 | Claude (5d82b169) | R3 ✅ | Savaş Odası: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |

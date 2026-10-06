@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CyberOto AI",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CyberGene · Araç ilanını ekspertiz öncesi eler: kusur röntgeni, piyasa kıyası, teklif. Karar destek aracıdır, ekspertiz değildir.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -9,6 +9,7 @@
     "storage"
   ],
   "host_permissions": [
+    "https://cyberoto.cybergene.co/*",
     "https://otoxray.cybergene.co/*",
     "http://127.0.0.1/*",
     "http://localhost/*"

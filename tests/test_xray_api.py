@@ -396,7 +396,8 @@ def test_manifest_is_store_ready_and_points_to_hosted_api():
     import pathlib
     m = json.loads((pathlib.Path(__file__).resolve().parent.parent / "extension/manifest.json").read_text("utf-8"))
     assert len(m["description"]) <= 132                       # Chrome Web Store sınırı
-    assert "https://otoxray.cybergene.co/*" in m["host_permissions"]
+    assert m["host_permissions"][0] == "https://cyberoto.cybergene.co/*"            # 2026-10-07 alan adı
+    assert "https://otoxray.cybergene.co/*" in m["host_permissions"]              # geçiş dönemi
     assert not any(p.startswith(("http://*", "https://*", "<all_urls>")) for p in m["host_permissions"])
 
 

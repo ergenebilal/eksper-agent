@@ -1,6 +1,6 @@
 /* CyberOto ayarlar: e-posta koduyla giriş (anahtar sayfaya hiç verilmez, service worker saklar), tercihler, gelişmiş. */
 const $ = (id) => document.getElementById(id);
-const DEFAULTS = { apiBase: 'https://otoxray.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
+const DEFAULTS = { apiBase: 'https://cyberoto.cybergene.co', token: '', email: '', maxButce: null, autoAnalyze: false, autoBatch: true };
 
 function say(id, text, kind) { const m = $(id); m.textContent = text; m.className = 'msg' + (kind ? ' ' + kind : ''); }
 const send = (msg) => chrome.runtime.sendMessage(msg);
