@@ -111,6 +111,7 @@ function previewView(st, tabId) {
     const ul = el('ul'); q.elenme_nedenleri.forEach((h) => ul.append(el('li', '', h))); c.append(ul); out.push(c);
   }
   out.push(xrayCard(q, tabId), marketCard(q, st.meta));
+  { const cc = costCard(q.gercek_maliyet, st.meta); if (cc) out.push(cc); }
   const oc = offerCard(q, true); if (oc) out.push(oc);
   const rc = rehberCard(); if (rc) out.push(rc);
   return out;
@@ -221,6 +222,30 @@ function rangeBar(p, fiyat) {
   return wrap;
 }
 
+function costCard(gm, meta) {
+  // Tahmini gerçek maliyet: ilanın söylediği yapılacak masraflar (alıntılı) + km'si gelmiş bakım (olası). Tutar ARALIK.
+  if (!gm || !gm.kalemler || !gm.kalemler.length) return null;
+  const c = card('Tahmini gerçek maliyet'); c.id = 'cost';
+  const tutarli = gm.kalemler.some((k) => k.aralik);
+  if (tutarli) {
+    c.append(row('İlan fiyatı', tl(meta.fiyat)));
+    const r = row('Masraflarla birlikte', `${tl(gm.toplam_alt)} – ${tl(gm.toplam_ust)}`, 'big'); r.id = 'cost-total'; c.append(r);
+  }
+  const ul = el('ul', 'costs');
+  gm.kalemler.forEach((k) => {
+    const li = el('li', 'cost ' + k.kesinlik);
+    const top = el('div', 'row');
+    top.append(el('span', '', k.ad), el('span', 'num', k.aralik ? `${tl(k.aralik[0])} – ${tl(k.aralik[1])}` : 'tutar onayı bekliyor'));
+    li.append(top);
+    if (k.alinti) li.append(el('q', 'small', k.alinti));
+    if (k.kesinlik === 'olasi') li.append(el('span', 'tag', 'Olası: ' + (k.neden || 'yapıldığı belirtilmemiş')));
+    ul.append(li);
+  });
+  c.append(ul, el('p', 'disc', 'Tahmini aralıktır (işçilik dahil, ' + (gm.segment === 'bilinmiyor' ? 'araç sınıfı bilinmediği için geniş aralık' : 'araç sınıfına göre') +
+    '). Kesin fiyat için ustadan teklif alın. Olası kalemler teklife yansıtılmaz.'));
+  return c;
+}
+
 function offerCard(d, onhesap) {
   // Teklif kutusu: açılış, hedef anlaşma, üst sınır + hesabın dayanağı
   const tk = d.teklif;
@@ -291,6 +316,7 @@ function renderOk(st, tabId) {
   }
 
   out.push(marketCard(d, st.meta));
+  { const cc = costCard(d.gercek_maliyet, st.meta); if (cc) out.push(cc); }
 
   // 4) Gizli kusur röntgeni
   const x = card('Gizli kusur röntgeni');

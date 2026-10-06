@@ -164,3 +164,20 @@ def test_gallery_samples_are_read():
     """'Galeriden' klasöründeki örnekler: alanlar okunur; Kimden alanı sayfanın kendisinde ne yazıyorsa o."""
     for no in ("1344374164", "1344374417"):
         assert (FX / f"detail_{no}.html").exists()
+
+
+def test_real_listings_declared_costs_via_quick(extracted, monkeypatch):
+    """Gerçek açıklamalardaki 'yapılacak' işler ön hesapta (hak harcamadan) alıntıyla döner; yapılmış işler dönmez."""
+    from arac_eksper.config.settings import settings
+    from arac_eksper.web import security, xray_app
+    monkeypatch.setattr(settings, "extension_token", "r" * 24)
+    security._fails.clear()
+    beklenen = {"1343930424": {"senkromec", "amortisor_cift"}, "1343928311": {"debriyaj_seti"}}
+    with TestClient(xray_app.app, base_url="http://panel.test") as c:
+        for no, r in extracted.items():
+            gm = c.post("/api/v1/quick", json=r["p"], headers={"Authorization": "Bearer " + "r" * 24}).json()["gercek_maliyet"]
+            beyan = {k["kod"] for k in (gm or {}).get("kalemler", []) if k["kesinlik"] == "beyan"}
+            assert beyan == beklenen.get(no, set()), no
+            for k in (gm or {}).get("kalemler", []):
+                if k["alinti"]:
+                    assert k["alinti"] in r["p"]["baslik"] + "\n" + r["p"]["aciklama"], no

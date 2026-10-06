@@ -84,6 +84,8 @@ kalemler:
   # ---------------------------------------------------------------- şanzıman / aktarma
   - {kod: debriyaj_seti, ad: "Debriyaj seti (manuel)", anahtar_kelimeler: ["debriyaj", "baskı balata", "kavrama kaçırıyor"],
      aralik: {ekonomik: [9000, 16000], orta: [12000, 22000], ust: [18000, 32000], premium: [25000, 50000]}, onayli: false}
+  - {kod: senkromec, ad: "Manuel şanzıman senkromeç onarımı", anahtar_kelimeler: ["senkromeç", "sekromenci", "senkromenç", "vitesten atıyor", "vites atıyor"],
+     aralik: {ekonomik: [8000, 18000], orta: [10000, 22000], ust: [14000, 30000], premium: [20000, 45000]}, onayli: false}
   - {kod: cift_kutleli_volan, ad: "Çift kütleli volan", anahtar_kelimeler: ["volan", "çift kütleli"],
      aralik: {ekonomik: [15000, 25000], orta: [18000, 32000], ust: [25000, 42000], premium: [35000, 70000]}, onayli: false}
   - {kod: cift_kavrama, ad: "Çift kavrama şanzıman (DSG/EDC/Powershift/DCT) kavrama değişimi", anahtar_kelimeler: ["kavrama", "dsg", "edc", "powershift", "titreme"],

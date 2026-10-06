@@ -17,7 +17,8 @@
 #     yakit           : (ops.) "dizel" | "benzin" | "lpg" | "hibrit"
 #     km_esik         : (ops.) bu km'den sonra risk belirginleşir → madde "tetiklenir", listede öne çıkar
 #     ciddiyet        : yuksek | orta | dusuk  (puana yalnız "yuksek" + tetiklenmiş madde yansır: rules.yaml kronik_ariza)
-#   bakim[]           : periyodik ağır bakım (R2 gerçek maliyet ve soru çarşafı için): kalem, aralik_km [alt, üst], motor (ops.), not
+#   bakim[]           : periyodik ağır bakım (R2 gerçek maliyet ve soru çarşafı için): kalem, aralik_km [alt, üst], motor (ops.), not,
+#                       masraf (ops.): masraf_kb.yaml kalem kodu (tutar oradan gelir)
 #   kaynak, onayli    : kaydın dayanağı ve onay durumu
 
 models:
@@ -34,7 +35,7 @@ models:
       - {etiket: "1.5 dCi biyel/yatak sesi (yüksek km)", motor: ["1.5 dCi"], km_esik: 200000, ciddiyet: orta,
          kontrol: "Soğuk çalıştırmada alt taraftan vuruntu sesi dinletin; yağ bakım geçmişini isteyin"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000], not: "Kayışlı; değiştiyse fatura isteyin"}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000], not: "Kayışlı; değiştiyse fatura isteyin"}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 
@@ -48,7 +49,7 @@ models:
       - {etiket: "1.5 dCi enjektör/DPF", motor: ["1.5 dCi"], km_esik: 150000, ciddiyet: orta,
          kontrol: "Rölantide düzensizlik, siyah duman; enjektör geri dönüş testi"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 
@@ -62,7 +63,7 @@ models:
       - {etiket: "1.5 dCi DPF/EGR", motor: ["1.5 dCi", "1.5 Blue dCi"], km_esik: 150000, ciddiyet: orta,
          kontrol: "DPF/EGR hata kayıtları"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 
@@ -74,7 +75,7 @@ models:
       - {etiket: "Easy-R robotize şanzıman", vites: yari_otomatik, km_esik: 80000, ciddiyet: yuksek,
          kontrol: "Geçişlerde duraksama/sarsıntı, yokuşta geri kaçma; aktüatör ve kavrama durumu"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 
@@ -88,7 +89,7 @@ models:
       - {etiket: "4x4 aktarma organları", motor: ["4x4"], km_esik: 100000, ciddiyet: orta,
          kontrol: "Arka diferansiyel ve aktarma kutusunda ses/yağ kaçağı; arazi kullanımını sorun"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 
@@ -100,7 +101,7 @@ models:
       - {etiket: "Easy-R robotize şanzıman", vites: yari_otomatik, km_esik: 80000, ciddiyet: yuksek,
          kontrol: "Geçişlerde duraksama/sarsıntı; aktüatör ve kavrama durumu"}
     bakim:
-      - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
+      - {kalem: "Triger seti + devirdaim", masraf: triger_seti, motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
     kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
     onayli: true
 

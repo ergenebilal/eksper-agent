@@ -114,7 +114,7 @@ def bakim_kalemleri(detail: ListingDetail, kb: list[dict] | None = None) -> list
             if b.get("motor") and not _item_matches({"motor": b["motor"]}, detail, text):
                 continue
             if detail.km >= b["aralik_km"][0]:
-                out.append({"kalem": b["kalem"], "aralik_km": b["aralik_km"], "not": b.get("not", "")})
+                out.append({"kalem": b["kalem"], "aralik_km": b["aralik_km"], "not": b.get("not", ""), "masraf": b.get("masraf")})
     return out
 
 

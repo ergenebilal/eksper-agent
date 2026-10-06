@@ -15,7 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
-from arac_eksper.analysis import checklist, description_llm, market_calc, offer as offer_calc, rehber, rules_engine
+from arac_eksper.analysis import checklist, description_llm, market_calc, masraf, offer as offer_calc, rehber, rules_engine
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.config.settings import settings
 from arac_eksper.llm.client import LLMUnavailable, OpenAIClient
@@ -198,8 +198,9 @@ def quick(req: AnalyzeRequest, user=Depends(current_user)):
     rules = load_rules()
     hard = rules_engine.evaluate_hard_fails(detail, empty, stats, rules, req.max_butce)
     pending = Verdict(ilan_no=req.ilan_no, etiket="DUSUNULEBILIR", guven_skoru=0.0, veri_tamlik=0.0, piyasa=stats)
-    b = None if hard else offer_calc.breakdown(detail, empty, pending, allow_no_market=True)
-    return {"ilan_no": req.ilan_no, "on_hesap": True, "elenme_nedenleri": hard,
+    gm = masraf.gercek_maliyet(detail)
+    b = None if hard else masraf.teklife_uygula(offer_calc.breakdown(detail, empty, pending, allow_no_market=True), gm)
+    return {"ilan_no": req.ilan_no, "on_hesap": True, "elenme_nedenleri": hard, "gercek_maliyet": gm,
             "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                        "min_emsal": rules["etiket"]["min_emsal"]},
             "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "teklif": b, "yasal_uyari": DISCLAIMER,
@@ -230,7 +231,8 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         accounts.add_charge(user["id"], h)
     v = rules_engine.determine_verdict(detail, findings, stats, max_butce=req.max_butce)
     # Açıklamalı teklif: piyasa varsa piyasadan, yoksa YALNIZ ilan fiyatından (kaynak="ilan", düşük güven)
-    b = offer_calc.breakdown(detail, findings, v, allow_no_market=True)
+    gm = masraf.gercek_maliyet(detail)
+    b = masraf.teklife_uygula(offer_calc.breakdown(detail, findings, v, allow_no_market=True), gm)
     if b:
         v.tavsiye_teklif, v.ust_sinir = b["acilis"], b["ust_sinir"]
     kanitlar, vurgu = _kanitlar(findings)
@@ -240,7 +242,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm), user=Depends(current_user
         "trace": v.trace if not user["id"] else [],     # kural ağırlıkları yalnız sahibe: davetliden kopyalanamasın
         "piyasa": {"n": stats.n, "medyan": stats.medyan, "p25": stats.p25, "p75": stats.p75, "guven": stats.guven,
                    "min_emsal": load_rules()["etiket"]["min_emsal"]},
-        "teklif": b,
+        "teklif": b, "gercek_maliyet": gm,
         "sapma_yuzde": _sapma(req.fiyat, stats.medyan), "tavsiye_teklif": v.tavsiye_teklif, "ust_sinir": v.ust_sinir,
         "ekspertiz_kontrol_listesi": v.ekspertiz_kontrol_listesi, "kanitlar": kanitlar, "vurgu": vurgu,
         "ekspertiz": v.ekspertiz_bolumleri, "soru_carsafi": v.soru_carsafi, "soru_metni": checklist.soru_metni(v.soru_carsafi),

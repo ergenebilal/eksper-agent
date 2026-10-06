@@ -182,9 +182,10 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 ### R2 — Gerçek maliyet
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
-| R2.1 | `masraf_kb.yaml`: ~40 yaygın kalem × segment, min-max TL, tarih, kaynak (kullanıcı onaylı) | ⬜ (+👤) | Şema testi; tarihi 6 aydan eski kalem uyarı verir | — |
-| R2.2 | LLM şemasına `masraf_kalemleri` (Evidence) + jargon; eval'e masraf vakaları | ⬜ | Masraf kalemi recall ≥ %85 (eval), uydurma tutar 0 | R0.3 tercihen |
-| R2.3 | **B · Gerçek maliyet** hesabı (metin + km tetikli) → aralık + döküm; `offer.py` entegrasyonu | ⬜ | Panelde "Tahmini gerçek maliyet: X–Y TL" + kalemler; teklif dayanağında görünür | R2.1, R2.2, R1.1 |
+| R2.1 | `masraf_kb.yaml`: ~40 yaygın kalem × segment, min-max TL, tarih, kaynak (kullanıcı onaylı) | ✅ taslak (42 kalem, 4 segment, hepsi onaysız) · 👤 onay | Şema testi; tarihi 6 aydan eski kalem uyarı verir | — |
+| R2.2 | LLM şemasına `masraf_kalemleri` (Evidence) + jargon; eval'e masraf vakaları | ✅ **v0 kural tabanlı** (LLM'siz, `analysis/masraf.py`): anahtar kelime + ihtiyaç ifadesi, tamamlanmış/olumsuz atlanır, uzun ifade önce; 18 gerçek ilanda 3/3 doğru, 0 yanlış alarm. LLM ile genişletme (eşanlamlılar) → R2.2b ⬜ | Masraf kalemi recall ≥ %85 (eval), uydurma tutar 0 | R0.3 tercihen |
+| R2.2b | LLM ile masraf kalemi genişletme (eşanlamlı/dolaylı ifadeler), alıntı zorunlu, tutar yine KB'den; `arac eval`'e masraf vakaları | ⬜ | Kural tabanlıya göre recall artışı ölçülür, uydurma tutar 0 | R0.3 |
+| R2.3 | **B · Gerçek maliyet** hesabı (metin + km tetikli) → aralık + döküm; `offer.py` entegrasyonu | ✅ ön hesapta da (hak harcamaz); beyan kalemlerin alt tahmini teklifden düşülür, olası bakım yalnız gösterilir; panel "Tahmini gerçek maliyet". **Tutarlar R2.1 onayına kadar "onay bekliyor"** | Panelde "Tahmini gerçek maliyet: X–Y TL" + kalemler; teklif dayanağında görünür | R2.1, R2.2, R1.1 |
 
 ### R3 — Savaş Odası
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
@@ -273,6 +274,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
+| 2026-10-07 | Claude (5d82b169) | R1.1/R1.3 onay, R2 | Kullanıcı R1.1 (32 model) ve R1.3'ü sohbette toplu onayladı (kaynak alanlarına işlendi). R2.1 masraf_kb taslağı (42 kalem). R2.2 planı değişti: LLM yerine önce kural tabanlı bulucu (alıntılı, ön hesapta da çalışır); LLM genişletmesi R2.2b. R2.3 gerçek maliyet + teklif düşümü + panel kartı. 389 test. **Sıradaki:** kullanıcıdan masraf_kb onayı; sonra R3 (Savaş Odası). |
 | 2026-10-07 | Claude (5d82b169) | R1.2 ✅, R1.4 ✅ | Araca özel ekspertiz listesi ve soru çarşafı (`analysis/checklist.py`), API `ekspertiz`/`soru_carsafi`/`soru_metni`, panel bölümleri; 8 birim + e2e. 364 test. **R1 durumu:** R1.1 ve R1.3 taslakları kullanıcı onayı bekliyor (onaylanınca kronik/bakım maddeleri ve alım günü listesi görünür). **Sıradaki ajan:** onay gelirse `arac kb kontrol` → yayın; yoksa R2.1 `masraf_kb.yaml` taslağı (aralıklar, kaynak/tarih, onaysız). |
 | 2026-10-07 | Claude (5d82b169) | R0 ✅ | 2. tur örnekler (3 arama, 2 galeriden, 3 boş şemalı) işlendi. Boş şema = "orijinal" sanma hatası anlam düzeyinde çözüldü (`diagram_check.py`, 22 birim testi). Arama: seri/marka okuma, model karışması, reklam satırı düzeltildi. Kullanıcı isteği: arama çubuğu sayfa geçişi/geri dönüşte kayboluyordu → kalıcı + CyberGene tasarımı. 356 test. **R0 tamam; R1'e geçiliyor.** |
 | 2026-10-07 | Claude (5d82b169) | R0.1, R0.2 | 13 gerçek ilan temizlenip `tests/fixtures/real`'e alındı (satıcı/hesap blokları, telefon, plaka, harita koordinatı silindi; hesap adı 0 eşleşme). Eklenti detay okuması 13/13 doğrulandı; **hasar şeması okunmuyordu (tüm gerçek ilanlar 🟢 alamıyordu) → düzeltildi**. KB şanzıman maddeleri vites+model+yıl eşleşmesine geçti. `tests/test_real_pages.py` (19 test). 324 test. Bulgular §3b. Sıradaki: kullanıcıdan 3 arama sayfası + galeriden/belirtilmemiş örnekler; R0.3 için 13 açıklamanın etiket taslağı; ilan tarihi okuma. |
