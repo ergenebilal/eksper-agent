@@ -1,6 +1,6 @@
 # CLAUDE.md — Araç Eksper Ajanı
 
-Bu dosya Claude Code için proje bağlamıdır. Her oturumda önce bunu, sonra `SPEC.md` ve `TASKS.md` dosyalarını oku.
+Bu dosya Claude Code için proje bağlamıdır. Her oturumda önce bunu, sonra **`OtoXray_Arge.md`** (canlı Ar-Ge planı ve takip), `SPEC.md` ve `TASKS.md` dosyalarını oku.
 
 ## Proje özeti
 Kişisel kullanım için ikinci el araç ön-eleme ajanı. Sahibinden.com ilanlarını toplar, yapılandırılmış veriye çevirir, kural motoru + LLM açıklama analizi ile değerlendirir ve 🟢 / 🟡 / 🔴 etiketli bir karne üretir. İki mod: Anlık Arama ve Radar (periyodik takip + Telegram bildirimi).
