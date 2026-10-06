@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS charges (member_id INTEGER NOT NULL, h TEXT NOT NULL,
     PRIMARY KEY (member_id, h));
 CREATE TABLE IF NOT EXISTS invites (
     id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, sent_at TEXT NOT NULL, ok INTEGER NOT NULL, hata TEXT);
+CREATE TABLE IF NOT EXISTS admin_log (
+    id INTEGER PRIMARY KEY, ts TEXT NOT NULL, aktor TEXT NOT NULL, islem TEXT NOT NULL, hedef TEXT, ayrinti TEXT);
 CREATE TABLE IF NOT EXISTS admin_creds (
     email TEXT PRIMARY KEY, pw_hash TEXT NOT NULL, updated_at TEXT NOT NULL, fails INTEGER NOT NULL DEFAULT 0,
     locked_until REAL NOT NULL DEFAULT 0);
@@ -363,6 +365,18 @@ def kalibrasyon() -> dict:
     return {"tablo": tablo, "toplam": len(rows), "ekspertizli": len(ekspertizli), "yanlis_yesil": yanlis_yesil,
             "kacan": kacan, "yesil_isabet": (sum(1 for r in yesil if r["sonuc"] != "ekspertiz_agir_kusur") / len(yesil))
             if yesil else None}
+
+
+# ------------------------------------------------------------------ yönetici işlem kaydı (Jeff API)
+def log_admin(aktor: str, islem: str, hedef: str | None = None, ayrinti: str | None = None) -> None:
+    with closing(_conn()) as c, c:
+        c.execute("INSERT INTO admin_log (ts, aktor, islem, hedef, ayrinti) VALUES (?,?,?,?,?)",
+                  (_now(), aktor[:40], islem[:40], (hedef or "")[:254] or None, (ayrinti or "")[:300] or None))
+
+
+def list_admin_log(limit: int = 100) -> list[dict]:
+    with closing(_conn()) as c:
+        return [dict(r) for r in c.execute("SELECT * FROM admin_log ORDER BY id DESC LIMIT ?", (limit,))]
 
 
 # ------------------------------------------------------------------ yönetici şifresi (isteğe bağlı, kodla girişe ek)

@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     public_url: str = "https://cyberoto.cybergene.co"  # e-postalardaki logo vb. için genel adres (2026-10-07: alan adı taşındı)
     # Yönetim sayfası (/yonetim): yalnız bu adreslere giriş kodu gönderilir
     admin_emails: list[str] = []
+    admin_api_token: str = ""          # Jeff yönetici API'si (/admin-api/v1): en az 32 karakter; boşsa API kapalı. Yalnız 127.0.0.1
     admin_cookie_secure: bool = True   # https arkasında True (yerel http denemede False)
 
     # Toplama güvenliği (CLAUDE.md kural 1-2)
