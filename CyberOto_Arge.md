@@ -4,17 +4,18 @@
 > sonra `CLAUDE.md`'yi okur. İş paketini başlatırken durumunu `🔄`, bitirince `✅` yapar ve en alttaki
 > **İlerleme günlüğü**ne bir satır ekler. Kararı kullanıcıya ait konular **Açık kararlar** bölümündedir: tahmin edilmez, sorulur.
 
-Son güncelleme: 2026-10-07 · Hazırlayan: Claude (oturum 5d82b169)
+Son güncelleme: 2026-10-07 (R0–R5 yazılım işleri tamam) · Hazırlayan: Claude (oturum 5d82b169)
 
 ---
 
 ## 0. Devralan ajan için 5 dakikalık başlangıç
 
-1. `git status`, `git log --oneline -5`. Çalışma dalı: **`feat/f0-eval`** (main'e göre ~38 commit önde, **push edilmedi**, push kullanıcıya ait).
-2. Testler: `uv run pytest -q` (≈50 sn, ≈290 test; `tests/test_extension_e2e.py` gerçek Chromium ister: `uv run playwright install chromium`).
+1. `git status`, `git log --oneline -5`. Çalışma dalı: **`feat/f0-eval`** (main'e göre ~50 commit önde, **push edilmedi**, push kullanıcıya ait).
+2. Testler: `uv run pytest -q` (≈4 dk, 450 test; `tests/test_extension_e2e.py` gerçek Chromium ister: `uv run playwright install chromium`).
 3. Canlı sistem: `https://otoxray.cybergene.co` (sağlık: `/healthz`). Yayın: `bash deploy/redeploy.sh` (yalnız **commit edilmiş** kodu gönderir).
 4. Ayrıntılı altyapı: [deploy/README.md](deploy/README.md) · ürün kararları: [PLAN.md](PLAN.md) · tasarım tokenları: [design/cybergene-dna.json](design/cybergene-dna.json).
-5. Bir sonraki iş: **§5 Yol haritası**ndaki ilk `⬜` paket (önkoşullara bak).
+5. Bir sonraki iş: R0–R5 yazılım işleri bitti (2026-10-07). Kalanlar **kullanıcı girdisi** bekliyor → **§7 Açık kararlar**. Girdi gelince ilgili pakete dön.
+6. Ürün adı **CyberOto AI** (eski: otoXray). Teknik kimlikler bilerek değişmedi: alan adı `otoxray.cybergene.co`, systemd `otoxray`, anahtar öneki `oxr_`.
 
 ## 1. Ürün ve mevcut durum (6 Ekim 2026)
 
@@ -23,7 +24,8 @@ Son güncelleme: 2026-10-07 · Hazırlayan: Claude (oturum 5d82b169)
 
 | Bileşen | Durum | Yer |
 |---|---|---|
-| Eklenti (MV3): ilan sayfası okuma, yan panel karnesi, arama sayfası fiyat rozetleri | ✅ çalışıyor, **seçiciler gerçek sayfayla DOĞRULANMADI** | `extension/` |
+| Eklenti (MV3): ilan sayfası okuma, yan panel karnesi, arama sayfası fiyat rozetleri | ✅ seçiciler 18 gerçek ilan + 3 arama sayfasıyla doğrulandı (R0) | `extension/` |
+| Savaş Odası (havuz + karşılaştır), sinyaller, belge röntgeni, kalibrasyon | ✅ R3–R5 | `analysis/compare.py`, `sinyaller.py`, `likidite.py`, `belge.py` |
 | Ücretsiz ön hesap (LLM'siz: piyasa, yapısal elenme, ön teklif) — ilan açılınca | ✅ | `api.py:/quick` |
 | Yapay zeka röntgeni (açıklama analizi, kanıt alıntılı) — yalnız düğmeyle, 1 hak | ✅ | `api.py:/analyze`, `analysis/description_llm.py` |
 | Aynı ilan + aynı açıklama 7 gün ücretsiz tekrar (yalnız hash) | ✅ | `accounts.py: charges` |
@@ -168,8 +170,8 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 |---|---|---|---|---|
 | R0.1 | 15-20 gerçek ilan sayfası (farklı marka, galeri/sahibinden, diyagramlı/diyagramsız) + 3 arama sayfası | ✅ 18 detay (2 "galeriden" klasörlü, 3 "komple boyalı" boş şemalı dahil) + 3 arama sayfası | Kullanıcı "Farklı kaydet" ile **`data/samples/`** klasörüne koyar (git'e girmez, ham kalır); ajan `arac fixture sanitize data/samples/*.html` ile temizleyip `tests/fixtures/real/`'a alır | `fixture_sanitizer.py` |
 | R0.2 | Eklenti seçicilerini gerçek fixture'lardan çıkar (UNVERIFIED işaretlerini kaldır) + **ilan tarihi** alanı | ✅ detay 18/18 + arama 3/3 (`tests/test_real_pages.py`, e2e gerçek arama testi) · ilan tarihi okuma → R3.2'ye taşındı | Tüm gerçek fixture'larda zorunlu alanlar %100 okunur; e2e gerçek fixture ile koşar | `extension/lib/selectors.js`, `extract-*.js`, `tests/test_extension_e2e.py` |
-| R0.3 | Gerçek açıklamalardan 100+ etiketli vaka (`kaynak: gercek`) | 👤/⬜ | `arac eval` recall ≥ %90, temiz vakada 🟢 engeli ≤ %5. Başlangıç: 13 gerçek açıklama için ajan etiket taslağı → kullanıcı onayı | `tests/data/aciklamalar.jsonl` |
-| R0.4 | Python ayrıştırıcıyı (`parser/selectors.py`, `damage_parser.py`) gerçek yapıya geçir (kişisel araç) | ⬜ | `tests/fixtures/real` ile alan doğruluğu %100 | `parser/` |
+| R0.3 | Gerçek açıklamalardan 100+ etiketli vaka (`kaynak: gercek`) | ✅ 18 taslak etiket (`tests/data/aciklamalar_gercek_taslak.jsonl`, 3 SINIRDA) · 👤 onay + daha fazla gerçek vaka · canlı ölçüm: recall 1,0, precision 1,0, tramer 1,0, olumsuz 0,92–1,0 | `arac eval` recall ≥ %90, temiz vakada 🟢 engeli ≤ %5. Başlangıç: 13 gerçek açıklama için ajan etiket taslağı → kullanıcı onayı | `tests/data/aciklamalar.jsonl` |
+| R0.4 | Python ayrıştırıcıyı (`parser/selectors.py`, `damage_parser.py`) gerçek yapıya geçir (kişisel araç) | ✅ f9c1c3b: 18/18 detay + 3/3 arama bağımsız okumayla eşleşir; okunamayan tarih bugüne düşmez; toplayıcıdaki kırık seçici referansı düzeltildi, tüm `Selectors.*` referansları testli | `tests/fixtures/real` ile alan doğruluğu %100 | `parser/` |
 
 ### R1 — Hızlı kazanımlar (mevcut veriden)
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
@@ -184,7 +186,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 |---|---|---|---|---|
 | R2.1 | `masraf_kb.yaml`: ~40 yaygın kalem × segment, min-max TL, tarih, kaynak (kullanıcı onaylı) | ✅ taslak (42 kalem, 4 segment, hepsi onaysız) · 👤 onay | Şema testi; tarihi 6 aydan eski kalem uyarı verir | — |
 | R2.2 | LLM şemasına `masraf_kalemleri` (Evidence) + jargon; eval'e masraf vakaları | ✅ **v0 kural tabanlı** (LLM'siz, `analysis/masraf.py`): anahtar kelime + ihtiyaç ifadesi, tamamlanmış/olumsuz atlanır, uzun ifade önce; 18 gerçek ilanda 3/3 doğru, 0 yanlış alarm. LLM ile genişletme (eşanlamlılar) → R2.2b ⬜ | Masraf kalemi recall ≥ %85 (eval), uydurma tutar 0 | R0.3 tercihen |
-| R2.2b | LLM ile masraf kalemi genişletme (eşanlamlı/dolaylı ifadeler), alıntı zorunlu, tutar yine KB'den; `arac eval`'e masraf vakaları | ⬜ | Kural tabanlıya göre recall artışı ölçülür, uydurma tutar 0 | R0.3 |
+| R2.2b | LLM ile masraf kalemi genişletme (eşanlamlı/dolaylı ifadeler), alıntı zorunlu, tutar yine KB'den; `arac eval`'e masraf vakaları | ✅ b618df2: `masraf_kalemleri` (yalnız KB kodu, birebir alıntı, "yapıldı" diyen alıntı atılır), kural tabanlıyla birleşir. Canlı: 18 gerçek ilanda 3/3, 0 yanlış alarm; ana eval değişmedi (1,0/1,0) | Kural tabanlıya göre recall artışı ölçülür, uydurma tutar 0 | R0.3 |
 | R2.3 | **B · Gerçek maliyet** hesabı (metin + km tetikli) → aralık + döküm; `offer.py` entegrasyonu | ✅ ön hesapta da (hak harcamaz); beyan kalemlerin alt tahmini teklifden düşülür, olası bakım yalnız gösterilir; panel "Tahmini gerçek maliyet". **Tutarlar R2.1 onayına kadar "onay bekliyor"** | Panelde "Tahmini gerçek maliyet: X–Y TL" + kalemler; teklif dayanağında görünür | R2.1, R2.2, R1.1 |
 
 ### R3 — Savaş Odası
@@ -198,26 +200,28 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 ### R4 — Sinyaller ve likidite
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
-| R4.1 | **2A · Aciliyet sinyalleri** (bant + alıntı) → teklif aralığına kural tabanlı etki | ⬜ | Eval'e aciliyet vakaları; skor değil bant; `rules.yaml` eşikleri | R0.3 tercihen |
-| R4.2 | **2A · Ticari dil sinyali** (itham yok) → soru çarşafına madde | ⬜ | "Sinyal" dili testle denetlenir (yasaklı kelimeler) | R1.4 |
-| R4.3 | **2D · Likidite v0**: `likidite_kb.yaml` + emsal yoğunluğu + ilan yaşı → hızlı/orta/yavaş + gerekçe | ⬜ (+👤 KB onayı) | Gün sayısı söylenmez; gerekçe gösterilir | R0.2 |
+| R4.1 | **2A · Aciliyet sinyalleri** (bant + alıntı) → teklif aralığına kural tabanlı etki | ✅ 1008db6: LLM'siz (`analysis/sinyaller.py`, `config/sinyaller.yaml`); metin + ilan yaşı + sitenin fiyat bayrağı + kullanıcının gördüğü düşüş → düşük/orta/yüksek; orta/yüksek yalnız açılış teklifini %1/%2 düşürür (`rules.yaml`). Tam kelime eşleşmesi ("açılır" ≠ "acil") | Eval'e aciliyet vakaları; skor değil bant; `rules.yaml` eşikleri | R0.3 tercihen |
+| R4.2 | **2A · Ticari dil sinyali** (itham yok) → soru çarşafına madde | ✅ 1008db6: bireysel ilanda ≥2 farklı ticari ifade → "Ticari satıcı sinyali" + öncelik-1 soru; galeri ilanında yalnız bilgi. 18 gerçek ilanda 0 sinyal ("faturaları mevcut" yanlış alarmı giderildi) | "Sinyal" dili testle denetlenir (yasaklı kelimeler) | R1.4 |
+| R4.3 | **2D · Likidite v0**: `likidite_kb.yaml` + emsal yoğunluğu + ilan yaşı → hızlı/orta/yavaş + gerekçe | ✅ taslak · 👤 KB onayı: 10 kural, hepsi onaysız (onaya kadar bant gösterilmez, yalnız emsal notu); gün sayısı asla söylenmez; `arac kb kontrol` | Gün sayısı söylenmez; gerekçe gösterilir | R0.2 |
 
 ### R5 — Güven ve görsel
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
-| R5.1 | **F · Tramer yapıştır**: SBM metni parse + ilan beyanıyla çelişki bayrağı | ⬜ | Gerçek (maskeli) örneklerle parse testi; metin sunucuda saklanmaz | 👤 örnek metinler |
+| R5.1 | **F · Tramer yapıştır**: SBM metni parse + ilan beyanıyla çelişki bayrağı | ✅ 6dd51ee (R5.4 ile ortak "Belge röntgeni") · 👤 gerçek sorgu örnekleri: testler sentetik | Gerçek (maskeli) örneklerle parse testi; metin sunucuda saklanmaz | 👤 örnek metinler |
 | R5.2 | **G · Görsel röntgen** araştırması: model seçimi, maliyet, eval seti | ⬜ | Ar-Ge raporu + karar (kullanıcı) | — |
-| R5.4 | **I · Ekspertiz raporu röntgeni** (öneri, kullanıcı kararı bekliyor — §7): kullanıcının fiziksel ekspertiz raporu (PDF/metin; v1 fotoğraf) → parça durumu sade dil, ilan beyanıyla çelişki listesi, masraf_kb ile onarım aralığı, güncellenmiş teklif, al/alma özeti. Rapor sunucuda saklanmaz; plaka/şasi/ad maskelenir; her bulgu rapordan alıntılı | ⬜ | Farklı firmalardan ≥5 maskeli gerçek rapor fixture'ı; parça okuma %100; tablo dışı sayı yok | 👤 örnek raporlar, R2.1 onayı |
-| R5.3 | **H · Karar sonrası döngü**: havuzda "ekspertize gittim / aldım / almadım" → kalibrasyon raporu | ⬜ | Yönetimde "hangi kural yanlış 🟢/🔴 üretti" raporu | R3.1 |
+| R5.4 | **I · Ekspertiz raporu röntgeni** (kullanıcı onayladı, 2026-10-07): kullanıcının fiziksel ekspertiz raporu (PDF/metin; v1 fotoğraf) → parça durumu sade dil, ilan beyanıyla çelişki listesi, masraf_kb ile onarım aralığı, güncellenmiş teklif, al/alma özeti. Rapor sunucuda saklanmaz; plaka/şasi/ad maskelenir; her bulgu rapordan alıntılı | ⬜ | Farklı firmalardan ≥5 maskeli gerçek rapor fixture'ı; parça okuma %100; tablo dışı sayı yok | ✅ v0 6dd51ee: `POST /api/v1/belge` (metin ya da metin katmanlı PDF, bellekte), kişisel veri maskeleme, alıntısız/uydurma bulgu ve belgede olmayan tutar atılır, ilanla kurallı karşılaştırma, onarım aralığı (onaylı KB), üst sınır önerisi; 1 hak, aynı belge ücretsiz; panel "Belge röntgeni". · 👤 3-5 gerçek rapor (farklı firma): testler sentetik. Fotoğraf/taranmış PDF → R5.2 |
+| R5.3 | **H · Karar sonrası döngü**: havuzda "ekspertize gittim / aldım / almadım" → kalibrasyon raporu | ✅ c1bdce1: havuz kartında sonuç seçimi (yerel + bilerek gönderilen geri bildirim), `/yonetim/kalibrasyon` (etiket × sonuç, yanlış yeşil, kaçan aday). Kural bazında döküm yok: kural izi sunucuda saklanmaz | Yönetimde "hangi kural yanlış 🟢/🔴 üretti" raporu | R3.1 |
 
 ### Platform / operasyon (paralel)
 | ID | Paket | Durum | Not |
 |---|---|---|---|
 | P.1 | Chrome Web Store "Özel" yayın + güvenilir test kullanıcıları + `STORE_URL` | 👤 | Paketleme/mağaza metinlerini ajan hazırlar, yükleme kullanıcının hesabından |
-| P.2 | Davetliler için kullanım koşulları + KVKK aydınlatma metni (taslak → avukat) | ⬜ | Hukuki tavsiye değildir notuyla taslak |
+| P.2 | Davetliler için kullanım koşulları + KVKK aydınlatma metni (taslak → avukat) | ✅ taslak `docs/legal/` · 👤 `[...]` alanları + avukat; saklama süreleri kodda (`accounts.SAKLAMA`, günlük `prune`) | Hukuki tavsiye değildir notuyla taslak |
 | P.3 | `feat/f0-eval` → `main` birleştirme ve push | 👤 | Push kullanıcıya ait (auto-mode engelleyebilir) |
-| P.4 | Kanıt listesinde aynı bulgunun iki kez görünmesi (olumsuz sinyal + hard-claim) | ⬜ | Küçük UX düzeltmesi, `api.py:_kanitlar` |
+| P.4 | Kanıt listesinde aynı bulgunun iki kez görünmesi (olumsuz sinyal + hard-claim) | ✅ c1bdce1 | Küçük UX düzeltmesi, `api.py:_kanitlar` |
 | P.5 | Gmail/Outlook'ta HTML e-posta görünümü kontrolü (koyu mod dönüşümü) | 👤 | Kullanıcı ekran görüntüsü gönderir |
+| P.6 | **CyberOto AI** yeniden adlandırma + logo | ✅ 31e42d3: tüm kullanıcıya görünen adlar, wordmark (Cyber beyaz + Oto #FF9A24), `design/brand/`. Teknik kimlikler değişmedi | — |
+| P.7 | Alan adını `cyberoto.cybergene.co`'ya taşıma (isteğe bağlı) | 👤 karar | DNS + sertifika + eklenti `host_permissions` + mevcut kullanıcıların sunucu adresi; eski adres yönlendirmeyle korunmalı |
 
 ## 6. Hak (kredi) ekonomisi — yeni özellikler
 
@@ -227,12 +231,20 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 | Yapay zeka röntgeni | 1 | Aynı ilan + aynı açıklama 7 gün ücretsiz |
 | Soru çarşafı, araca özel liste, gerçek maliyet | 0 (röntgene dahil) | Röntgen sonucundan türetilir |
 | Karşılaştır ve karar ver (2-5 ilan) | 1 | Aynı küme tekrar ücretsiz; her ilanın röntgeni önkoşul |
-| Tramer yapıştır | 0 (öneri) | Güveni artırır, LLM'siz parse hedefi |
+| Belge röntgeni (ekspertiz raporu / tramer) | 1 | Aynı belge + ilan tekrar ücretsiz; LLM hatasında iade |
+| Satış/piyasa sinyalleri | 0 | Kurallı, ön hesapta da çalışır |
 | Görsel röntgen | Açık karar | Maliyeti ölçülünce |
 
 ## 7. Açık kararlar (kullanıcıya sorulacak — tahmin etme)
 
-- **R5.4 Ekspertiz raporu röntgeni** eklensin mi, hangi sırayla (R4'ten önce/sonra), kaç hak? Claude önerisi: evet; R4'ten sonra, Tramer (R5.1) ile tek "Belge röntgeni" modülü; 1 hak. Önkoşul: kullanıcıdan 3-5 farklı firmanın maskeli raporu.
+1. **`masraf_kb.yaml` onayı** (42 kalem): onaylanana kadar gerçek maliyet ve belge onarımlarında "tutar onayı bekliyor" görünür.
+2. **`likidite_kb.yaml` onayı** (10 kural): onaylanana kadar piyasa hızı bandı gösterilmez.
+3. **R0.3 taslak etiketleri** (18 vaka; 3 SINIRDA: g007 baskı balatası, g015 bedelsiz tramer kaydı, g017 arka panel işlemi): onaylanınca ana eval setine taşınır.
+4. **`rules.yaml` yeni anahtarları** (R4): `sinyal.*` eşikleri ve `teklif.aciliyet_ek_orta/yuksek` (%1/%2). Dosya başlığı "eşikleri yalnızca kullanıcı değiştirir" diyor: değerleri onaylayın ya da değiştirin.
+5. **Gerçek belgeler**: 3-5 farklı firmanın ekspertiz raporu + 2-3 tramer sorgu metni (maskelemeyi ajan yapar) → R5.1/R5.4 gerçek fixture testi.
+6. **Alan adı** (P.7): `otoxray.cybergene.co` kalsın mı, `cyberoto.cybergene.co`'ya mı taşınsın?
+7. **Yasal metinler** (P.2): `[...]` alanları (unvan, adres, LLM sağlayıcısı ve konumu) + avukat incelemesi.
+8. Push, Chrome Web Store "Özel" yayın, e-posta görünüm kontrolü (P.1, P.3, P.5).
 
 (7 Ekim 2026 öncesi kararlar → §8.)
 
@@ -262,6 +274,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | 2026-10-07 | Aciliyet dili finansal/analitik/objektif (§7 dil kılavuzu) | Kullanıcı |
 | 2026-10-07 | Görsel analiz (R5.2) bütçesi askıda; metin tabanlı analizler bitince değerlendirilecek | Kullanıcı |
 | 2026-10-07 | Ham örnek sayfalar `data/samples/` (git dışı); temizlenmiş fixture `tests/fixtures/real/` | Claude, kullanıcı ile |
+| 2026-10-07 | Ekspertiz raporu analizi plana alındı (R5.4), Tramer ile tek "Belge röntgeni"; kalan tüm işler otonom tamamlansın | Kullanıcı |
 | 2026-10-07 | Ürün adı **CyberOto AI** (kısa: CyberOto); CyberGene projeleri "Cyber + alan" kalıbıyla adlandırılır. Yeniden adlandırma altyapı bitince yapılır; alan adı değişikliği kullanıcıya sorulur; logo kullanıcıdan gelecek | Kullanıcı |
 
 ## 9. Devir protokolü (kota biterse / ajan değişirse)
@@ -277,6 +290,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
+| 2026-10-07 | Claude (5d82b169) | R4, R5, R0.3/R0.4, R2.2b, P.2/P.4, yeniden adlandırma ✅ | 1008db6 R4 sinyaller + likidite · 6dd51ee belge röntgeni (pypdf) · c1bdce1 kalibrasyon + kanıt tekrarı · f9c1c3b Python ayrıştırıcı gerçek yapıda · e94011f gerçek vaka taslakları · b618df2 LLM masraf kalemleri · 643d158/6363cb2 saklama temizliği + yasal taslaklar · 31e42d3 CyberOto AI. 450 test, 31e42d3 yayında. Eval (canlı LLM): ana 50 vaka 1,0/1,0; gerçek taslak 18 vaka 1,0/1,0. Not: kullanıcının `rapor.md` dosyası yanlışlıkla bir commit'e girdi; commit'ten ve sunucudan çıkarıldı (yerelde duruyor, izlenmiyor). **Sıradaki:** §7 kullanıcı girdileri. |
 | 2026-10-07 | Claude (5d82b169) | R3 ✅ | Savaş Odası: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
 | 2026-10-07 | Claude (5d82b169) | R1.1/R1.3 onay, R2 | Kullanıcı R1.1 (32 model) ve R1.3'ü sohbette toplu onayladı (kaynak alanlarına işlendi). R2.1 masraf_kb taslağı (42 kalem). R2.2 planı değişti: LLM yerine önce kural tabanlı bulucu (alıntılı, ön hesapta da çalışır); LLM genişletmesi R2.2b. R2.3 gerçek maliyet + teklif düşümü + panel kartı. 389 test. **Sıradaki:** kullanıcıdan masraf_kb onayı; sonra R3 (Savaş Odası). |
