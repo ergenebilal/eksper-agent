@@ -131,3 +131,6 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:none;box-shadow
   .table-wrap{overflow:visible}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.pill.err{color:var(--red);border-color:rgba(240,93,108,.45);background:rgba(240,93,108,.08)}
+button.small-btn{font-size:13px;padding:8px 12px;border-radius:12px;white-space:nowrap}
+td form{margin:0}

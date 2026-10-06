@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS usage (
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, created_at TEXT NOT NULL, ilan_no TEXT NOT NULL,
     etiket TEXT, skor REAL, oy TEXT, sonuc TEXT, notu TEXT);
+CREATE TABLE IF NOT EXISTS invites (
+    id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, sent_at TEXT NOT NULL, ok INTEGER NOT NULL, hata TEXT);
 CREATE TABLE IF NOT EXISTS admin_sessions (
     sid_hash TEXT PRIMARY KEY, email TEXT NOT NULL, csrf TEXT NOT NULL, expires_at REAL NOT NULL);
 """
@@ -337,3 +339,23 @@ def drop_admin_session(sid: str | None) -> None:
     if sid:
         with closing(_conn()) as c, c:
             c.execute("DELETE FROM admin_sessions WHERE sid_hash = ?", (_sha(sid),))
+
+
+# ------------------------------------------------------------------ davetler
+def record_invite(member_id: int, ok: bool, hata: str | None = None) -> None:
+    """Davet e-postası denemesi: yalnız sonuç ve hata TÜRÜ (adres/içerik yok)."""
+    with closing(_conn()) as c, c:
+        c.execute("INSERT INTO invites (member_id, sent_at, ok, hata) VALUES (?,?,?,?)",
+                  (member_id, _now(), 1 if ok else 0, (hata or "")[:120] or None))
+
+
+def list_invites() -> list[dict]:
+    """Davet gönderilmiş (denenmiş) üyeler: son deneme, deneme sayısı, ilk giriş (katılım)."""
+    with closing(_conn()) as c:
+        rows = c.execute("""SELECT m.id, m.email, m.ad, m.durum, m.bitis, m.gunluk_kota,
+            i.sent_at AS son_davet, i.ok AS son_ok, i.hata AS son_hata,
+            (SELECT COUNT(*) FROM invites WHERE member_id = m.id) AS deneme,
+            (SELECT MIN(created_at) FROM member_keys WHERE member_id = m.id) AS ilk_giris
+            FROM members m JOIN invites i ON i.id = (SELECT MAX(id) FROM invites WHERE member_id = m.id)
+            ORDER BY i.id DESC""").fetchall()
+    return [dict(r) for r in rows]

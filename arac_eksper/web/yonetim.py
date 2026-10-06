@@ -26,7 +26,7 @@ MESAJ = {
     "smtp_yok": ("err", "E-posta gönderimi yapılandırılmamış (SMTP ayarları)."),
     "eklendi": ("ok", "Üye eklendi."),
     "eklendi_davet": ("ok", "Üye eklendi ve davet e-postası gönderildi."),
-    "eklendi_davetsiz": ("warn", "Üye eklendi ama davet e-postası gönderilemedi."),
+    "eklendi_davetsiz": ("warn", "Üye eklendi ama davet e-postası gönderilemedi; nedeni aşağıda."),
     "davet": ("ok", "Davet e-postası yeniden gönderildi."),
     "davet_hata": ("err", "Davet e-postası gönderilemedi."),
     "guncellendi": ("ok", "Haklar güncellendi."),
@@ -36,6 +36,8 @@ MESAJ = {
     "email_var": ("err", "Bu e-posta zaten kayıtlı."),
     "deger_gecersiz": ("err", "Değerlerden biri geçersiz (hak sayısı ya da tarih)."),
     "bulunamadi": ("err", "Üye bulunamadı."),
+    "form_gecersiz": ("err", "Form doğrulanamadı; işlem yapılmadı. Sayfayı yenileyip tekrar deneyin."),
+    "oturum": ("err", "Oturumunuz sona erdi; yeniden giriş yapın."),
 }
 DURUM_ETIKET = {"aktif": "Aktif", "durduruldu": "Durduruldu", "iptal": "İptal"}
 
@@ -78,6 +80,21 @@ def _page(request: Request, name: str, sess: dict | None, **ctx) -> Response:
 
 def _csrf_ok(request: Request, sess: dict | None, token: str) -> bool:
     return bool(sess) and security.origin_ok(request) and hmac.compare_digest(token or "", sess["csrf"])
+
+
+def _reject(sess: dict | None) -> RedirectResponse:
+    """Form doğrulanamadı: oturum varsa açık uyarıyla geri dön (sessizce yutma)."""
+    return _go("", "form_gecersiz") if sess else _go("/giris", "oturum")
+
+
+def _send_invite(m: dict) -> bool:
+    try:
+        mailer.send_invite(m["email"], m["ad"], haklar_metni(m))
+    except mailer.MailUnavailable as e:
+        accounts.record_invite(m["id"], False, str(e))
+        return False
+    accounts.record_invite(m["id"], True)
+    return True
 
 
 def haklar_metni(m: dict) -> str:
@@ -189,7 +206,7 @@ def uye_ekle(request: Request, csrf: str = Form(""), email: str = Form("", max_l
              rozet: str | None = Form(None), notu: str = Form("", max_length=300), davet: str | None = Form(None)):
     sess = _session(request)
     if not _csrf_ok(request, sess, csrf):
-        return _go("/giris")
+        return _reject(sess)
     try:
         accounts.normalize_email(email)
     except ValueError:
@@ -202,12 +219,7 @@ def uye_ekle(request: Request, csrf: str = Form(""), email: str = Form("", max_l
         return _go("", "deger_gecersiz")
     if not davet:
         return _go("", "eklendi")
-    m = accounts.get_member(mid)
-    try:
-        mailer.send_invite(m["email"], m["ad"], haklar_metni(m))
-    except mailer.MailUnavailable:
-        return _go("", "eklendi_davetsiz")
-    return _go("", "eklendi_davet")
+    return _go("/davetler", "eklendi_davet" if _send_invite(accounts.get_member(mid)) else "eklendi_davetsiz")
 
 
 @router.get("/uye/{mid}")
@@ -230,7 +242,7 @@ def uye_guncelle(request: Request, mid: int, csrf: str = Form(""), ad: str = For
                  notu: str = Form("", max_length=300)):
     sess = _session(request)
     if not _csrf_ok(request, sess, csrf):
-        return _go("/giris")
+        return _reject(sess)
     try:
         ok = accounts.update_member(mid, **_form_haklar(gunluk, aylik, bitis, rozet, ad, notu))
     except ValueError:
@@ -242,7 +254,7 @@ def uye_guncelle(request: Request, mid: int, csrf: str = Form(""), ad: str = For
 def uye_durum(request: Request, mid: int, csrf: str = Form(""), durum: str = Form("")):
     sess = _session(request)
     if not _csrf_ok(request, sess, csrf):
-        return _go("/giris")
+        return _reject(sess)
     try:
         ok = accounts.set_status(mid, durum)
     except ValueError:
@@ -254,7 +266,7 @@ def uye_durum(request: Request, mid: int, csrf: str = Form(""), durum: str = For
 def uye_cihazlar(request: Request, mid: int, csrf: str = Form("")):
     sess = _session(request)
     if not _csrf_ok(request, sess, csrf):
-        return _go("/giris")
+        return _reject(sess)
     accounts.revoke_all_keys(mid)
     return _go(f"/uye/{mid}", "cihaz")
 
@@ -263,15 +275,12 @@ def uye_cihazlar(request: Request, mid: int, csrf: str = Form("")):
 def uye_davet(request: Request, mid: int, csrf: str = Form("")):
     sess = _session(request)
     if not _csrf_ok(request, sess, csrf):
-        return _go("/giris")
+        return _reject(sess)
     m = accounts.get_member(mid)
     if not m:
         return _go("", "bulunamadi")
-    try:
-        mailer.send_invite(m["email"], m["ad"], haklar_metni(m))
-    except mailer.MailUnavailable:
-        return _go(f"/uye/{mid}", "davet_hata")
-    return _go(f"/uye/{mid}", "davet")
+    back = "/davetler" if request.query_params.get("geri") == "davetler" else f"/uye/{mid}"
+    return _go(back, "davet" if _send_invite(m) else "davet_hata")
 
 
 @router.get("/geri-bildirim")
@@ -280,3 +289,16 @@ def geri_bildirim(request: Request):
     if not sess:
         return _go("/giris")
     return _page(request, "geri_bildirim.html", sess, kayitlar=accounts.list_feedback(300))
+
+
+@router.get("/davetler")
+def davetler(request: Request):
+    sess = _session(request)
+    if not sess:
+        return _go("/giris")
+    rows = accounts.list_invites()
+    for r in rows:
+        r["erisim_sorunu"] = accounts.access_problem(r)
+    ozet = {"toplam": len(rows), "katilan": sum(1 for r in rows if r["ilk_giris"]),
+            "hatali": sum(1 for r in rows if not r["son_ok"])}
+    return _page(request, "davetler.html", sess, davetler=rows, ozet=ozet, smtp=mailer.configured())

@@ -264,7 +264,7 @@ def test_admin_adds_member_with_rights_and_invite(client, outbox):
     r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "yeni@ornek.com", "ad": "Yeni", "gunluk": "12",
                                           "aylik": "100", "bitis": "2099-01-31", "rozet": "on", "davet": "on"},
                     follow_redirects=False)
-    assert "eklendi_davet" in r.headers["location"]
+    assert r.headers["location"].endswith("/yonetim/davetler?m=eklendi_davet")
     m = accounts.get_member_by_email("yeni@ornek.com")
     assert (m["gunluk_kota"], m["aylik_kota"], m["bitis"], m["rozet"]) == (12, 100, "2099-01-31", 1)
     invite = next(x for x in outbox if x["to"] == "yeni@ornek.com")
@@ -289,7 +289,7 @@ def test_admin_edits_pauses_and_logs_out_member(client, outbox):
 def test_admin_csrf_and_origin_enforced(client, outbox):
     csrf = admin_login(client, outbox)
     r = client.post("/yonetim/uye", data={"csrf": "yanlis", "email": "z@ornek.com", "gunluk": "5"}, follow_redirects=False)
-    assert r.headers["location"].endswith("/yonetim/giris") and not accounts.get_member_by_email("z@ornek.com")
+    assert r.headers["location"].endswith("?m=form_gecersiz") and not accounts.get_member_by_email("z@ornek.com")
     r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "z@ornek.com", "gunluk": "5"},
                     headers={"Origin": "https://evil.example"}, follow_redirects=False)
     assert not accounts.get_member_by_email("z@ornek.com")
@@ -332,3 +332,68 @@ def test_cli_feedback_list_json():
     accounts.add_feedback(mid, "42", "DUSUNULEBILIR", 6.0, "pos", None, "iyi")
     r = runner.invoke(cli.app, ["xray", "feedback", "--json"])
     assert r.exit_code == 0 and '"ilan_no": "42"' in r.stdout
+
+
+# ------------------------------------------------------------------ gerçek tarayıcı başlıkları + davetler
+CHROME_FORM = {"Origin": "null", "Sec-Fetch-Site": "same-origin"}     # Referrer-Policy: no-referrer altında Chrome
+
+
+def test_real_chrome_form_post_with_null_origin_is_accepted(client, outbox):
+    """Canlıda yaşanan hata: Origin 'null' gelen form POST'u sessizce reddediliyordu, üye eklenmiyordu."""
+    csrf = admin_login(client, outbox)
+    r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "gercek@ornek.com", "gunluk": "5", "davet": "on"},
+                    headers=CHROME_FORM, follow_redirects=False)
+    assert r.headers["location"].endswith("/yonetim/davetler?m=eklendi_davet")
+    assert accounts.get_member_by_email("gercek@ornek.com")
+    assert any(m["to"] == "gercek@ornek.com" for m in outbox)
+
+
+def test_cross_site_or_unknown_origin_is_rejected_with_a_visible_message(client, outbox):
+    csrf = admin_login(client, outbox)
+    for headers in ({"Sec-Fetch-Site": "cross-site", "Origin": "https://evil.example"}, {"Origin": "null"}):
+        r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "x1@ornek.com", "gunluk": "5"},
+                        headers=headers, follow_redirects=False)
+        assert r.headers["location"].endswith("?m=form_gecersiz")
+    assert not accounts.get_member_by_email("x1@ornek.com")
+    assert "Form doğrulanamadı" in client.get("/yonetim?m=form_gecersiz").text
+
+
+def test_invites_page_shows_sent_failed_and_joined(client, outbox, monkeypatch):
+    csrf = admin_login(client, outbox)
+    client.post("/yonetim/uye", data={"csrf": csrf, "email": "ok@ornek.com", "gunluk": "5", "davet": "on"})
+    real_send = mailer.send
+
+    def boom(to, subject, body):
+        raise mailer.MailUnavailable("E-posta gönderilemedi (SMTPAuthenticationError).")
+    monkeypatch.setattr(mailer, "send", boom)
+    r = client.post("/yonetim/uye", data={"csrf": csrf, "email": "kotu@ornek.com", "gunluk": "5", "davet": "on"},
+                    follow_redirects=False)
+    assert r.headers["location"].endswith("eklendi_davetsiz")
+    client.post("/yonetim/uye", data={"csrf": csrf, "email": "davetsiz@ornek.com", "gunluk": "5"})   # davetsiz eklenen
+    monkeypatch.setattr(mailer, "send", real_send)
+    accounts.issue_key(accounts.get_member_by_email("ok@ornek.com")["id"])                       # ok@ katıldı
+    page = client.get("/yonetim/davetler").text
+    assert "ok@ornek.com" in page and "kotu@ornek.com" in page and "davetsiz@ornek.com" not in page
+    assert "Katıldı" in page and "Bekliyor" in page and "SMTPAuthenticationError" in page
+    assert "2 kişiye davet gönderildi; 1 kişi eklentiye giriş yaptı, 1 davet gönderilemedi" in page
+    mid = accounts.get_member_by_email("kotu@ornek.com")["id"]
+    r = client.post(f"/yonetim/uye/{mid}/davet?geri=davetler", data={"csrf": csrf}, follow_redirects=False)
+    assert r.headers["location"].endswith("/yonetim/davetler?m=davet")
+    page = client.get("/yonetim/davetler").text
+    assert "2 deneme" in page and "1 davet gönderilemedi" not in page
+
+
+def test_mail_failure_logs_only_the_error_type(monkeypatch, capsys):
+    import smtplib
+    monkeypatch.setattr(settings, "smtp_host", "smtp.test")
+    monkeypatch.setattr(settings, "smtp_from", "otoxray@cybergene.co")
+    monkeypatch.setattr(settings, "smtp_port", 465)
+
+    class Bad:
+        def __init__(self, *a, **k):
+            raise smtplib.SMTPAuthenticationError(535, b"sifre yanlis gizli@ornek.com")
+    monkeypatch.setattr(smtplib, "SMTP_SSL", Bad)
+    with pytest.raises(mailer.MailUnavailable, match="SMTPAuthenticationError"):
+        mailer.send("kisi@ornek.com", "konu", "govde")
+    err = capsys.readouterr().err
+    assert "SMTPAuthenticationError" in err and "kisi@ornek.com" not in err and "gizli" not in err

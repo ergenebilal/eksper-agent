@@ -2,6 +2,7 @@
 Kod/davet içeriği günlüğe yazılmaz."""
 import smtplib
 import ssl
+import sys
 from email.message import EmailMessage
 from email.utils import formataddr, make_msgid
 
@@ -40,8 +41,10 @@ def send(to: str, subject: str, body: str) -> None:
                 if settings.smtp_user:
                     s.login(settings.smtp_user, settings.smtp_password)
                 s.send_message(msg)
-    except (OSError, smtplib.SMTPException) as e:      # ayrıntı (sunucu yanıtı) dışarı verilmez
-        raise MailUnavailable(f"E-posta gönderilemedi ({type(e).__name__}).") from None
+    except (OSError, smtplib.SMTPException) as e:      # ayrıntı (sunucu yanıtı/adres) dışarı verilmez
+        kind = type(e).__name__
+        print(f"otoxray mailer: gönderim başarısız ({kind})", file=sys.stderr, flush=True)
+        raise MailUnavailable(f"E-posta gönderilemedi ({kind}).") from None
 
 
 def send_code(to: str, code: str, yonetim: bool = False) -> None:

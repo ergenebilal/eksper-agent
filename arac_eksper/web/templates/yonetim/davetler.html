@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Davetler{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Davetler</h1>
+  <p class="summary">{{ ozet.toplam }} kişiye davet gönderildi; {{ ozet.katilan }} kişi eklentiye giriş yaptı{% if ozet.hatali %}, {{ ozet.hatali }} davet gönderilemedi{% endif %}.</p>
+</div>
+
+{% if not smtp %}<p class="flash warn">E-posta gönderimi yapılandırılmadı: davetler gönderilemez (SMTP ayarları).</p>{% endif %}
+
+<section class="card list">
+  {% if davetler %}
+  <div class="table-wrap">
+  <table class="stackable">
+    <thead><tr><th>Davetli</th><th>Gönderim</th><th>Son davet</th><th>Katılım</th><th>Erişim</th><th></th></tr></thead>
+    <tbody>
+    {% for d in davetler %}
+      <tr>
+        <td data-label="Davetli"><a href="/yonetim/uye/{{ d.id }}">{{ d.email }}</a>{% if d.ad %}<small>{{ d.ad }}</small>{% endif %}</td>
+        <td data-label="Gönderim">{% if d.son_ok %}<span class="pill ok">Gönderildi</span>{% else %}<span class="pill err">Gönderilemedi</span><small>{{ d.son_hata or '' }}</small>{% endif %}</td>
+        <td class="num" data-label="Son davet">{{ d.son_davet[:16] | replace('T', ' ') }}{% if d.deneme > 1 %}<small>{{ d.deneme }} deneme</small>{% endif %}</td>
+        <td data-label="Katılım">{% if d.ilk_giris %}<span class="pill ok">Katıldı</span><small class="num">{{ d.ilk_giris[:10] }}</small>{% else %}<span class="pill off">Bekliyor</span>{% endif %}</td>
+        <td data-label="Erişim">{{ d.erisim_sorunu or 'Açık' }}</td>
+        <td data-label="">
+          {% if d.durum != 'iptal' %}
+          <form method="post" action="/yonetim/uye/{{ d.id }}/davet?geri=davetler"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="small-btn">Yeniden gönder</button></form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty"><h2>Henüz davet yok</h2><p class="muted"><a href="/yonetim">Üyeler</a> sayfasında bir kişi eklerken "Davet e-postası gönder" işaretliyse davet burada görünür.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

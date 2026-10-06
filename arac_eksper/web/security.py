@@ -125,10 +125,17 @@ def bearer_ok(request: Request) -> bool:
 
 
 def origin_ok(request: Request) -> bool:
-    """Tarayıcıdan gelen değiştirici isteklerde Origin/Referer aynı sunucuyu göstermeli (CSRF ek katmanı)."""
+    """Tarayıcıdan gelen değiştirici isteklerde istek aynı siteden gelmeli (CSRF ek katmanı; jeton ayrıca zorunlu).
+    Referrer-Policy: no-referrer yüzünden Chrome form POST'unda Origin'i "null" gönderir; o durumda tarayıcının
+    Sec-Fetch-Site başlığı esas alınır (aynı köken = "same-origin")."""
+    site = request.headers.get("sec-fetch-site")
+    if site:
+        return site in ("same-origin", "none")
     src = request.headers.get("origin") or request.headers.get("referer")
     if not src:
         return True     # tarayıcı dışı istemci (Bearer ile gelen Jeff vb.)
+    if src == "null":
+        return False    # köken gizlenmiş ve Sec-Fetch-Site yok: güvenli tarafta kal
     return urlsplit(src).netloc == request.headers.get("host", "")
 
 
