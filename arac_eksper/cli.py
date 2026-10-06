@@ -48,6 +48,10 @@ def search(
         summaries, _ = list_parser.parse(list_res.html)
         typer.echo(f"{len(summaries)} ilan bulundu.")
         
+        # Sadece piyasa örneği olarak sakla
+        for s in summaries:
+            repo.create_or_update_listing_summary(db, s, marka, model)
+            
         # Ön Eleme
         filtered = []
         for s in summaries:
@@ -72,13 +76,30 @@ def search(
             
             typer.echo(f"Açıklama LLM'e gönderiliyor...")
             try:
-                findings = description_llm.analyze_description(llm_client, detail.baslik, detail.aciklama)
+                findings = description_llm.analyze_description(llm_client, detail.baslik, detail.aciklama, db=db, ilan_no=detail.ilan_no)
             except Exception as e:
-                typer.echo(f"LLM Hatası (API key girmemiş olabilirsiniz): {e}")
-                continue
-                
+                from arac_eksper.llm.client import LLMUnavailable
+                if isinstance(e, LLMUnavailable):
+                    typer.secho(f"LLM Hatası: {e}. İlan analiz bekliyor olarak işaretleniyor.", fg=typer.colors.YELLOW)
+                    findings = None
+                else:
+                    typer.echo(f"LLM Hatası: {e}")
+                    continue
+                    
             stats = market.get_market_stats(db, detail)
-            verdict = rules_engine.determine_verdict(detail, findings, stats)
+            
+            if findings:
+                verdict = rules_engine.determine_verdict(detail, findings, stats)
+            else:
+                from arac_eksper.schemas import Verdict
+                verdict = Verdict(
+                    ilan_no=detail.ilan_no,
+                    etiket="DUSUNULEBILIR",
+                    guven_skoru=0.0,
+                    veri_tamlik=0.0,
+                    hard_fails=["LLM Analizi Bekliyor"],
+                    artilar=[], eksiler=[], ekspertiz_kontrol_listesi=[]
+                )
             
             card = generate_markdown_card(detail, findings, verdict)
             typer.echo("\n" + "="*50 + "\n" + card + "\n" + "="*50)

@@ -27,12 +27,15 @@ class ListingSummary(BaseModel):
     ilan_no: str
     url: str
     baslik: str
+    marka: str = ""
+    model: str = ""
     fiyat: int
     yil: int
     km: int
     il: str
     ilce: Optional[str] = None
     ilan_tarihi: date
+    source: str = "list"
 
 class ListingDetail(ListingSummary):
     seri: Optional[str] = None
@@ -57,8 +60,11 @@ class Evidence(BaseModel):
 class DescriptionFindings(BaseModel):
     tramer_tutari: Optional[int] = None
     sase_direk_podye_islem: Literal["yok_beyan", "var", "belirsiz"]
+    sase_alinti: Optional[str] = None
     airbag: Literal["orijinal_beyan", "acmis", "belirsiz"]
+    airbag_alinti: Optional[str] = None
     motor_sanziman: Literal["sorunsuz_beyan", "degisen", "sorunlu", "belirsiz"]
+    motor_alinti: Optional[str] = None
     km_degisimi_suphesi: bool
     olumlu_sinyaller: List[Evidence] = Field(default_factory=list)
     olumsuz_sinyaller: List[Evidence] = Field(default_factory=list)

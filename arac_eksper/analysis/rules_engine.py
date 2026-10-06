@@ -127,22 +127,48 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
     tamlik = 1.0
     if not detail.parts: tamlik -= 0.3
     if not findings.tramer_tutari and not detail.tramer_tutari_yapilandirilmis: tamlik -= 0.1
-    if market and market.n < 8: tamlik -= 0.2
+    
+    # Piyasa kontrolü (P0.4)
+    if not market or market.n < 5:
+        tamlik -= 0.3
+        
     tamlik = max(0.0, tamlik)
     
     # Etiket
     if hard_fails or score < 5.5:
         etiket = "ALINMAZ"
     elif score >= 7.5 and sapma <= 0 and findings.sase_direk_podye_islem != "var" and tamlik >= 0.6:
-        etiket = "ALINIR"
+        if not market or market.n < 5:
+            etiket = "DUSUNULEBILIR" # P0.4 kuralı
+        else:
+            etiket = "ALINIR"
     else:
         etiket = "DUSUNULEBILIR"
         
-    return Verdict(
+    # Artılar ve Eksiler
+    artilar = [s.etiket for s in findings.olumlu_sinyaller if s.etiket]
+    eksiler = hard_fails.copy() + [s.etiket for s in findings.olumsuz_sinyaller if s.etiket]
+    
+    if findings.tramer_tutari:
+        eksiler.append(f"{findings.tramer_tutari:,} TL Tramer")
+        
+    ekspertiz_kontrol_listesi = ["Şase uçları", "Podyeler", "Direkler", "Airbag modülü", "Motor üfleme testi"]
+    
+    verdict = Verdict(
         ilan_no=detail.ilan_no,
         etiket=etiket,
         guven_skoru=round(score, 1),
         veri_tamlik=round(tamlik, 2),
         hard_fails=hard_fails,
-        piyasa=market
+        piyasa=market,
+        artilar=artilar,
+        eksiler=eksiler,
+        ekspertiz_kontrol_listesi=ekspertiz_kontrol_listesi
     )
+    
+    from arac_eksper.analysis.offer import calculate_offer
+    teklif_tuple = calculate_offer(detail, findings, verdict)
+    if teklif_tuple:
+        verdict.tavsiye_teklif = teklif_tuple[0]
+        
+    return verdict

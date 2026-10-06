@@ -4,7 +4,7 @@ import time
 import gzip
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from playwright.async_api import async_playwright
 from arac_eksper.collector.base import Collector, FetchResult
 from arac_eksper.config.settings import settings
@@ -23,12 +23,11 @@ class PlaywrightCollector(Collector):
         
     def _check_rate_limit(self) -> bool:
         # DB tabanlı Token Bucket
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         count = self.db.query(FetchLog).filter(FetchLog.timestamp >= one_hour_ago).count()
         return count < settings.max_pages_per_hour
         
     async def _fetch(self, url: str, is_detail: bool) -> FetchResult:
-        from datetime import timedelta
         if not self._check_rate_limit():
             print(f"Rate limit aşıldı! Saatte max {settings.max_pages_per_hour} sayfa.")
             return FetchResult(status="ERROR", final_url=url)

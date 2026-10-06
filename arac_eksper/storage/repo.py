@@ -39,5 +39,45 @@ def create_or_update_listing(db: Session, detail: schemas.ListingDetail):
         db_listing.fetched_at = detail.fetched_at
 
     db.commit()
+
+def create_or_update_listing_summary(db: Session, summary, marka: str, model: str):
+    from arac_eksper.storage.models import Listing, ListingSnapshot
+    from datetime import datetime, timezone
+    
+    db_listing = db.query(Listing).filter(Listing.ilan_no == summary.ilan_no).first()
+    now_utc = datetime.now(timezone.utc)
+    
+    if not db_listing:
+        db_listing = Listing(
+            ilan_no=summary.ilan_no,
+            url=summary.url,
+            baslik=summary.baslik,
+            marka=marka,
+            model=model,
+            seri=getattr(summary, 'seri', None),
+            fiyat=summary.fiyat,
+            yil=summary.yil,
+            km=summary.km,
+            il=summary.il,
+            ilce=summary.ilce,
+            ilan_tarihi=summary.ilan_tarihi,
+            source="list",
+            fetched_at=now_utc,
+            aciklama=""
+        )
+        db.add(db_listing)
+    else:
+        # Fiyat güncellendiyse list'ten de gelse güncelle
+        if db_listing.fiyat != summary.fiyat:
+            db_listing.fiyat = summary.fiyat
+            db_listing.fetched_at = now_utc
+            
+    snapshot = ListingSnapshot(
+        ilan_no=summary.ilan_no,
+        fiyat=summary.fiyat,
+        fetched_at=now_utc
+    )
+    db.add(snapshot)
+    db.commit()
     db.refresh(db_listing)
     return db_listing

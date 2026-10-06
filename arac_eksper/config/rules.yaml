@@ -1,50 +1,25 @@
-# rules.yaml
 rules:
-  hard_fails:
-    - field: "agir_hasar_kayitli"
-      operator: "=="
-      value: true
-    - field: "sase_direk_podye_islem"
-      operator: "=="
-      value: "var"
-    - field: "airbag"
-      operator: "=="
-      value: "acmis"
-    - field: "tavan"
-      operator: "in"
-      value: ["boyali", "degisen"]
-    - field: "sapma"
-      operator: ">"
-      value: 0.25
-    - field: "yillik_km"
-      operator: ">"
-      value: 45000
-    - field: "dolandiricilik_sinyali_ve_ucuz"
-      operator: "=="
-      value: true
-
   scoring:
-    lokal_boyali_parca: -0.3
-    boyali_parca: -0.6
-    degisen_parca: -1.2
-    degisen_kaput_bagaj: -1.5
-    tampon_boya_degisen: -0.1
-    unknown_parca: -0.25
-    unknown_max: -1.5
+    tampon_boya_degisen: 0.0
+    lokal_boyali_parca: -0.2
+    boyali_parca: -0.5
+    degisen_kaput_bagaj: -2.0
+    degisen_parca: -1.0
+    unknown_parca: -0.1
+    unknown_max: -1.0
     
-    tramer_0_5: -0.3
+    tramer_0_5: -0.5
     tramer_5_10: -1.0
     tramer_10_plus: -2.0
-    tramer_bilinmiyor: -0.5
+    tramer_bilinmiyor: -0.3
     
-    yillik_km_25_35: -0.8
-    yillik_km_35_45: -1.8
+    yillik_km_25_35: -0.5
+    yillik_km_35_45: -1.0
     yillik_km_suphe: -1.0
     
-    olumsuz_sinyal: -0.7
+    olumsuz_sinyal: -0.5
     belirsiz_ifade: -0.3
-    olumlu_sinyal: 0.4
-    olumlu_max: 1.0
+    olumlu_sinyal: 0.5
+    olumlu_max: 2.0
     
     sapma_eksi_5_15: 0.5
-    sapma_eksi_20: 0.0

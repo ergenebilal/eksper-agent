@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///data/arac.db"
     openai_api_key: str = ""
     
+    llm_base_url: str = "http://127.0.0.1:8999/v1"
+    llm_api_key: str = "sk-placeholder"
+    llm_model_fast: str = "fast-model"
+    llm_model_strong: str = "strong-model"
+    
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

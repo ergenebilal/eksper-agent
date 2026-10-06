@@ -1,7 +1,10 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Float, Date, JSON, Text
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from arac_eksper.storage.db import Base
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class Listing(Base):
     __tablename__ = "listings"
@@ -16,6 +19,8 @@ class Listing(Base):
     ilce = Column(String, nullable=True)
     ilan_tarihi = Column(Date, nullable=False)
     
+    marka = Column(String, nullable=False, server_default="")
+    model = Column(String, nullable=False, server_default="")
     seri = Column(String, nullable=True)
     paket = Column(String, nullable=True)
     vites = Column(String, nullable=True)
@@ -25,11 +30,13 @@ class Listing(Base):
     renk = Column(String, nullable=True)
     kimden = Column(String, nullable=True)
     
+    source = Column(String, nullable=False, server_default="detail") # 'list' veya 'detail'
+    
     agir_hasar_kayitli = Column(Boolean, nullable=True)
     tramer_tutari_yapilandirilmis = Column(Integer, nullable=True)
-    aciklama = Column(Text, nullable=False)
+    aciklama = Column(Text, nullable=False, default="")
     
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    fetched_at = Column(DateTime, default=utc_now)
     raw_html_path = Column(String, nullable=True)
 
     snapshots = relationship("ListingSnapshot", back_populates="listing", cascade="all, delete-orphan")
@@ -44,7 +51,7 @@ class ListingSnapshot(Base):
     id = Column(Integer, primary_key=True, index=True)
     ilan_no = Column(String, ForeignKey("listings.ilan_no"), nullable=False)
     fiyat = Column(Integer, nullable=False)
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    fetched_at = Column(DateTime, default=utc_now)
 
     listing = relationship("Listing", back_populates="snapshots")
 
@@ -100,7 +107,7 @@ class MarketCache(Base):
     p25 = Column(Integer, nullable=False)
     p75 = Column(Integer, nullable=False)
     guven = Column(String, nullable=False)
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    fetched_at = Column(DateTime, default=utc_now)
 
 
 class Watch(Base):
@@ -120,7 +127,7 @@ class Notification(Base):
     id = Column(Integer, primary_key=True, index=True)
     ilan_no = Column(String, nullable=False)
     watch_id = Column(Integer, ForeignKey("watches.id"), nullable=False)
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=utc_now)
 
 
 class FetchLog(Base):
@@ -129,7 +136,7 @@ class FetchLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String, nullable=False)
     status = Column(String, nullable=False) # OK, BLOCKED, NOT_FOUND, ERROR
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
 
 
 class Feedback(Base):
@@ -138,4 +145,15 @@ class Feedback(Base):
     id = Column(Integer, primary_key=True, index=True)
     ilan_no = Column(String, nullable=False)
     is_positive = Column(Boolean, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
+
+
+class LLMCache(Base):
+    __tablename__ = "llm_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ilan_no = Column(String, index=True, nullable=False)
+    aciklama_hash = Column(String, nullable=False)
+    model_name = Column(String, nullable=False)
+    findings = Column(JSON, nullable=False)
+    fetched_at = Column(DateTime, default=utc_now)

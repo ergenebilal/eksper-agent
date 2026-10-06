@@ -13,18 +13,23 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
     min_km = max(0, target.km - km_margin)
     max_km = target.km + km_margin
     
-    query = db.query(Listing).filter(
+    base_filter = [
+        Listing.marka == target.marka,
+        Listing.model == target.model,
         Listing.seri == target.seri if target.seri else True,
+        Listing.ilan_no != target.ilan_no,
+        Listing.fetched_at >= thirty_days_ago
+    ]
+
+    query = db.query(Listing).filter(
+        *base_filter,
         Listing.yil >= target.yil - 1,
         Listing.yil <= target.yil + 1,
         Listing.vites == target.vites,
         Listing.yakit == target.yakit,
         Listing.km >= min_km,
-        Listing.km <= max_km,
-        Listing.fetched_at >= thirty_days_ago
+        Listing.km <= max_km
     )
-    # Şimdilik basitleştirdim. Marka/Model Listing modelinde tutulmalıydı ama spec detail'dan marka çekilmesini öngörüyor, biz kimden/baslik alanlarına ektik. 
-    # Gerçek DB sorgusu için modelin eksik alanları eklenebilir. Şimdilik list fiyatlarını mock alalım:
     
     prices = [p.fiyat for p in query.all()]
     confidence = "yuksek"
@@ -36,13 +41,13 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
         max_km_wide = target.km + km_margin_wide
         
         query_wide = db.query(Listing).filter(
+            *base_filter,
             Listing.yil >= target.yil - 2,
             Listing.yil <= target.yil + 2,
             Listing.vites == target.vites,
             Listing.yakit == target.yakit,
             Listing.km >= min_km_wide,
-            Listing.km <= max_km_wide,
-            Listing.fetched_at >= thirty_days_ago
+            Listing.km <= max_km_wide
         )
         prices = [p.fiyat for p in query_wide.all()]
         confidence = "dusuk"
