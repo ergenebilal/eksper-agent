@@ -1,14 +1,16 @@
 from arac_eksper.schemas import ListingDetail, DescriptionFindings, Verdict, PartState
 
-def generate_markdown_card(detail: ListingDetail, findings: DescriptionFindings, verdict: Verdict) -> str:
+def generate_markdown_card(detail: ListingDetail, findings: DescriptionFindings | None, verdict: Verdict) -> str:
     # 1. Başlık ve Etiket
     etiket_emoji = "🟢" if verdict.etiket == "ALINIR" else "🟡" if verdict.etiket == "DUSUNULEBILIR" else "🔴"
     etiket_text = f"{etiket_emoji} {verdict.etiket}"
+    if verdict.beklemede:
+        etiket_text = "⏳ ANALİZ BEKLİYOR (LLM erişilemedi)"
     if verdict.etiket == "ALINIR":
         etiket_text += " — ekspertize götürmeye değer"
         
     # 2. Araç Bilgisi
-    arac_bilgisi = f"{detail.yil} {detail.seri or ''} {detail.paket or ''} · {detail.km:,} km · {detail.il}/{detail.ilce or ''}".replace(',', '.')
+    arac_bilgisi = f"{detail.yil} {detail.marka} {detail.model} {detail.paket or ''} · {detail.km:,} km · {detail.il}/{detail.ilce or ''}".replace(',', '.')
     
     # 3. Fiyat ve Piyasa
     sapma_str = ""
@@ -24,14 +26,12 @@ def generate_markdown_card(detail: ListingDetail, findings: DescriptionFindings,
     
     # 5. Artılar ve Eksiler
     artilar = verdict.artilar.copy()
-    for o in findings.olumlu_sinyaller:
+    for o in (findings.olumlu_sinyaller if findings else []):
         artilar.append(f"{o.etiket} (beyan)")
         
     eksiler = verdict.eksiler.copy()
-    for o in findings.olumsuz_sinyaller:
+    for o in (findings.olumsuz_sinyaller if findings else []):
         eksiler.append(f"{o.etiket} (açıklamadan)")
-    if findings.tramer_tutari:
-        eksiler.append(f"{findings.tramer_tutari:,} TL tramer (açıklamadan)".replace(',', '.'))
         
     artilar_satiri = f"✅ {', '.join(artilar)}" if artilar else ""
     eksiler_satiri = f"⚠️ {', '.join(eksiler)}" if eksiler else ""
@@ -39,7 +39,7 @@ def generate_markdown_card(detail: ListingDetail, findings: DescriptionFindings,
     # 6. Teklif
     teklif_satiri = ""
     if verdict.tavsiye_teklif:
-        ust_sinir = verdict.piyasa.medyan if verdict.piyasa else detail.fiyat
+        ust_sinir = verdict.ust_sinir or verdict.tavsiye_teklif
         teklif_satiri = f"💬 Teklif: {verdict.tavsiye_teklif:,} TL ile aç, {ust_sinir:,} TL üst sınır".replace(',', '.')
         
     # 7. Ekspertiz

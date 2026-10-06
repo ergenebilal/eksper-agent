@@ -1,36 +1,52 @@
 import numpy as np
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from arac_eksper.storage.models import Listing
 from arac_eksper.schemas import MarketStats, ListingDetail
 
+def _tolerant_eq(column, value):
+    """Değer biliniyorsa eşleşme ya da bilinmeyen (NULL) kayıt kabul edilir.
+    Liste sayfasından gelen emsallerde vites/yakıt/seri çoğu zaman yoktur."""
+    if value is None or value == "":
+        return None
+    return or_(column.is_(None), func.lower(column) == str(value).lower())
+
+
+def _base_filters(target: ListingDetail, thirty_days_ago):
+    filters = [
+        func.lower(Listing.marka) == (target.marka or "").lower(),
+        func.lower(Listing.model) == (target.model or "").lower(),
+        Listing.ilan_no != target.ilan_no,
+        Listing.fetched_at >= thirty_days_ago,
+    ]
+    for col, val in ((Listing.seri, target.seri), (Listing.vites, target.vites), (Listing.yakit, target.yakit)):
+        cond = _tolerant_eq(col, val)
+        if cond is not None:
+            filters.append(cond)
+    return filters
+
+
 def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
     """Belirtilen araç için piyasa istatistiklerini hesaplar."""
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    
+    thirty_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
+
+    if not (target.marka and target.model):
+        # Marka/model bilinmiyorsa emsal aranamaz; yanlış kümeyle kıyaslamaktansa "yok" dön.
+        return MarketStats(n=0, medyan=0, p25=0, p75=0, guven="yok")
+
     # 1. Aşama: Dar arama
     km_margin = target.km * 0.30
-    min_km = max(0, target.km - km_margin)
-    max_km = target.km + km_margin
-    
-    base_filter = [
-        Listing.marka == target.marka,
-        Listing.model == target.model,
-        Listing.seri == target.seri if target.seri else True,
-        Listing.ilan_no != target.ilan_no,
-        Listing.fetched_at >= thirty_days_ago
-    ]
+    base = _base_filters(target, thirty_days_ago)
 
     query = db.query(Listing).filter(
-        *base_filter,
+        *base,
         Listing.yil >= target.yil - 1,
         Listing.yil <= target.yil + 1,
-        Listing.vites == target.vites,
-        Listing.yakit == target.yakit,
-        Listing.km >= min_km,
-        Listing.km <= max_km
+        Listing.km >= max(0, target.km - km_margin),
+        Listing.km <= target.km + km_margin,
     )
-    
+
     prices = [p.fiyat for p in query.all()]
     confidence = "yuksek"
     
@@ -41,11 +57,9 @@ def get_market_stats(db: Session, target: ListingDetail) -> MarketStats:
         max_km_wide = target.km + km_margin_wide
         
         query_wide = db.query(Listing).filter(
-            *base_filter,
+            *base,
             Listing.yil >= target.yil - 2,
             Listing.yil <= target.yil + 2,
-            Listing.vites == target.vites,
-            Listing.yakit == target.yakit,
             Listing.km >= min_km_wide,
             Listing.km <= max_km_wide
         )

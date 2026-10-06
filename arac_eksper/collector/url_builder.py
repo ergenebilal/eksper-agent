@@ -12,15 +12,16 @@ def load_category_map():
         return data.get("categories", {}) if data else {}
 
 def get_category_slug(criteria: SearchCriteria) -> str:
+    """Harita biçimi: Marka -> Model -> "slug"  ya da  Marka -> Model -> {"_model": "slug", "<seri>": "slug"}.
+    Seri verilmişse ve haritada varsa seri slug'ı, yoksa model slug'ı kullanılır."""
     cmap = load_category_map()
-    marka_map = cmap.get(criteria.marka, {})
-    model_map = marka_map.get(criteria.model, {})
-    
+    model_map = cmap.get(criteria.marka, {}).get(criteria.model, "")
     if isinstance(model_map, str):
         return model_map
-    elif isinstance(model_map, dict) and criteria.seri:
-        return model_map.get(criteria.seri, "")
-    
+    if isinstance(model_map, dict):
+        if criteria.seri and criteria.seri in model_map:
+            return model_map[criteria.seri]
+        return model_map.get("_model", "")
     return ""
 
 def build_search_url(criteria: SearchCriteria, page: int = 1, sort: str = "date_desc") -> str:

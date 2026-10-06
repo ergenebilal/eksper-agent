@@ -1,212 +1,409 @@
+import asyncio
+import json
+import re
+from pathlib import Path
+from typing import Optional
+
 import typer
+import yaml
 
 app = typer.Typer(help="Sahibinden Araç Analiz Ajanı")
 
-@app.command()
+# Çıkış kodları (Jeff/otomasyon sözleşmesi)
+EXIT_OK, EXIT_ERROR, EXIT_BLOCKED, EXIT_BAD_INPUT = 0, 1, 2, 3
+
+
+def say(msg: str = "", json_mode: bool = False, **kw):
+    """--json modunda stdout yalnızca JSON olmalı; insan okunur çıktı stderr'e gider."""
+    typer.echo(msg, err=json_mode, **kw)
+
+
+def emit_json(obj) -> None:
+    typer.echo(json.dumps(obj, ensure_ascii=False, indent=2, default=str))
+
+
+def exit_code_for(status: str) -> int:
+    return {"OK": EXIT_OK, "BLOCKED": EXIT_BLOCKED}.get(status, EXIT_ERROR)
+
+
+def _session():
+    from arac_eksper.storage.db import SessionLocal
+    return SessionLocal()
+
+
+# ---------------------------------------------------------------- search
 @app.command()
 def search(
     marka: str = typer.Option(..., help="Araç markası"),
     model: str = typer.Option(..., help="Araç modeli"),
-    seri: str = typer.Option(None, help="Araç serisi"),
-    max_butce: int = typer.Option(..., help="Maksimum bütçe"),
-    min_yil: int = typer.Option(None, help="Minimum yıl"),
-    max_km: int = typer.Option(None, help="Maksimum KM"),
-    vites: str = typer.Option(None, help="Vites türü"),
-    yakit: str = typer.Option(None, help="Yakıt türü")
+    max_butce: int = typer.Option(..., help="Maksimum bütçe (TL)"),
+    seri: Optional[str] = typer.Option(None, help="Araç serisi / paket (kategori haritasında seri varsa)"),
+    min_yil: Optional[int] = typer.Option(None, help="Minimum yıl"),
+    max_km: Optional[int] = typer.Option(None, help="Maksimum KM"),
+    vites: Optional[str] = typer.Option(None, help="manuel | otomatik | yari_otomatik"),
+    yakit: Optional[str] = typer.Option(None, help="benzin | dizel | lpg | hibrit | elektrik"),
+    pages: Optional[int] = typer.Option(None, help="Taranacak liste sayfası sayısı"),
+    max_detay: Optional[int] = typer.Option(None, help="En fazla kaç ilanın detayı çekilsin"),
+    json_out: bool = typer.Option(False, "--json", help="stdout'a yalnızca JSON yaz"),
 ):
-    """Anlık arama yapar."""
-    import asyncio
-    from arac_eksper.schemas import SearchCriteria
-    from arac_eksper.collector.url_builder import build_search_url
+    """Anlık arama: piyasayı tarar, ilanları değerlendirir, en iyi fırsatları raporlar."""
+    from pydantic import ValidationError
+    from arac_eksper import pipeline
     from arac_eksper.collector.playwright_collector import PlaywrightCollector
-    from arac_eksper.parser import list_parser, detail_parser
-    from arac_eksper.analysis import description_llm, market, rules_engine
     from arac_eksper.llm.client import OpenAIClient
-    from arac_eksper.storage.db import SessionLocal
-    from arac_eksper.report.card import generate_markdown_card
-    from arac_eksper.storage import repo
-    
-    criteria = SearchCriteria(
-        marka=marka, model=model, seri=seri, 
-        max_butce=max_butce, min_yil=min_yil, max_km=max_km,
-        vites=vites, yakit=yakit
-    )
-    
-    db = SessionLocal()
-    llm_client = OpenAIClient()
-    collector = PlaywrightCollector(db)
-    
-    async def run_search():
-        url = build_search_url(criteria)
-        typer.echo(f"Liste sayfası çekiliyor: {url}")
-        
-        list_res = await collector.fetch_list(url)
-        if list_res.status != "OK" or not list_res.html:
-            typer.echo(f"Liste sayfası alınamadı! Durum: {list_res.status}", err=True)
-            return
-            
-        summaries, _ = list_parser.parse(list_res.html)
-        typer.echo(f"{len(summaries)} ilan bulundu.")
-        
-        # Sadece piyasa örneği olarak sakla
-        for s in summaries:
-            repo.create_or_update_listing_summary(db, s, marka, model)
-            
-        # Ön Eleme
-        filtered = []
-        for s in summaries:
-            if s.fiyat > max_butce: continue
-            if min_yil and s.yil < min_yil: continue
-            if max_km and s.km > max_km: continue
-            filtered.append(s)
-            
-        typer.echo(f"Ön elemeden geçen ilan sayısı: {len(filtered)}")
-        
-        for s in filtered[:3]: # Rate limit ve test için ilk 3
-            typer.echo(f"\nİlan detayı çekiliyor: {s.ilan_no}")
-            det_res = await collector.fetch_detail(s.url)
-            if det_res.status != "OK" or not det_res.html:
-                typer.echo(f"Atlandı: {det_res.status}")
-                continue
-                
-            detail = detail_parser.parse(det_res.html, url=s.url)
-            detail.raw_html_path = det_res.saved_path
-            
-            repo.create_or_update_listing(db, detail)
-            
-            typer.echo(f"Açıklama LLM'e gönderiliyor...")
-            try:
-                findings = description_llm.analyze_description(llm_client, detail.baslik, detail.aciklama, db=db, ilan_no=detail.ilan_no)
-            except Exception as e:
-                from arac_eksper.llm.client import LLMUnavailable
-                if isinstance(e, LLMUnavailable):
-                    typer.secho(f"LLM Hatası: {e}. İlan analiz bekliyor olarak işaretleniyor.", fg=typer.colors.YELLOW)
-                    findings = None
-                else:
-                    typer.echo(f"LLM Hatası: {e}")
-                    continue
-                    
-            stats = market.get_market_stats(db, detail)
-            
-            if findings:
-                verdict = rules_engine.determine_verdict(detail, findings, stats)
-            else:
-                from arac_eksper.schemas import Verdict
-                verdict = Verdict(
-                    ilan_no=detail.ilan_no,
-                    etiket="DUSUNULEBILIR",
-                    guven_skoru=0.0,
-                    veri_tamlik=0.0,
-                    hard_fails=["LLM Analizi Bekliyor"],
-                    artilar=[], eksiler=[], ekspertiz_kontrol_listesi=[]
-                )
-            
-            card = generate_markdown_card(detail, findings, verdict)
-            typer.echo("\n" + "="*50 + "\n" + card + "\n" + "="*50)
-            
+    from arac_eksper.schemas import SearchCriteria
+
     try:
-        asyncio.run(run_search())
+        criteria = SearchCriteria(marka=marka, model=model, seri=seri, max_butce=max_butce, min_yil=min_yil,
+                                  max_km=max_km, vites=vites, yakit=yakit)
+    except ValidationError as e:
+        say(f"Geçersiz kriter: {e.errors()[0]['loc']} {e.errors()[0]['msg']}", json_out)
+        raise typer.Exit(EXIT_BAD_INPUT)
+
+    db = _session()
+    try:
+        from arac_eksper.collector.url_builder import build_search_url
+        try:
+            build_search_url(criteria)
+        except ValueError as e:
+            say(str(e) + " — `arac map add` ile kategori ekleyin.", json_out)
+            raise typer.Exit(EXIT_BAD_INPUT)
+
+        result = asyncio.run(pipeline.run_search(db, PlaywrightCollector(db), OpenAIClient(), criteria,
+                                                 pages=pages, max_details=max_detay))
+        if json_out:
+            emit_json(result.to_json_dict())
+        else:
+            _print_search(result)
+        raise typer.Exit(exit_code_for(result.status))
     finally:
         db.close()
 
+
+def _print_search(result) -> None:
+    from arac_eksper import pipeline
+    ordered = pipeline.ranked(result.outcomes)
+    greens = [o for o in ordered if o.verdict.etiket == "ALINIR" and not o.verdict.beklemede]
+    yellows = [o for o in ordered if o.verdict.etiket == "DUSUNULEBILIR"][:3]
+    for o in greens + yellows:
+        typer.echo("\n" + "=" * 50 + "\n" + pipeline.card_for(o) + "\n" + "=" * 50)
+    c = result.counts
+    typer.echo(f"\nÖzet: 🟢 {c['alinir']} · 🟡 {c['dusunulebilir']} · 🔴 {c['alinmaz']} (kartı yalnızca özet) · "
+               f"⏳ {c['beklemede']} · çekilen sayfa: {result.pages_fetched}")
+    for err in result.errors:
+        typer.secho(f"! {err}", fg=typer.colors.YELLOW, err=True)
+    if result.status == "BLOCKED":
+        typer.secho("Doğrulama/engel sayfası: otomatik deneme durduruldu. Manuel müdahale gerekli.",
+                    fg=typer.colors.RED, err=True)
+
+
+# ---------------------------------------------------------------- report / explain / feedback
+@app.command()
+def report(ilan_no: str = typer.Argument(...), json_out: bool = typer.Option(False, "--json")):
+    """Bir ilanın son karnesini (kayıtlı karardan) gösterir."""
+    from arac_eksper import pipeline
+    from arac_eksper.storage import repo
+    db = _session()
+    try:
+        row = repo.latest_verdict_row(db, ilan_no)
+        if not row:
+            say(f"{ilan_no} için kayıtlı karar yok. Önce `arac search` ya da `arac import-html` çalıştırın.", json_out)
+            raise typer.Exit(EXIT_ERROR)
+        detail, findings = repo.row_to_inputs(row)
+        verdict = repo.row_to_verdict(row)
+        if json_out:
+            emit_json(verdict.model_dump(mode="json"))
+        else:
+            typer.echo(pipeline.generate_markdown_card(detail, findings, verdict))
+    finally:
+        db.close()
+
+
+@app.command()
+def explain(ilan_no: str = typer.Argument(...)):
+    """Kararın tam dökümü: hangi kural kaç puan düşürdü."""
+    from arac_eksper.storage import repo
+    db = _session()
+    try:
+        row = repo.latest_verdict_row(db, ilan_no)
+        if not row:
+            typer.echo(f"{ilan_no} için kayıtlı karar yok.", err=True)
+            raise typer.Exit(EXIT_ERROR)
+        v = repo.row_to_verdict(row)
+        typer.echo(f"İlan {v.ilan_no} → {v.etiket} · skor {v.guven_skoru}/10 · veri tamlığı %{v.veri_tamlik*100:.0f}")
+        if v.beklemede:
+            typer.echo("Analiz bekliyor: LLM havuzuna erişilemedi; bir sonraki radar turunda yeniden denenecek.")
+        typer.echo("\nHard fail:" + (" yok" if not v.hard_fails else ""))
+        for h in v.hard_fails:
+            typer.echo(f"  ✗ {h}")
+        typer.echo("\nPuan dökümü:\n  10.0  başlangıç")
+        running = 10.0
+        for t in v.trace:
+            running += t["puan"]
+            typer.echo(f"  {t['puan']:+.2f}  {t['kural']}  (→ {max(0.0, min(10.0, running)):.1f})")
+        if v.piyasa:
+            typer.echo(f"\nPiyasa: n={v.piyasa.n}, medyan={v.piyasa.medyan:,} TL, güven={v.piyasa.guven}".replace(",", "."))
+        if v.tavsiye_teklif:
+            typer.echo(f"Teklif: {v.tavsiye_teklif:,} TL (üst sınır {v.ust_sinir:,} TL)".replace(",", "."))
+    finally:
+        db.close()
+
+
+@app.command()
+def feedback(ilan_no: str = typer.Argument(...), sonuc: str = typer.Argument(..., help="pos | neg")):
+    """Geri bildirim kaydı (Jeff/CLI üzerinden; Telegram butonlarıyla aynı tabloya yazar)."""
+    from arac_eksper.storage import repo
+    if sonuc not in ("pos", "neg"):
+        typer.echo("sonuc pos ya da neg olmalı", err=True)
+        raise typer.Exit(EXIT_BAD_INPUT)
+    db = _session()
+    try:
+        repo.add_feedback(db, ilan_no, sonuc == "pos")
+        typer.echo("Kaydedildi.")
+    finally:
+        db.close()
+
+
 @app.command("import-html")
-def import_html(
-    path: str = typer.Argument(..., help="HTML dosya veya klasör yolu")
-):
-    """HTML dosyalarından import yapar."""
-    from arac_eksper.storage.db import SessionLocal
+def import_html(path: str = typer.Argument(..., help="HTML dosya veya klasör yolu")):
+    """Tarayıcıdan kaydedilmiş ilan sayfalarını içe aktarır (engel durumunda yedek yol)."""
     from arac_eksper.collector import manual_import
-    
-    db = SessionLocal()
+    db = _session()
     try:
         imported = manual_import.import_from_path(db, path)
         typer.echo(f"Başarıyla içe aktarılan ilan sayısı: {len(imported)}")
         if imported:
             typer.echo(f"İlan No'lar: {', '.join(imported)}")
-    except Exception as e:
-        typer.echo(f"Hata oluştu: {str(e)}", err=True)
+    except Exception as e:  # noqa: BLE001
+        typer.echo(f"Hata oluştu: {e}", err=True)
+        raise typer.Exit(EXIT_ERROR)
     finally:
         db.close()
 
-# Daha sonra watch gibi alt komutlar da eklenecek.
+
+# ---------------------------------------------------------------- db / map
 db_app = typer.Typer(help="Veritabanı işlemleri")
 app.add_typer(db_app, name="db")
 
+
 @db_app.command("init")
 def db_init():
-    """Veritabanını ve tabloları oluşturur."""
-    import os
-    os.system("alembic upgrade head")
-    typer.echo("Veritabanı tabloları oluşturuldu.")
+    """Veritabanını ve tabloları oluşturur / günceller (alembic upgrade head)."""
+    from alembic import command
+    from alembic.config import Config
+    root = Path(__file__).resolve().parent.parent
+    cfg = Config(str(root / "alembic.ini"))
+    cfg.set_main_option("script_location", str(root / "alembic"))
+    command.upgrade(cfg, "head")
+    typer.echo("Veritabanı hazır.")
+
 
 map_app = typer.Typer(help="Kategori haritası işlemleri")
 app.add_typer(map_app, name="map")
 
+
 @map_app.command("add")
-def map_add(
-    marka: str = typer.Argument(...),
-    model: str = typer.Argument(...),
-    url: str = typer.Argument(...)
-):
-    """Sahibinden kategori URL'sini ekler."""
-    import yaml
-    from pathlib import Path
-    
-    # URL'den slug çıkarma (örn: https://www.sahibinden.com/renault-megane? -> renault-megane)
-    import re
-    match = re.search(r'sahibinden\.com/([^/?]+)', url)
+def map_add(marka: str = typer.Argument(...), model: str = typer.Argument(...), url: str = typer.Argument(...)):
+    """Elle yapılmış bir sahibinden arama URL'sinden kategori slug'ını çıkarıp haritaya ekler."""
+    match = re.search(r"sahibinden\.com/([^/?]+)", url)
     if not match:
         typer.echo("Geçersiz URL", err=True)
-        return
-        
+        raise typer.Exit(EXIT_BAD_INPUT)
     slug = match.group(1)
-    
     path = Path(__file__).parent / "config" / "category_map.yaml"
     data = {"categories": {}}
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {"categories": {}}
-            
-    if marka not in data["categories"]:
-        data["categories"][marka] = {}
-        
-    data["categories"][marka][model] = slug
-    
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, allow_unicode=True)
-        
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {"categories": {}}
+    data.setdefault("categories", {}).setdefault(marka, {})[model] = slug
+    path.write_text(yaml.dump(data, allow_unicode=True), encoding="utf-8")
     typer.echo(f"Eklendi: {marka} {model} -> {slug}")
 
+
+# ---------------------------------------------------------------- watch (radar)
 watch_app = typer.Typer(help="Radar işlemleri")
 app.add_typer(watch_app, name="watch")
+
 
 @watch_app.command("add")
 def watch_add(
     name: str = typer.Option(..., help="Radar adı"),
-    marka: str = typer.Option(...),
-    model: str = typer.Option(...),
-    max_butce: int = typer.Option(...)
+    marka: str = typer.Option(...), model: str = typer.Option(...), max_butce: int = typer.Option(...),
+    min_yil: Optional[int] = typer.Option(None), max_km: Optional[int] = typer.Option(None),
+    interval: int = typer.Option(30, help="Dakika (en az 15)"),
+    saatler: str = typer.Option("08:00-23:00", help="Aktif saatler, örn. 08:00-23:00"),
 ):
     """Yeni radar ekler."""
-    from arac_eksper.storage.db import SessionLocal
+    from arac_eksper.config.settings import settings
+    from arac_eksper.schemas import SearchCriteria
     from arac_eksper.storage.models import Watch
-    import json
-    
-    db = SessionLocal()
+    criteria = SearchCriteria(marka=marka, model=model, max_butce=max_butce, min_yil=min_yil, max_km=max_km)
+    interval = max(interval, settings.min_watch_interval_minutes)
+    db = _session()
     try:
-        criteria = {"marka": marka, "model": model, "max_butce": max_butce}
-        watch = Watch(name=name, criteria=criteria)
-        db.add(watch)
+        db.add(Watch(name=name, criteria=criteria.model_dump(exclude_none=True), interval_minutes=interval,
+                     active_hours=saatler))
         db.commit()
-        typer.echo(f"Radar eklendi: {name}")
+        typer.echo(f"Radar eklendi: {name} (her {interval} dk, {saatler})")
     finally:
         db.close()
 
+
+@watch_app.command("list")
+def watch_list():
+    from arac_eksper.storage.models import Watch
+    db = _session()
+    try:
+        for w in db.query(Watch).all():
+            typer.echo(f"{w.id:>3}  {'AKTİF ' if w.is_active else 'DURDU '} {w.name}  {w.interval_minutes}dk  "
+                       f"{w.active_hours}  {w.criteria}")
+    finally:
+        db.close()
+
+
+@watch_app.command("pause")
+def watch_pause(name: str = typer.Argument(...)):
+    _set_active(name, False)
+
+
+@watch_app.command("resume")
+def watch_resume(name: Optional[str] = typer.Argument(None, help="Boşsa tüm radarlar")):
+    """Radarı (ya da hepsini) yeniden başlatır. Engel sonrası otomatik duraklatmayı da kaldırır."""
+    _set_active(name, True)
+
+
+def _set_active(name: Optional[str], active: bool):
+    from arac_eksper.storage.models import Watch
+    db = _session()
+    try:
+        q = db.query(Watch)
+        if name:
+            q = q.filter(Watch.name == name)
+        ws = q.all()
+        for w in ws:
+            w.is_active = active
+        db.commit()
+        typer.echo(f"{len(ws)} radar {'başlatıldı' if active else 'duraklatıldı'}.")
+    finally:
+        db.close()
+
+
 @watch_app.command("run")
-def watch_run():
-    """Tüm aktif radarları zamanlanmış şekilde çalıştırır."""
-    from arac_eksper.watcher.scheduler import run_scheduler
-    run_scheduler()
+def watch_run(
+    once: bool = typer.Option(False, "--once", help="Tüm aktif radarları bir kez çalıştırıp çık (cron/Jeff için)"),
+    force: bool = typer.Option(False, "--force", help="Aktif saat kısıtını yoksay"),
+    json_out: bool = typer.Option(False, "--json"),
+):
+    """Radarları çalıştırır. SCHEDULER_MODE=external ya da --once: tek tur; aksi halde sürekli zamanlayıcı."""
+    from arac_eksper.config.settings import settings
+    from arac_eksper.storage.models import Watch
+    from arac_eksper.watcher import scheduler
+
+    if not once and settings.scheduler_mode != "external":
+        scheduler.run_scheduler()
+        return
+
+    db = _session()
+    try:
+        ids = [w.id for w in db.query(Watch).filter(Watch.is_active == True).all()]  # noqa: E712
+    finally:
+        db.close()
+
+    runs, worst = [], EXIT_OK
+    for wid in ids:
+        r = scheduler.run_watch_once(wid, force=force)
+        if r is None:
+            continue
+        runs.append(r)
+        say(f"Radar #{wid}: {r.status} · {r.counts} · hata: {r.errors}", json_out)
+        worst = max(worst, exit_code_for(r.status)) if r.status != "OK" else worst
+    if json_out:
+        emit_json({"runs": [r.to_json_dict() for r in runs],
+                   "events": [e for r in runs for e in r.events]})
+    raise typer.Exit(worst)
+
+
+@watch_app.command("summary")
+def watch_summary():
+    """Günlük özet mesajını üretir ve bildirim kanalına gönderir."""
+    from arac_eksper.watcher import scheduler
+    scheduler.send_daily_summary()
+    typer.echo("Özet gönderildi.")
+
+
+# ---------------------------------------------------------------- events / status / telegram
+@app.command()
+def events(since: int = typer.Option(0, help="Bu id'den büyük olaylar"),
+           json_out: bool = typer.Option(True, "--json/--text"),
+           types: str = typer.Option("alinir,blocked,watch_paused,daily_summary",
+                                     help="Virgülle ayrılmış olay türleri")):
+    """Bildirim olayları (NOTIFY_MODE=jeff iken Jeff bunu okur)."""
+    from arac_eksper.storage.models import Event
+    db = _session()
+    try:
+        wanted = [t.strip() for t in types.split(",") if t.strip()]
+        rows = db.query(Event).filter(Event.id > since, Event.type.in_(wanted)).order_by(Event.id).all()
+        out = [{"id": e.id, "type": e.type, "ilan_no": e.ilan_no, "watch_id": e.watch_id, "text": e.text,
+                "payload": e.payload, "created_at": e.created_at.isoformat() if e.created_at else None} for e in rows]
+        if json_out:
+            emit_json({"events": out, "last_id": out[-1]["id"] if out else since})
+        else:
+            for e in out:
+                typer.echo(f"#{e['id']} [{e['type']}] {e['text']}")
+    finally:
+        db.close()
+
+
+@app.command()
+def status(json_out: bool = typer.Option(False, "--json")):
+    """Sağlık: son BAŞARILI çekim, engel durumu, saatlik kullanım, radar son çalışmaları.
+    ('Çalışıyor' demek için sunucunun ayakta olması değil, son başarılı çekim zamanı bakılır.)"""
+    from datetime import datetime, timedelta, timezone
+    from arac_eksper.collector import guard
+    from arac_eksper.config.settings import settings
+    from arac_eksper.storage.models import Event, FetchLog, Watch
+    db = _session()
+    try:
+        last_ok = db.query(FetchLog).filter(FetchLog.status == "OK").order_by(FetchLog.id.desc()).first()
+        hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        used = db.query(FetchLog).filter(FetchLog.timestamp >= hour_ago).count()
+        until = guard.is_blocked_now(db)
+        watches = []
+        for w in db.query(Watch).all():
+            last = (db.query(Event).filter(Event.type == "watch_run", Event.watch_id == w.id)
+                    .order_by(Event.id.desc()).first())
+            watches.append({"id": w.id, "name": w.name, "active": w.is_active,
+                            "last_run_at": last.created_at.isoformat() if last and last.created_at else None,
+                            "last_status": (last.payload or {}).get("status") if last else None})
+        info = {"last_successful_fetch_at": guard.as_utc(last_ok.timestamp).isoformat() if last_ok else None,
+                "blocked_until": until.isoformat() if until else None,
+                "pages_used_this_hour": used, "pages_limit": settings.max_pages_per_hour, "watchers": watches}
+        if json_out:
+            emit_json(info)
+        else:
+            typer.echo(f"Son başarılı çekim : {info['last_successful_fetch_at'] or 'HİÇ'}")
+            typer.echo(f"Engel              : {info['blocked_until'] or 'yok'}")
+            typer.echo(f"Saatlik kullanım   : {used}/{settings.max_pages_per_hour}")
+            for w in watches:
+                typer.echo(f"Radar {w['name']}: {'aktif' if w['active'] else 'DURDU'} · son tur {w['last_run_at'] or 'hiç'} ({w['last_status']})")
+    finally:
+        db.close()
+
+
+telegram_app = typer.Typer(help="Telegram")
+app.add_typer(telegram_app, name="telegram")
+
+
+@telegram_app.command("poll")
+def telegram_poll():
+    """👍/👎 butonlarını dinler ve feedbacks tablosuna yazar (NOTIFY_MODE=arac)."""
+    from arac_eksper.report import feedback as fb
+    db = _session()
+    try:
+        typer.echo("Telegram geri bildirimi dinleniyor (Ctrl+C ile durdur)...")
+        fb.poll_forever(db)
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     app()

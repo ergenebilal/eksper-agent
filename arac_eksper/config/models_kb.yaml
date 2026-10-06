@@ -1,0 +1,13 @@
+# Model bilgi tabanı: bilinen kronik arızalar. İÇERİĞİ KULLANICI DOLDURUR (otomatik eklenmez).
+# Eşleşen her kayıt: puan -0.5 (rules.yaml: kronik_ariza) + ekspertiz kontrol maddesi.
+#
+# Örnek (kendi bilginle düzenle):
+# models:
+#   - marka: Renault
+#     model: Megane
+#     yil_min: 2016
+#     yil_max: 2020
+#     kronik:
+#       - etiket: "EDC şanzıman"
+#         kontrol: "Kalkışta silkeleme, düşük viteste vuruntu; test sürüşünde kontrol et"
+models: []

@@ -3,7 +3,7 @@ from arac_eksper.analysis.description_llm import analyze_description, normalize_
 from arac_eksper.schemas import DescriptionFindings, Evidence
 
 class MockLLMClient:
-    def parse_structured(self, system_prompt: str, user_prompt: str, response_model):
+    def parse_structured(self, system_prompt: str, user_prompt: str, response_model, model_name=None):
         return DescriptionFindings(
             sase_direk_podye_islem="var",
             sase_alinti="şase işlemli", # Invalid quote, actual is "şasede ufak bi düzeltme"

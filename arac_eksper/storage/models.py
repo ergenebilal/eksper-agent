@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Float, Date, JSON, Text
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Float, Date, JSON, Text, false
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from arac_eksper.storage.db import Base
@@ -92,7 +92,14 @@ class Verdict(Base):
     artilar = Column(JSON, nullable=True)
     eksiler = Column(JSON, nullable=True)
     tavsiye_teklif = Column(Integer, nullable=True)
+    ust_sinir = Column(Integer, nullable=True)
     ekspertiz_kontrol_listesi = Column(JSON, nullable=True)
+    trace = Column(JSON, nullable=True)
+    piyasa = Column(JSON, nullable=True)
+    beklemede = Column(Boolean, nullable=False, default=False, server_default=false())
+    detail_json = Column(JSON, nullable=True)    # report/explain için kararın girdisi
+    findings_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
 
     listing = relationship("Listing", back_populates="verdicts")
 
@@ -157,3 +164,17 @@ class LLMCache(Base):
     model_name = Column(String, nullable=False)
     findings = Column(JSON, nullable=False)
     fetched_at = Column(DateTime, default=utc_now)
+
+
+class Event(Base):
+    """Bildirim olayları. notify_mode=jeff iken Jeff `arac events` ile buradan okur."""
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String, nullable=False)   # alinir, blocked, watch_paused, daily_summary
+    ilan_no = Column(String, nullable=True)
+    watch_id = Column(Integer, nullable=True)
+    text = Column(Text, nullable=False)
+    payload = Column(JSON, nullable=True)
+    delivered = Column(Boolean, nullable=False, default=False, server_default=false())
+    created_at = Column(DateTime, default=utc_now)

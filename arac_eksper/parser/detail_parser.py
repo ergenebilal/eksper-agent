@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone
 from arac_eksper.schemas import ListingDetail, PartState
 from arac_eksper.parser.selectors import Selectors
 from arac_eksper.parser.list_parser import parse_price, parse_date
@@ -47,6 +47,8 @@ def parse(html: str, url: str = "") -> ListingDetail:
         il=il,
         ilce=ilce,
         ilan_tarihi=ilan_tarihi,
+        marka=info_dict.get("Marka", ""),
+        model=info_dict.get("Seri", ""),  # sahibinden: Marka > Seri (=model adı) > Model (=paket)
         seri=info_dict.get("Seri"),
         paket=info_dict.get("Model"),
         vites=info_dict.get("Vites"),
@@ -58,5 +60,5 @@ def parse(html: str, url: str = "") -> ListingDetail:
         agir_hasar_kayitli=hasar,
         parts=parts,
         aciklama=aciklama,
-        fetched_at=datetime.utcnow()
+        fetched_at=datetime.now(timezone.utc)
     )

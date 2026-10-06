@@ -1,33 +1,33 @@
 import requests
 from arac_eksper.config.settings import settings
 
-def send_telegram_message(text: str, ilan_no: str):
-    bot_token = getattr(settings, 'telegram_bot_token', None)
-    chat_id = getattr(settings, 'telegram_chat_id', None)
-    
-    if not bot_token or not chat_id:
-        print("Telegram bot_token veya chat_id ayarlanmamış.")
-        return
-        
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    
-    reply_markup = {
-        "inline_keyboard": [[
-            {"text": "👍 İyi", "callback_data": f"fb_pos_{ilan_no}"},
-            {"text": "👎 Kötü", "callback_data": f"fb_neg_{ilan_no}"}
-        ]]
-    }
-    
+
+def telegram_configured() -> bool:
+    return bool(settings.telegram_bot_token and settings.telegram_chat_id)
+
+
+def send_telegram_message(text: str, ilan_no: str | None = None) -> bool:
+    """Düz metin gönderir (parse_mode yok: ilan başlıklarındaki _ * karakterleri Markdown'ı bozmasın).
+    ilan_no verilirse 👍/👎 geri bildirim butonları eklenir. Başarıyı döner; anahtar loglanmaz."""
+    if not telegram_configured():
+        print("Telegram bot_token veya chat_id ayarlanmamış (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).")
+        return False
+
     payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "Markdown",
+        "chat_id": settings.telegram_chat_id,
+        "text": text[:4000],
         "disable_web_page_preview": True,
-        "reply_markup": reply_markup
     }
-    
+    if ilan_no:
+        payload["reply_markup"] = {"inline_keyboard": [[
+            {"text": "👍 İyi", "callback_data": f"fb_pos_{ilan_no}"},
+            {"text": "👎 Kötü", "callback_data": f"fb_neg_{ilan_no}"},
+        ]]}
     try:
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Telegram gönderim hatası: {e}")
+        r = requests.post(f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage",
+                          json=payload, timeout=15)
+        r.raise_for_status()
+        return True
+    except Exception as e:  # noqa: BLE001  (URL token içerir; yalnızca hata türünü yaz)
+        print(f"Telegram gönderim hatası: {type(e).__name__}")
+        return False

@@ -6,7 +6,7 @@ from arac_eksper.analysis.rules_engine import determine_verdict, load_rules
 def test_load_rules():
     rules = load_rules()
     assert "scoring" in rules
-    assert rules["scoring"]["boyali_parca"] == -0.5
+    assert rules["scoring"]["boyali_parca"] == -0.6
 
 def test_rules_engine_scoring_with_yaml():
     detail = ListingDetail(
@@ -32,9 +32,9 @@ def test_rules_engine_scoring_with_yaml():
     verdict = determine_verdict(detail, findings, market=None)
     
     # Base: 10.0
-    # Kaput (painted) -> -0.5
-    # Sol kapi (replaced) -> -1.0
+    # Kaput (painted) -> -0.6
+    # Sol kapi (replaced) -> -1.2
     # Tramer: 20000 / 100000 = 0.20 > 0.10 -> tramer_10_plus -> -2.0
-    # Total score = 10.0 - 0.5 - 1.0 - 2.0 = 6.5
+    # Total score = 10.0 - 0.6 - 1.2 - 2.0 = 6.2
     
-    assert verdict.guven_skoru == 6.5
+    assert verdict.guven_skoru == 6.2

@@ -1,25 +1,43 @@
+# rules.yaml — SPEC.md §4.3 ile birebir. Ağırlıkları ve eşikleri yalnızca kullanıcı değiştirir.
 rules:
+  hard_fails:
+    max_sapma: 0.25              # ilan fiyatı piyasa medyanının %25 üstündeyse ele
+    max_yillik_km: 45000         # yıllık km bunun üstündeyse ele (filo/taksi riski)
+    dolandiricilik_sapma: -0.20  # dolandırıcılık sinyali + medyanın %20'den ucuzsa ele
+    tavan_elenen_durumlar: ["lokal_boyali", "boyali", "degisen"]
+    butce_asimi: true            # ilan fiyatı kullanıcı bütçesini aşıyorsa ele
+
+  etiket:
+    alinmaz_skor_alti: 5.5       # skor bunun altındaysa ALINMAZ
+    alinir_min_skor: 7.5
+    alinir_max_sapma: -0.05      # plan matrisi: ALINIR = piyasa medyanından en az %5 uygun; medyanda = DÜŞÜNÜLEBİLİR
+    alinir_min_tamlik: 0.6
+    min_emsal: 5                 # bunun altında piyasa karşılaştırması güvenilmez -> ALINIR olamaz
+
   scoring:
-    tampon_boya_degisen: 0.0
-    lokal_boyali_parca: -0.2
-    boyali_parca: -0.5
-    degisen_kaput_bagaj: -2.0
-    degisen_parca: -1.0
-    unknown_parca: -0.1
-    unknown_max: -1.0
-    
-    tramer_0_5: -0.5
+    lokal_boyali_parca: -0.3
+    boyali_parca: -0.6
+    degisen_parca: -1.2
+    degisen_kaput_bagaj: -1.5
+    tampon_boya_degisen: -0.1
+    unknown_parca: -0.25
+    unknown_max: -1.5
+
+    tramer_0_5: -0.3
     tramer_5_10: -1.0
     tramer_10_plus: -2.0
-    tramer_bilinmiyor: -0.3
-    
-    yillik_km_25_35: -0.5
-    yillik_km_35_45: -1.0
+    tramer_bilinmiyor: -0.5
+
+    yillik_km_25_35: -0.8
+    yillik_km_35_45: -1.8
     yillik_km_suphe: -1.0
-    
-    olumsuz_sinyal: -0.5
+
+    olumsuz_sinyal: -0.7
     belirsiz_ifade: -0.3
-    olumlu_sinyal: 0.5
-    olumlu_max: 2.0
-    
+    olumlu_sinyal: 0.4
+    olumlu_max: 1.0
+
     sapma_eksi_5_15: 0.5
+    sapma_eksi_20: 0.0
+
+    kronik_ariza: -0.5   # models_kb.yaml'da eşleşen her kayıt için

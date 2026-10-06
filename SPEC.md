@@ -152,7 +152,7 @@ Yıllık km = km / max(araç yaşı (ay/12), 1).
 
 **Etiket:**
 - 🔴 ALINMAZ: herhangi bir hard fail veya skor < 5.5
-- 🟢 ALINIR: skor ≥ 7.5 VE sapma ≤ 0 VE `sase_direk_podye_islem != "var"` VE `veri_tamlik ≥ 0.6`
+- 🟢 ALINIR: skor ≥ 7.5 VE sapma ≤ -%5 (plan matrisi: piyasadan en az %5 uygun; medyanda = 🟡) VE `sase_direk_podye_islem != "var"` VE `veri_tamlik ≥ 0.6` VE emsal sayısı ≥ 5 (tüm eşikler rules.yaml `etiket` bölümünde)
 - 🟡 DÜŞÜNÜLEBİLİR: geri kalan her şey
 
 `veri_tamlik`: yapılandırılmış alanların, parça diyagramının, tramer bilgisinin ve emsal sayısının dolu olma oranı (ağırlıklı).
