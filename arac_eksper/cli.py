@@ -600,6 +600,15 @@ def kb_kontrol():
     madde = sum(len(e.get("kronik") or []) for e in tum)
     say(f"models_kb: {len(tum)} model, {madde} kronik madde · onaylı {len(onayli)} / taslak {len(tum) - len(onayli)}")
     say(f"alim_gunu: {'onaylı (panelde görünür)' if rehber.load_alim_gunu() else 'taslak (panelde görünmez)'}")
+    from arac_eksper.analysis import masraf_kb
+    m_err, m_warn = masraf_kb.validate()
+    tum_k = masraf_kb.kalemler(include_unapproved=True)
+    onayli_k = masraf_kb.kalemler()
+    say(f"masraf_kb: {len(tum_k)} kalem · onaylı {len(onayli_k)} / taslak {len(tum_k) - len(onayli_k)}"
+        f" · fiyat tarihi {masraf_kb.load().get('fiyat_tarihi', '?')}")
+    errs += [f"masraf_kb: {e}" for e in m_err]
+    for w in m_warn:
+        say(f"  UYARI: masraf_kb: {w}")
     for e in errs:
         say(f"  HATA: {e}")
     say("Şema geçerli." if not errs else f"{len(errs)} hata")

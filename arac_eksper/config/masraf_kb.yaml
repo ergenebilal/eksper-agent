@@ -1,0 +1,163 @@
+# Masraf bilgi tabanı — gerçek maliyet hesabı için (OtoXray_Arge.md R2.1)
+#
+# ⚠ TASLAK: Claude, 2026-10-07. Fiyatlar Ekim 2026 Türkiye piyasası için KABA TAHMİNDİR (işçilik dahil, özel servis
+#   ortalaması; yetkili servis genelde üst sınıra yakın ya da üstündedir). HİÇBİR KALEM ONAYLI DEĞİL.
+#   Kural 5: LLM tutar uydurmaz; yalnız kalemi tanır (anahtar_kelimeler), tutar BURADAN gelir ve ARALIK olarak gösterilir.
+#   Kural 10: `onayli: false` kalem hesaba girmez. Kullanıcı (ustaya danışarak) aralıkları düzeltir, `onayli: true` yapar.
+#   Fiyatlar enflasyonla eskir: `fiyat_tarihi` 6 aydan eskiyse `arac kb kontrol` uyarır.
+#   Doğrulama: `uv run arac kb kontrol`
+
+para_birimi: TRY
+fiyat_tarihi: "2026-10"
+kaynak: "Taslak (Claude, 2026-10-07): genel servis/parça piyasası tahmini; usta onayı bekliyor"
+
+# Segment = parça/işçilik fiyat düzeyi (araç fiyatı değil). Eşleşme: marka + seri (ilan "Seri"), Türkçe harf farkı yok sayılır.
+# Listede olmayan araç: premium markaysa "premium", değilse "bilinmiyor" (hesapta ekonomik alt sınırı ile üst segment üst sınırı arası).
+segmentler:
+  ekonomik:
+    - [Fiat, Egea]
+    - [Fiat, Linea]
+    - [Fiat, Albea]
+    - [Fiat, Doblo]
+    - [Fiat, Fiorino]
+    - [Tofaş, Doğan]
+    - [Tofaş, Şahin]
+    - [Renault, Clio]
+    - [Renault, Symbol]
+    - [Dacia, Sandero]
+    - [Dacia, Logan]
+    - [Opel, Corsa]
+    - [Ford, Fiesta]
+    - [Volkswagen, Polo]
+    - [Hyundai, i20]
+    - [Hyundai, Accent Blue]
+    - [Hyundai, Accent Era]
+    - [Peugeot, "301"]
+    - [Peugeot, "208"]
+    - [Citroen, C-Elysee]
+    - [Toyota, Yaris]
+  orta:
+    - [Renault, Megane]
+    - [Renault, Fluence]
+    - [Renault, Captur]
+    - [Dacia, Duster]
+    - [Ford, Focus]
+    - [Opel, Astra]
+    - [Volkswagen, Golf]
+    - [Volkswagen, Jetta]
+    - [Skoda, Octavia]
+    - [Seat, Leon]
+    - [Toyota, Corolla]
+    - [Toyota, C-HR]
+    - [Honda, Civic]
+    - [Hyundai, Tucson]
+    - [Hyundai, Elantra]
+    - [Kia, Sportage]
+    - [Kia, Ceed]
+    - [Nissan, Qashqai]
+    - [Peugeot, "2008"]
+    - [Peugeot, "3008"]
+    - [Citroen, C4]
+  ust:
+    - [Volkswagen, Passat]
+    - [Volkswagen, Tiguan]
+    - [Skoda, Superb]
+    - [Skoda, Kodiaq]
+    - [Citroen, C5]
+    - [Peugeot, "508"]
+    - [Honda, CR-V]
+premium_markalar: [BMW, Mercedes-Benz, Audi, Volvo, Porsche, Land Rover, Lexus, Jaguar, Mini, Alfa Romeo]
+
+# Her kalem: kod, ad, anahtar_kelimeler (ilan metninde tanıma — R2.2), aralik {ekonomik, orta, ust, premium}: [alt, üst] TL,
+# not (ops.), onayli. Aralık: tek parça/tek işlem (adet belirtilmişse adet başına).
+kalemler:
+  # ---------------------------------------------------------------- periyodik / ağır bakım
+  - {kod: periyodik_bakim, ad: "Periyodik bakım (yağ + filtreler)", anahtar_kelimeler: ["bakımı gelmiş", "bakım zamanı", "yağ bakımı"],
+     aralik: {ekonomik: [4000, 7000], orta: [5500, 9500], ust: [8000, 14000], premium: [12000, 25000]}, onayli: false}
+  - {kod: triger_seti, ad: "Triger seti + devirdaim", anahtar_kelimeler: ["triger", "eksantrik kayışı", "triger kayışı"],
+     aralik: {ekonomik: [9000, 16000], orta: [12000, 22000], ust: [18000, 32000], premium: [25000, 55000]},
+     not: "Zincirli motorlarda zincir seti daha pahalıdır (zincir_seti)", onayli: false}
+  - {kod: zincir_seti, ad: "Eksantrik zinciri seti", anahtar_kelimeler: ["zincir sesi", "eksantrik zinciri", "triger zinciri"],
+     aralik: {ekonomik: [15000, 28000], orta: [22000, 40000], ust: [30000, 55000], premium: [45000, 110000]}, onayli: false}
+  - {kod: buji_atesleme, ad: "Buji + ateşleme bobini", anahtar_kelimeler: ["buji", "bobin", "tekleme"],
+     aralik: {ekonomik: [2500, 7000], orta: [3500, 9000], ust: [5000, 13000], premium: [8000, 22000]}, onayli: false}
+  # ---------------------------------------------------------------- şanzıman / aktarma
+  - {kod: debriyaj_seti, ad: "Debriyaj seti (manuel)", anahtar_kelimeler: ["debriyaj", "baskı balata", "kavrama kaçırıyor"],
+     aralik: {ekonomik: [9000, 16000], orta: [12000, 22000], ust: [18000, 32000], premium: [25000, 50000]}, onayli: false}
+  - {kod: cift_kutleli_volan, ad: "Çift kütleli volan", anahtar_kelimeler: ["volan", "çift kütleli"],
+     aralik: {ekonomik: [15000, 25000], orta: [18000, 32000], ust: [25000, 42000], premium: [35000, 70000]}, onayli: false}
+  - {kod: cift_kavrama, ad: "Çift kavrama şanzıman (DSG/EDC/Powershift/DCT) kavrama değişimi", anahtar_kelimeler: ["kavrama", "dsg", "edc", "powershift", "titreme"],
+     aralik: {ekonomik: [25000, 45000], orta: [30000, 55000], ust: [40000, 70000], premium: [55000, 110000]}, onayli: false}
+  - {kod: mekatronik, ad: "Mekatronik / şanzıman beyni onarımı", anahtar_kelimeler: ["mekatronik", "şanzıman beyni", "tcu"],
+     aralik: {ekonomik: [25000, 50000], orta: [35000, 70000], ust: [45000, 90000], premium: [60000, 140000]}, onayli: false}
+  - {kod: otomatik_sanziman_revizyon, ad: "Tork konvertörlü otomatik şanzıman revizyonu", anahtar_kelimeler: ["şanzıman revizyon", "şanzıman yapıldı", "vites atmıyor"],
+     aralik: {ekonomik: [45000, 85000], orta: [60000, 110000], ust: [75000, 140000], premium: [100000, 250000]}, onayli: false}
+  - {kod: cvt_revizyon, ad: "CVT şanzıman onarımı", anahtar_kelimeler: ["cvt", "xtronic", "kayma"],
+     aralik: {ekonomik: [40000, 75000], orta: [50000, 95000], ust: [65000, 120000], premium: [90000, 200000]}, onayli: false}
+  - {kod: robotize_aktuator, ad: "Robotize şanzıman aktüatörü (Easy-R/Dualogic/Easytronic/MMT)", anahtar_kelimeler: ["aktüatör", "easy-r", "dualogic", "easytronic"],
+     aralik: {ekonomik: [15000, 30000], orta: [20000, 38000], ust: [25000, 45000], premium: [35000, 70000]}, onayli: false}
+  - {kod: sanziman_yagi, ad: "Şanzıman yağı değişimi (otomatik)", anahtar_kelimeler: ["şanzıman yağı"],
+     aralik: {ekonomik: [3500, 7000], orta: [4500, 9000], ust: [6000, 12000], premium: [9000, 20000]}, onayli: false}
+  # ---------------------------------------------------------------- motor
+  - {kod: dpf_temizlik, ad: "DPF temizliği", anahtar_kelimeler: ["dpf", "partikül filtresi", "dizel partikül"],
+     aralik: {ekonomik: [4000, 8000], orta: [5000, 10000], ust: [6000, 12000], premium: [8000, 16000]}, onayli: false}
+  - {kod: dpf_degisim, ad: "DPF değişimi", anahtar_kelimeler: ["dpf iptal", "dpf değişecek"],
+     aralik: {ekonomik: [25000, 45000], orta: [30000, 60000], ust: [40000, 75000], premium: [55000, 120000]},
+     not: "DPF iptali yasal değildir ve muayeneden kalabilir", onayli: false}
+  - {kod: egr, ad: "EGR temizliği / değişimi", anahtar_kelimeler: ["egr"],
+     aralik: {ekonomik: [3500, 15000], orta: [4500, 20000], ust: [6000, 26000], premium: [8000, 40000]}, onayli: false}
+  - {kod: enjektor, ad: "Dizel enjektör (adet)", anahtar_kelimeler: ["enjektör"],
+     aralik: {ekonomik: [6000, 12000], orta: [7000, 14000], ust: [9000, 18000], premium: [12000, 28000]}, onayli: false}
+  - {kod: turbo, ad: "Turbo revizyonu", anahtar_kelimeler: ["turbo", "turbo kaçırıyor"],
+     aralik: {ekonomik: [15000, 28000], orta: [18000, 35000], ust: [25000, 45000], premium: [35000, 80000]}, onayli: false}
+  - {kod: silindir_kapak, ad: "Silindir kapağı (kafa) revizyonu / conta", anahtar_kelimeler: ["kafa", "conta yaktı", "silindir kapak"],
+     aralik: {ekonomik: [18000, 35000], orta: [25000, 45000], ust: [32000, 60000], premium: [45000, 100000]}, onayli: false}
+  - {kod: rektefiye, ad: "Motor rektefiyesi", anahtar_kelimeler: ["rektefiye", "motor yapılacak"],
+     aralik: {ekonomik: [60000, 110000], orta: [80000, 150000], ust: [100000, 200000], premium: [150000, 400000]}, onayli: false}
+  - {kod: radyator, ad: "Radyatör", anahtar_kelimeler: ["radyatör", "hararet"],
+     aralik: {ekonomik: [5000, 10000], orta: [6500, 13000], ust: [9000, 18000], premium: [12000, 30000]}, onayli: false}
+  - {kod: termostat, ad: "Termostat", anahtar_kelimeler: ["termostat"],
+     aralik: {ekonomik: [2000, 5000], orta: [2500, 6500], ust: [3500, 9000], premium: [5000, 15000]}, onayli: false}
+  - {kod: alternator, ad: "Şarj dinamosu (alternatör)", anahtar_kelimeler: ["alternatör", "şarj dinamosu"],
+     aralik: {ekonomik: [6000, 12000], orta: [7500, 15000], ust: [10000, 20000], premium: [14000, 35000]}, onayli: false}
+  - {kod: mars_motoru, ad: "Marş motoru", anahtar_kelimeler: ["marş motoru", "marş basmıyor"],
+     aralik: {ekonomik: [4500, 9000], orta: [5500, 11000], ust: [7500, 15000], premium: [10000, 25000]}, onayli: false}
+  - {kod: aku, ad: "Akü", anahtar_kelimeler: ["akü"],
+     aralik: {ekonomik: [3500, 6500], orta: [4000, 8000], ust: [5500, 10000], premium: [7000, 18000]}, onayli: false}
+  - {kod: egzoz_katalizor, ad: "Egzoz / katalitik konvertör", anahtar_kelimeler: ["egzoz", "katalizör", "katalitik"],
+     aralik: {ekonomik: [6000, 20000], orta: [8000, 28000], ust: [10000, 35000], premium: [15000, 60000]}, onayli: false}
+  - {kod: hibrit_batarya, ad: "Hibrit batarya yenileme", anahtar_kelimeler: ["hibrit batarya", "batarya"],
+     aralik: {ekonomik: [60000, 120000], orta: [80000, 160000], ust: [100000, 200000], premium: [150000, 350000]}, onayli: false}
+  - {kod: lpg_bakim, ad: "LPG sistem bakımı + supap ayarı", anahtar_kelimeler: ["lpg", "supap"],
+     aralik: {ekonomik: [3000, 8000], orta: [4000, 10000], ust: [5000, 12000], premium: [7000, 18000]}, onayli: false}
+  # ---------------------------------------------------------------- yürüyen aksam / fren / lastik
+  - {kod: amortisor_cift, ad: "Amortisör (ön ya da arka, çift)", anahtar_kelimeler: ["amortisör", "amasör"],
+     aralik: {ekonomik: [7000, 14000], orta: [9000, 18000], ust: [12000, 25000], premium: [18000, 50000]}, onayli: false}
+  - {kod: on_takim, ad: "Ön takım (salıncak, rotil, rot başı)", anahtar_kelimeler: ["ön takım", "salıncak", "rotil", "rot"],
+     aralik: {ekonomik: [6000, 14000], orta: [8000, 18000], ust: [11000, 25000], premium: [16000, 45000]}, onayli: false}
+  - {kod: fren_on, ad: "Ön fren disk + balata", anahtar_kelimeler: ["balata", "fren disk", "disk"],
+     aralik: {ekonomik: [5000, 10000], orta: [6500, 13000], ust: [9000, 18000], premium: [13000, 35000]}, onayli: false}
+  - {kod: lastik_takim, ad: "Lastik (4 adet)", anahtar_kelimeler: ["lastik", "lastikler bitik", "lastik değişmeli"],
+     aralik: {ekonomik: [12000, 24000], orta: [16000, 32000], ust: [22000, 45000], premium: [35000, 90000]}, onayli: false}
+  - {kod: direksiyon_kutusu, ad: "Direksiyon kutusu", anahtar_kelimeler: ["direksiyon kutusu", "direksiyon sesi"],
+     aralik: {ekonomik: [10000, 22000], orta: [13000, 28000], ust: [18000, 38000], premium: [25000, 70000]}, onayli: false}
+  # ---------------------------------------------------------------- klima / elektrik
+  - {kod: klima_gaz, ad: "Klima gazı dolumu", anahtar_kelimeler: ["klima gaz", "gaz basılacak", "klima soğutmuyor"],
+     aralik: {ekonomik: [1500, 3000], orta: [1800, 3500], ust: [2200, 4500], premium: [3000, 7000]}, onayli: false}
+  - {kod: klima_kompresor, ad: "Klima kompresörü", anahtar_kelimeler: ["kompresör"],
+     aralik: {ekonomik: [15000, 30000], orta: [18000, 36000], ust: [24000, 48000], premium: [35000, 80000]}, onayli: false}
+  - {kod: far, ad: "Far (tek)", anahtar_kelimeler: ["far", "farlar"],
+     aralik: {ekonomik: [4000, 12000], orta: [6000, 20000], ust: [10000, 35000], premium: [18000, 80000]}, onayli: false}
+  # ---------------------------------------------------------------- kaporta / cam
+  - {kod: parca_boya, ad: "Panel boyası (parça başı)", anahtar_kelimeler: ["boya", "boyanacak", "güneş yanığı"],
+     aralik: {ekonomik: [4500, 8000], orta: [5500, 10000], ust: [7000, 13000], premium: [9000, 20000]}, onayli: false}
+  - {kod: lokal_boya, ad: "Lokal boya / rötuş (parça başı)", anahtar_kelimeler: ["lokal", "rötuş", "çizik"],
+     aralik: {ekonomik: [2000, 4500], orta: [2500, 5500], ust: [3000, 7000], premium: [4000, 10000]}, onayli: false}
+  - {kod: pdr, ad: "Boyasız göçük düzeltme (adet)", anahtar_kelimeler: ["göçük", "vuruk", "dolu"],
+     aralik: {ekonomik: [1000, 3000], orta: [1200, 3500], ust: [1500, 4500], premium: [2000, 6000]}, onayli: false}
+  - {kod: tampon, ad: "Tampon onarımı / değişimi", anahtar_kelimeler: ["tampon"],
+     aralik: {ekonomik: [3000, 12000], orta: [4000, 16000], ust: [5000, 22000], premium: [8000, 40000]}, onayli: false}
+  - {kod: on_cam, ad: "Ön cam", anahtar_kelimeler: ["ön cam", "cam çatlak"],
+     aralik: {ekonomik: [5000, 10000], orta: [6000, 14000], ust: [8000, 20000], premium: [12000, 40000]}, onayli: false}
+  - {kod: airbag_set, ad: "Airbag modülü + torpido/direksiyon yenileme", anahtar_kelimeler: ["airbag"],
+     aralik: {ekonomik: [25000, 50000], orta: [30000, 65000], ust: [40000, 85000], premium: [60000, 150000]}, onayli: false}
