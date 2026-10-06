@@ -18,6 +18,24 @@ def _yillik_km(detail: ListingDetail) -> float:
     yas = max(detail.fetched_at.year - detail.yil, 1)
     return detail.km / yas
 
+def _bilinen_parca(detail: ListingDetail) -> int:
+    return sum(1 for st in detail.parts.values() if st != PartState.UNKNOWN)
+
+
+def alinir_engelleri(detail: ListingDetail, findings: DescriptionFindings) -> list[str]:
+    """🟢'yi engelleyen (ama 🔴 yapmayan) durumlar: bilinmeyen ya da doğrulanamayan risk 'iyi' sayılmaz."""
+    out = []
+    if not _bilinen_parca(detail):
+        out.append("parça diyagramı yok / parçalar bilinmiyor")
+    if findings.dolandiricilik_sinyalleri:
+        out.append("dolandırıcılık sinyali var")
+    if findings.motor_sanziman in ("degisen", "sorunlu"):
+        out.append(f"motor/şanzıman {findings.motor_sanziman}")
+    if findings.km_degisimi_suphesi:
+        out.append("km değişimi şüphesi")
+    return out
+
+
 def evaluate_hard_fails(detail: ListingDetail, findings: DescriptionFindings, market: MarketStats,
                         rules: dict, max_butce: int | None = None) -> list[str]:
     hf = rules["hard_fails"]
@@ -80,7 +98,10 @@ def evaluate_score_trace(detail: ListingDetail, findings: DescriptionFindings, m
                 add(f"{name} değişen", sc["degisen_parca"])
         elif state == PartState.UNKNOWN:
             unknown_count += 1
-    if unknown_count:
+    if not detail.parts:
+        # Diyagram hiç yoksa hiçbir parça bilinmiyor: en yüksek "bilinmeyen parça" cezası (kural 9)
+        add("Parça diyagramı yok (parçalar bilinmiyor)", -abs(sc["unknown_max"]))
+    elif unknown_count:
         add(f"{unknown_count} parça belirtilmemiş",
             -min(unknown_count * abs(sc["unknown_parca"]), abs(sc["unknown_max"])))
 
@@ -138,7 +159,7 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
 
     # Veri tamlığı
     tamlik = 1.0
-    if not detail.parts:
+    if not _bilinen_parca(detail):
         tamlik -= 0.3
     if findings.tramer_tutari is None and detail.tramer_tutari_yapilandirilmis is None:
         tamlik -= 0.1
@@ -148,10 +169,12 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
         tamlik -= 0.3
     tamlik = max(0.0, tamlik)
 
+    engeller = alinir_engelleri(detail, findings)
+
     # Etiket
     if hard_fails or score < et["alinmaz_skor_alti"]:
         etiket = "ALINMAZ"
-    elif (score >= et["alinir_min_skor"] and sapma <= et["alinir_max_sapma"]
+    elif (not engeller and score >= et["alinir_min_skor"] and sapma <= et["alinir_max_sapma"]
           and findings.sase_direk_podye_islem != "var"
           and tamlik >= et["alinir_min_tamlik"] and not yetersiz_piyasa):
         etiket = "ALINIR"
@@ -168,6 +191,8 @@ def determine_verdict(detail: ListingDetail, findings: DescriptionFindings, mark
         eksiler.append("Km değişimi şüphesi (açıklamadan)")
     if findings.motor_sanziman in ("degisen", "sorunlu"):
         eksiler.append(f"Motor/şanzıman: {findings.motor_sanziman} (açıklamadan)")
+    if engeller and not hard_fails:
+        eksiler += [f"ALINIR engeli: {e}" for e in engeller]
     if yetersiz_piyasa:
         eksiler.append("Piyasa emsali yetersiz: fiyat karşılaştırması güvenilir değil")
     eksiler += [f"Kronik arıza: {k.get('etiket', '?')}" for k in kronik]
