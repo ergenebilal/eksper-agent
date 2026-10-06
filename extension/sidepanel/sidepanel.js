@@ -38,7 +38,9 @@ function loadingView(st) {
   wait.id = 'waiting';
   const secs = Math.max(0, Math.round((Date.now() - (st.since || st.at || Date.now())) / 1000));
   wait.append(el('p', '', `⏳ Açıklama röntgeni yapılıyor… ${secs} sn`),
-              el('p', 'small mute', 'Yapay zeka analizi genelde 15-40 saniye sürer. Aşağıdaki piyasa ve teklif ön hesabı bu sırada hazırdır.'));
+              el('p', 'small mute', q ? 'Yapay zeka analizi genelde 15-40 saniye sürer. Aşağıdaki piyasa ve teklif ön hesabı bu sırada hazırdır.'
+                                      : 'Yapay zeka analizi genelde 15-40 saniye sürer.'));
+  if (st.quickError) wait.append(el('p', 'small warnbox', 'Ön hesap alınamadı: ' + st.quickError));
   out.push(wait);
   if (q) {
     if (q.elenme_nedenleri && q.elenme_nedenleri.length) {

@@ -44,6 +44,7 @@ async function api(path, { method = 'POST', body } = {}) {
     });
     if (r.status === 401) return { ok: false, code: 'unauthorized', message: 'Jeton reddedildi (EXTENSION_TOKEN).' };
     if (r.status === 503) return { ok: false, code: 'disabled', message: 'Sunucuda EXTENSION_TOKEN ayarlı değil.' };
+    if (r.status === 404) return { ok: false, code: 'outdated', message: 'Sunucu eski sürüm (bu özellik yok). otoxray-yeniden-baslat.cmd ile yeniden başlatın.' };
     if (r.status === 429) return { ok: false, code: 'rate_limited', message: 'Günlük analiz sınırı doldu ya da çok fazla deneme.' };
     if (r.status === 422) {          // yalnız ALAN ADI ve kural mesajı gösterilir; girdi değeri (ilan metni) asla
       let why = '';
@@ -151,7 +152,9 @@ async function handle(msg, sender) {
       // ÖN HESAP (LLM'siz, anında): piyasa + yapıdan elenme nedenleri + ön teklif; LLM röntgeni beklenirken gösterilir.
       let finished = false;
       api('/api/v1/quick', { body }).then(async (q) => {
-        if (q.ok && !finished) await setResult(tabId, { status: 'loading', meta, since, quick: q.data });
+        if (finished) return;
+        await setResult(tabId, q.ok ? { status: 'loading', meta, since, quick: q.data }
+                                    : { status: 'loading', meta, since, quickError: q.message });
       });
       const res = await api('/api/v1/analyze', { body });
       finished = true;

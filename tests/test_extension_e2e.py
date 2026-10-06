@@ -380,6 +380,13 @@ def test_instant_pre_calculation_is_shown_while_the_llm_is_still_working(browser
         ScriptedLLM.delay = 0.0
 
 
+def test_outdated_server_is_reported_not_silently_ignored(browser_ctx):
+    """Eski sunucuda /quick yok (404): panel 'ön hesap hazır' demeye devam etmemeli, nedenini söylemeli."""
+    sw = browser_ctx["sw"]
+    res = sw.evaluate("async () => await api('/api/v1/yok-boyle-bir-uc', {body: {}})")
+    assert res["ok"] is False and res["code"] == "outdated" and "yeniden başlatın" in res["message"]
+
+
 def test_extension_never_requests_the_site_by_itself(browser_ctx):
     """Siteye giden her istek test sayfalarının kendi gezintisidir; service worker/eklenti hiç istek atmaz."""
     hits = browser_ctx["hits"]
