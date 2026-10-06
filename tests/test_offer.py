@@ -128,3 +128,34 @@ def test_no_offer_for_red_or_pending_even_without_market():
     assert breakdown(d, get_base_findings(), Verdict(ilan_no="1", etiket="ALINMAZ", guven_skoru=2, veri_tamlik=1), True) is None
     assert breakdown(d, get_base_findings(), Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=0, veri_tamlik=0,
                                                      beklemede=True), True) is None
+
+
+def test_no_offer_figure_ever_exceeds_the_asking_price_even_after_rounding():
+    """Gerçek hata: ilan 1.499.000 TL iken yuvarlama 1.500.000 TL'ye çıkarıyordu."""
+    from arac_eksper.analysis.offer import breakdown
+    for fiyat in (1_499_000, 1_499_999, 1_003_000, 987_654, 2_999_000):
+        d = _detail(fiyat=fiyat)
+        v = Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=8.0, veri_tamlik=1.0)
+        b = breakdown(d, get_base_findings(), v, allow_no_market=True)
+        assert b["acilis"] <= b["anlasma"] <= b["ust_sinir"] <= fiyat, (fiyat, b)
+        assert b["hedef"] <= b["ust_sinir"] and b["baz"] <= fiyat
+
+
+def test_settlement_point_is_between_opening_and_upper_limit_not_the_asking_price():
+    from arac_eksper.analysis.offer import breakdown
+    d = _detail(fiyat=1_499_000)
+    v = Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=8.0, veri_tamlik=1.0)
+    b = breakdown(d, get_base_findings(), v, allow_no_market=True)
+    assert b["acilis"] < b["anlasma"] < b["ust_sinir"] or (b["acilis"] < b["anlasma"] <= b["ust_sinir"])
+    assert b["anlasma"] < 1_499_000                       # ilan fiyatının kendisi "makul anlaşma" değildir
+
+
+def test_few_comparables_do_not_become_the_market_for_the_offer():
+    from arac_eksper.analysis.offer import breakdown
+    d = _detail(fiyat=1_499_000)
+    few = MarketStats(n=2, medyan=1_200_000, p25=1_190_000, p75=1_210_000, guven="dusuk")
+    v = Verdict(ilan_no="1", etiket="DUSUNULEBILIR", guven_skoru=8.0, veri_tamlik=1.0, piyasa=few)
+    assert calculate_offer(d, get_base_findings(), v) is None
+    b = breakdown(d, get_base_findings(), v, allow_no_market=True)
+    assert b["kaynak"] == "ilan" and "Emsal az (n=2" in b["dayanak"][0]
+    assert b["baz"] <= 1_499_000                          # 2 ilanın medyanı (1.2M) baz alınmadı

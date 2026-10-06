@@ -6,6 +6,11 @@ def round_to_5000(val: float) -> int:
     return int(round(val / 5000.0) * 5000)
 
 
+def floor_to_5000(val: float) -> int:
+    """Aşağı yuvarlar (küçük ek ile kayan nokta hatası 5000'in katını bir basamak düşürmesin)."""
+    return int((val + 1e-6) // 5000 * 5000)
+
+
 def _tl(n: float) -> str:
     return f"{round(n):,}".replace(",", ".")
 
@@ -23,7 +28,10 @@ def breakdown(detail: ListingDetail, findings: DescriptionFindings, verdict: Ver
     if verdict.etiket == "ALINMAZ" or verdict.beklemede:
         return None
     t = load_rules()["teklif"]
-    has_market = bool(verdict.piyasa and verdict.piyasa.medyan > 0)
+    min_emsal = load_rules()["etiket"]["min_emsal"]
+    az_emsal = bool(verdict.piyasa and 0 < verdict.piyasa.n < min_emsal and verdict.piyasa.medyan > 0)
+    # Piyasa ancak yeterli emsal (min_emsal) varsa esas alınır; 2-3 ilanın ortalaması güvenilir bir "piyasa" değildir.
+    has_market = bool(verdict.piyasa and verdict.piyasa.medyan > 0 and verdict.piyasa.n >= min_emsal)
     if not has_market and not allow_no_market:
         return None
 
@@ -39,8 +47,10 @@ def breakdown(detail: ListingDetail, findings: DescriptionFindings, verdict: Ver
                        (f" · ilan fiyatı ({_tl(ilan_fiyat)} TL) piyasadan yüksek: baz piyasa" if ilan_fiyat > medyan else
                         f" · baz ilan fiyatı ({_tl(ilan_fiyat)} TL)"))
     else:
-        dayanak.append(f"Piyasa verisi yok: baz yalnızca ilan fiyatı ({_tl(ilan_fiyat)} TL). "
-                       "Emsal bulunca teklif daha güvenilir olur.")
+        neden = (f"Emsal az (n={verdict.piyasa.n}, en az {min_emsal} gerekir): piyasa esas alınmadı" if az_emsal
+                 else "Piyasa verisi yok")
+        dayanak.append(f"{neden}: baz yalnızca ilan fiyatı ({_tl(ilan_fiyat)} TL). "
+                       "Yeterli emsal bulunca teklif daha güvenilir olur.")
 
     indirim = 0.0
     sayac = {PartState.LOCAL_PAINT: [0, t["lokal_boyali"], "lokal boyalı"],
@@ -85,10 +95,16 @@ def breakdown(detail: ListingDetail, findings: DescriptionFindings, verdict: Ver
             dayanak.append(f"Taban: piyasanın %{t['taban_orani'] * 100:.0f}'i ({_tl(taban)} TL) altına inilmez")
     acilis, ust = min(acilis, ilan_fiyat), min(ust, ilan_fiyat)       # asla ilan fiyatını aşma
 
-    return {"kaynak": "piyasa" if has_market else "ilan", "baz": round_to_5000(baz),
-            "hedef": round_to_5000(min(hedef, ilan_fiyat)), "acilis": round_to_5000(acilis),
-            "ust_sinir": round_to_5000(ust), "indirim_orani": round(indirim, 4), "pazarlik_payi": pazarlik,
-            "dayanak": dayanak}
+    # Yuvarlama ilan fiyatının ÜSTÜNE çıkarmamalı: üst sınır/hedef aşağı yuvarlanır; açılış en yakına, ama üst sınırı geçmez.
+    ust_r = floor_to_5000(ust)
+    hedef_r = min(floor_to_5000(min(hedef, ilan_fiyat)), ust_r)
+    acilis_r = min(round_to_5000(acilis), hedef_r)
+    # Makul anlaşma noktası: açılış ile üst sınırın ortası (pazarlıkta yarı yolda buluşma)
+    anlasma_r = min(max(round_to_5000((acilis_r + ust_r) / 2), acilis_r), ust_r)
+    dayanak.append("Makul anlaşma noktası: açılış teklifi ile üst sınırın ortası")
+    return {"kaynak": "piyasa" if has_market else "ilan", "baz": min(round_to_5000(baz), floor_to_5000(ilan_fiyat)),
+            "hedef": hedef_r, "acilis": acilis_r, "anlasma": anlasma_r, "ust_sinir": ust_r,
+            "indirim_orani": round(indirim, 4), "pazarlik_payi": pazarlik, "dayanak": dayanak}
 
 
 def calculate_offer(detail: ListingDetail, findings: DescriptionFindings, verdict: Verdict) -> tuple[int, int] | None:

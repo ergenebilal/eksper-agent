@@ -145,7 +145,7 @@ function renderOk(st, tabId) {
     const w = el('div', 'offer');
     const acilis = tk ? tk.acilis : d.tavsiye_teklif, ust = tk ? tk.ust_sinir : d.ust_sinir;
     w.append(row('Açılış teklifi', tl(acilis), 'big'));
-    if (tk && tk.hedef) w.append(row('Makul anlaşma noktası', tl(tk.hedef)));
+    if (tk && (tk.anlasma || tk.hedef)) w.append(row('Makul anlaşma noktası', tl(tk.anlasma || tk.hedef)));
     w.append(row('Üst sınır (yalnız sana)', tl(ust)));
     if (tk && tk.kaynak === 'ilan') {
       w.append(el('p', 'small warnbox', 'Piyasa verisi olmadığı için bu teklif yalnızca ilan fiyatı ve ilandaki kusurlara göre hesaplandı. Emsal bulununca daha güvenilir olur.'));
