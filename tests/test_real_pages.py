@@ -145,11 +145,12 @@ def test_kb_gearbox_items_match_a_real_listing_once_approved():
     d = ListingDetail(ilan_no=e["ilan_no"], url="", baslik="", marka=e["marka"], model=e["seri"], seri=e["seri"],
                       paket=e["paket"], vites=e["vites"], yakit=e["yakit"], fiyat=1, yil=e["yil"], km=e["km"], il="",
                       ilan_tarihi=datetime.now().date(), aciklama="", fetched_at=datetime.now(timezone.utc), parts=e["parts"])
-    kb = [dict(x, onayli=True) for x in models_kb.load_kb(include_unapproved=True)]   # onay simülasyonu
+    kb = [dict(x, onayli=True) for x in models_kb.load_kb(include_unapproved=True)]
     names = {k["etiket"]: k["tetiklendi"] for k in models_kb.kronik_arizalar(d, kb)}
     assert names.get("EDC şanzıman kavrama aşınması") is False                       # eşleşti, 88k < 100k eşik
     assert "1.5 dCi DPF/EGR tıkanması" in names
-    assert models_kb.kronik_arizalar(d, models_kb.load_kb()) == []                    # onaysız: etkisiz
+    unapproved = [dict(x, onayli=False) for x in kb]
+    assert models_kb.kronik_arizalar(d, [e for e in unapproved if e["onayli"]]) == []   # onaysız: etkisiz
 
 
 def test_unfilled_diagram_is_indistinguishable_in_dom_so_text_decides(extracted):

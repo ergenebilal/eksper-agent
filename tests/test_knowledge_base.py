@@ -38,21 +38,32 @@ KB = [{
 }]
 
 
-# ------------------------------------------------------------------ taslak dosyası
-def test_draft_kb_is_valid_and_entirely_unapproved():
+# ------------------------------------------------------------------ bilgi tabanı dosyası
+def test_kb_file_is_valid_and_every_entry_has_source_and_approval_flag():
     tum = models_kb.load_kb(include_unapproved=True)
     assert len(tum) >= 30 and models_kb.validate(tum) == []
-    assert all(e["onayli"] is False for e in tum)                    # kural 10: taslak
-    assert models_kb.load_kb() == []                                 # onaysız → hiçbir kayıt yüklenmez
-    assert all(e.get("kaynak") for e in tum)
+    assert all(e.get("kaynak") and isinstance(e.get("onayli"), bool) for e in tum)
+    assert all("Onay:" in e["kaynak"] for e in tum if e["onayli"])   # onayın kaynağı izlenebilir
 
 
-def test_unapproved_draft_does_not_change_any_verdict():
+def _unapproved_copy(tmp_path):
+    p = tmp_path / "kb.yaml"
+    src = yaml.safe_load(models_kb.KB_PATH.read_text(encoding="utf-8"))
+    for e in src["models"]:
+        e["onayli"] = False
+    p.write_text(yaml.safe_dump(src, allow_unicode=True), encoding="utf-8")
+    return p
+
+
+def test_unapproved_entries_are_never_loaded_and_change_no_verdict(tmp_path):
+    p = _unapproved_copy(tmp_path)
+    assert models_kb.load_kb(path=p) == [] and len(models_kb.load_kb(include_unapproved=True, path=p)) >= 30
     d = car()
     f = DescriptionFindings(sase_direk_podye_islem="yok_beyan", airbag="orijinal_beyan", motor_sanziman="belirsiz",
                             km_degisimi_suphesi=False)
     m = MarketStats(n=10, medyan=900_000, p25=850_000, p75=950_000, guven="yuksek")
-    assert rules_engine.determine_verdict(d, f, m).guven_skoru == rules_engine.determine_verdict(d, f, m, kb=[]).guven_skoru
+    assert (rules_engine.determine_verdict(d, f, m, kb=models_kb.load_kb(path=p)).guven_skoru
+            == rules_engine.determine_verdict(d, f, m, kb=[]).guven_skoru)
 
 
 def test_validate_reports_bad_entries():
@@ -107,11 +118,15 @@ def test_only_high_severity_triggered_items_cost_points():
 
 
 # ------------------------------------------------------------------ alım günü rehberi
-def test_alim_gunu_draft_valid_and_hidden_until_approved():
+def test_alim_gunu_valid_and_hidden_when_unapproved(tmp_path):
     assert rehber.validate_alim_gunu() == []
-    assert rehber.load_alim_gunu() is None
     d = rehber.load_alim_gunu(include_unapproved=True)
     assert len(d["bolumler"]) >= 4 and "hukuki tavsiye değildir" in d["uyari"]
+    src = yaml.safe_load(rehber.ALIM_GUNU_PATH.read_text(encoding="utf-8"))
+    src["onayli"] = False
+    p = tmp_path / "alim.yaml"
+    p.write_text(yaml.safe_dump(src, allow_unicode=True), encoding="utf-8")
+    assert rehber.load_alim_gunu(path=p) is None
 
 
 @pytest.fixture
@@ -125,19 +140,18 @@ def client(monkeypatch):
 
 
 def test_rehber_endpoint_serves_only_approved_content(client, tmp_path, monkeypatch):
-    assert client.get("/api/v1/rehber", headers=H).json() == {"alim_gunu": None}
-    src = yaml.safe_load(rehber.ALIM_GUNU_PATH.read_text(encoding="utf-8"))
-    src["onayli"] = True
-    p = tmp_path / "alim.yaml"
-    p.write_text(yaml.safe_dump(src, allow_unicode=True), encoding="utf-8")
-    monkeypatch.setattr(rehber, "ALIM_GUNU_PATH", p)
-    monkeypatch.setattr(rehber.load_alim_gunu, "__defaults__", (False, p))
-    d = client.get("/api/v1/rehber", headers=H).json()["alim_gunu"]
-    assert d and d["bolumler"][0]["maddeler"]
+    for onay in (True, False):
+        src = yaml.safe_load(rehber.ALIM_GUNU_PATH.read_text(encoding="utf-8"))
+        src["onayli"] = onay
+        p = tmp_path / f"alim_{onay}.yaml"
+        p.write_text(yaml.safe_dump(src, allow_unicode=True), encoding="utf-8")
+        monkeypatch.setattr(rehber.load_alim_gunu, "__defaults__", (False, p))
+        d = client.get("/api/v1/rehber", headers=H).json()["alim_gunu"]
+        assert (d is not None and bool(d["bolumler"][0]["maddeler"])) if onay else d is None
     assert client.get("/api/v1/rehber").status_code == 401
 
 
 def test_cli_kb_kontrol():
     r = runner.invoke(cli.app, ["kb", "kontrol"])
     assert r.exit_code == 0, r.output
-    assert "onaylı 0" in r.output and "taslak (panelde görünmez)" in r.output
+    assert "Şema geçerli" in r.output and ("onaylı (panelde görünür)" in r.output or "taslak (panelde görünmez)" in r.output)

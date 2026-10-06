@@ -1,8 +1,8 @@
 # Model bilgi tabanı — kronik arızalar, km eşikleri, periyodik bakım (OtoXray_Arge.md R1.1)
 #
-# ⚠ TASLAK: Claude tarafından genel piyasa/servis bilgisinden 2026-10-06'da hazırlandı. HİÇBİR KAYIT ONAYLI DEĞİL.
-#   Kural 10: `onayli: false` olan kayıt kararı, puanı ve listeyi ETKİLEMEZ. Kullanıcı (gerekirse ustaya danışıp)
-#   kaydı kontrol eder, düzeltir ve `onayli: true` yapar. Emin olunmayan maddeyi silmek, yanlış bırakmaktan iyidir.
+# Claude tarafından genel piyasa/servis bilgisinden 2026-10-06'da hazırlandı; kullanıcı 2026-10-07'de sohbette TOPLU onayladı
+#   (satır satır usta incelemesi yapılmadı). Kural 10: `onayli: false` olan kayıt kararı, puanı ve listeyi ETKİLEMEZ.
+#   Yanlış bulunan maddeyi düzeltin ya da kaydı `onayli: false` yapın; emin olunmayanı silmek, yanlış bırakmaktan iyidir.
 #   Doğrulama: `uv run arac kb kontrol`
 #
 # Alanlar
@@ -35,8 +35,8 @@ models:
          kontrol: "Soğuk çalıştırmada alt taraftan vuruntu sesi dinletin; yağ bakım geçmişini isteyin"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000], not: "Kayışlı; değiştiyse fatura isteyin"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Renault
     model: Fluence
@@ -49,8 +49,8 @@ models:
          kontrol: "Rölantide düzensizlik, siyah duman; enjektör geri dönüş testi"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Renault
     model: Clio
@@ -63,8 +63,8 @@ models:
          kontrol: "DPF/EGR hata kayıtları"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Renault
     model: Symbol
@@ -75,8 +75,8 @@ models:
          kontrol: "Geçişlerde duraksama/sarsıntı, yokuşta geri kaçma; aktüatör ve kavrama durumu"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Dacia
     model: Duster
@@ -89,8 +89,8 @@ models:
          kontrol: "Arka diferansiyel ve aktarma kutusunda ses/yağ kaçağı; arazi kullanımını sorun"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Dacia
     model: Sandero
@@ -101,8 +101,8 @@ models:
          kontrol: "Geçişlerde duraksama/sarsıntı; aktüatör ve kavrama durumu"}
     bakim:
       - {kalem: "Triger seti + devirdaim", motor: ["1.5 dCi"], aralik_km: [120000, 160000]}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Fiat (Multijet, Dualogic, DCT)
   - marka: Fiat
@@ -114,8 +114,8 @@ models:
          kontrol: "DPF doluluk ve EGR hata kayıtları; şehir içi kısa mesafe kullanımı sorun"}
       - {etiket: "DCT (çift kavrama) şanzıman", vites: otomatik, km_esik: 100000, ciddiyet: orta,
          kontrol: "Kalkış ve düşük hızda titreme; geçiş sertliği; test sürüşü"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Fiat
     model: Linea
@@ -126,8 +126,8 @@ models:
          kontrol: "Geçişlerde gecikme/vuruntu, hidrolik ünite sesi; şanzıman hata kayıtları"}
       - {etiket: "1.3 Multijet DPF/EGR", motor: ["Multijet", "1.3"], yakit: dizel, km_esik: 120000, ciddiyet: orta,
          kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- VAG (DSG DQ200, TDI, TSI)
   - marka: Volkswagen
@@ -141,8 +141,8 @@ models:
          kontrol: "DPF/EGR hata kayıtları"}
       - {etiket: "Erken 1.2/1.4 TSI zincir uzaması", motor: ["1.2 TSI", "1.4 TSI"], km_esik: 100000, ciddiyet: orta,
          kontrol: "Soğuk ilk çalıştırmada zincir şakırtısı dinletin (yalnız eski kuşak, 2013 öncesi)"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Volkswagen
     model: Passat
@@ -153,8 +153,8 @@ models:
          kontrol: "Geçiş sertliği, kalkış titremesi; DSG yağ değişim geçmişi ve mekatronik hata kaydı"}
       - {etiket: "1.6/2.0 TDI DPF/EGR", motor: ["TDI"], yakit: dizel, km_esik: 150000, ciddiyet: orta,
          kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Volkswagen
     model: Polo
@@ -163,8 +163,8 @@ models:
     kronik:
       - {etiket: "DSG 7 ileri kuru kavrama (DQ200)", vites: otomatik, km_esik: 100000, ciddiyet: yuksek,
          kontrol: "Kalkışta titreme; mekatronik hata kaydı"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Volkswagen
     model: Jetta
@@ -174,8 +174,8 @@ models:
       - {etiket: "DSG 7 ileri kuru kavrama (DQ200)", vites: otomatik, km_esik: 120000, ciddiyet: yuksek,
          kontrol: "Kalkışta titreme; mekatronik hata kaydı"}
       - {etiket: "1.6 TDI DPF/EGR", motor: ["TDI"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Skoda
     model: Octavia
@@ -185,8 +185,8 @@ models:
       - {etiket: "DSG 7 ileri kuru kavrama (DQ200)", vites: otomatik, km_esik: 120000, ciddiyet: yuksek,
          kontrol: "Kalkışta titreme, düşük viteste vuruntu; mekatronik hata kaydı"}
       - {etiket: "1.6/2.0 TDI DPF/EGR", motor: ["TDI"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Skoda
     model: Superb
@@ -195,8 +195,8 @@ models:
     kronik:
       - {etiket: "DSG mekatronik/kavrama", vites: otomatik, km_esik: 150000, ciddiyet: yuksek,
          kontrol: "Geçiş sertliği, kalkış titremesi; DSG bakım geçmişi"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Seat
     model: Leon
@@ -205,8 +205,8 @@ models:
     kronik:
       - {etiket: "DSG 7 ileri kuru kavrama (DQ200)", vites: otomatik, km_esik: 120000, ciddiyet: yuksek,
          kontrol: "Kalkışta titreme; mekatronik hata kaydı"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Ford (Powershift, EcoBoost)
   - marka: Ford
@@ -218,8 +218,8 @@ models:
          kontrol: "Kalkışta titreme, geçişte vuruntu, şanzıman kontrol ünitesi hata kaydı; kavrama/ünite değişim faturası"}
       - {etiket: "1.0 EcoBoost soğutma suyu kaybı", motor: ["1.0 EcoBoost", "1.0 Ecoboost"], km_esik: 80000, ciddiyet: orta,
          kontrol: "Antifriz seviyesi ve kaçak; hararet geçmişi sorun"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Ford
     model: Fiesta
@@ -230,8 +230,8 @@ models:
          kontrol: "Kalkışta titreme, geçişte vuruntu; kontrol ünitesi hata kaydı"}
       - {etiket: "1.0 EcoBoost soğutma suyu kaybı", motor: ["1.0 EcoBoost", "1.0 Ecoboost"], km_esik: 80000, ciddiyet: orta,
          kontrol: "Antifriz seviyesi ve kaçak"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Opel
   - marka: Opel
@@ -241,8 +241,8 @@ models:
     kronik:
       - {etiket: "Easytronic robotize şanzıman", vites: yari_otomatik, km_esik: 80000, ciddiyet: yuksek,
          kontrol: "Geçişlerde duraksama, vites bulamama; aktüatör ve kavrama durumu"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Opel
     model: Astra
@@ -253,8 +253,8 @@ models:
          kontrol: "DPF/EGR hata kayıtları"}
       - {etiket: "Easytronic robotize şanzıman (eski kasa)", vites: yari_otomatik, km_esik: 80000, ciddiyet: yuksek,
          kontrol: "Geçişlerde duraksama; aktüatör durumu"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- PSA (PureTech, AL4, HDi)
   - marka: Peugeot
@@ -265,8 +265,8 @@ models:
       - {etiket: "4 ileri tork konvertörlü otomatik (AL4/DP0)", motor: ["1.6 VTi"], vites: otomatik, km_esik: 100000, ciddiyet: yuksek,
          kontrol: "Geçişte vuruntu, acil durum moduna geçme (vites sabitlenmesi); şanzıman yağ ve hata kaydı"}
       - {etiket: "1.6 HDi/BlueHDi DPF/EGR", motor: ["HDi"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Citroen
     model: C-Elysee
@@ -276,8 +276,8 @@ models:
       - {etiket: "4 ileri tork konvertörlü otomatik (AL4/DP0)", motor: ["1.6 VTi"], vites: otomatik, km_esik: 100000, ciddiyet: yuksek,
          kontrol: "Geçişte vuruntu, acil durum moduna geçme; şanzıman hata kaydı"}
       - {etiket: "1.6 HDi/BlueHDi DPF/EGR", motor: ["HDi"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Peugeot
     model: "3008"
@@ -288,8 +288,8 @@ models:
          kontrol: "Kayış durumu (yetkili serviste ölçüm), yağ eksiltme, fren servo vakum sorunu; kayış değişim faturası"}
       - {etiket: "1.5 BlueHDi AdBlue/DPF", motor: ["BlueHDi"], yakit: dizel, km_esik: 120000, ciddiyet: orta,
          kontrol: "AdBlue sistem ve DPF hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Toyota / Honda
   - marka: Toyota
@@ -302,8 +302,8 @@ models:
       - {etiket: "1.4 D-4D enjektör", motor: ["D-4D"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "Rölanti düzensizliği; enjektör testi"}
       - {etiket: "Hibrit batarya sağlığı", yakit: hibrit, km_esik: 150000, ciddiyet: orta,
          kontrol: "Yetkili serviste hibrit sistem/batarya sağlık testi"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Toyota
     model: C-HR
@@ -312,8 +312,8 @@ models:
     kronik:
       - {etiket: "Hibrit batarya sağlığı", yakit: hibrit, km_esik: 150000, ciddiyet: orta,
          kontrol: "Yetkili serviste hibrit sistem/batarya sağlık testi"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Honda
     model: Civic
@@ -324,8 +324,8 @@ models:
          kontrol: "LPG montaj ruhsata işli mi; supap ayarı ve kompresyon testi"}
       - {etiket: "CVT şanzıman", vites: otomatik, km_esik: 120000, ciddiyet: orta,
          kontrol: "Kalkışta kayma hissi; CVT yağ değişim geçmişi"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Hyundai / Kia
   - marka: Hyundai
@@ -335,8 +335,8 @@ models:
     kronik:
       - {etiket: "7 ileri DCT kuru kavrama", vites: otomatik, km_esik: 80000, ciddiyet: orta,
          kontrol: "Kalkışta titreme; şanzıman hata kaydı"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Hyundai
     model: Accent Blue
@@ -344,8 +344,8 @@ models:
     yil_max: 2019
     kronik:
       - {etiket: "1.6 CRDi DPF/EGR", motor: ["CRDi"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Hyundai
     model: Tucson
@@ -355,8 +355,8 @@ models:
       - {etiket: "7 ileri DCT kuru kavrama", vites: otomatik, km_esik: 80000, ciddiyet: orta,
          kontrol: "Kalkışta titreme, yokuşta kavrama kokusu; şanzıman hata kaydı"}
       - {etiket: "1.6 CRDi DPF/EGR", motor: ["CRDi"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Kia
     model: Sportage
@@ -366,8 +366,8 @@ models:
       - {etiket: "7 ileri DCT kuru kavrama", vites: otomatik, km_esik: 80000, ciddiyet: orta,
          kontrol: "Kalkışta titreme; şanzıman hata kaydı"}
       - {etiket: "1.6 CRDi DPF/EGR", motor: ["CRDi"], yakit: dizel, km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Nissan
   - marka: Nissan
@@ -380,8 +380,8 @@ models:
       - {etiket: "1.2 DIG-T yağ eksiltme", motor: ["1.2 DIG-T", "DIG-T"], km_esik: 80000, ciddiyet: orta,
          kontrol: "Yağ seviyesi ve egzozdan mavi duman; kompresyon testi"}
       - {etiket: "1.5 dCi DPF/EGR", motor: ["1.5 dCi"], km_esik: 150000, ciddiyet: orta, kontrol: "DPF/EGR hata kayıtları"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   # ---------------------------------------------------------------- Premium
   - marka: BMW
@@ -393,8 +393,8 @@ models:
          kontrol: "Motorun arka tarafından gelen zincir sesi (rölanti/ilk çalıştırma); zincir değişim faturası"}
       - {etiket: "N20 benzinli (320i/328i) zincir kızağı", motor: ["320i", "328i"], yakit: benzin, yil_max: 2015, km_esik: 100000, ciddiyet: yuksek,
          kontrol: "Soğuk çalıştırmada zincir sesi; servis kaydı"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
 
   - marka: Mercedes-Benz
     model: C Serisi
@@ -405,5 +405,5 @@ models:
          kontrol: "Geçiş sertliği; şanzıman yağ değişim geçmişi ve hata kaydı"}
       - {etiket: "Soğuk çalıştırmada zincir sesi", km_esik: 150000, ciddiyet: orta,
          kontrol: "İlk çalıştırmada birkaç saniyelik şakırtı; servis kaydı"}
-    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi; usta onayı bekliyor"
-    onayli: false
+    kaynak: "Taslak (Claude, 2026-10-06): genel servis/piyasa bilgisi. Onay: kullanıcı, 2026-10-07 (sohbette, toplu)"
+    onayli: true
