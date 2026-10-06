@@ -78,6 +78,7 @@ def test_oracle_scores_perfectly():
     rep = evaluation.evaluate(OracleLLM(CASES), CASES)
     assert rep.recall == 1.0 and rep.precision == 1.0
     assert rep.temiz_yanlis_alarm_orani == 0.0 and rep.tramer_dogruluk == 1.0 and rep.olumsuz_recall == 1.0
+    assert rep.temiz_engel_orani == 0.0
     assert rep.hatali == 0
 
 

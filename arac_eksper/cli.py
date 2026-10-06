@@ -446,14 +446,17 @@ def eval_cmd(
         say(f"Kırmızı bayrak recall: {pct(rep.recall)} (eşik {pct(min_recall)}) · precision: {pct(rep.precision)}")
         say(f"Temiz vakada yanlış alarm: {pct(rep.temiz_yanlis_alarm_orani)} · tramer doğruluğu: "
             f"{pct(rep.tramer_dogruluk)} · olumsuz sinyal recall: {pct(rep.olumsuz_recall)}")
+        say(f"Temiz vakada 🟢 engeli (doğrulanamayan iddia): {pct(rep.temiz_engel_orani)}")
         say(f"Ortalama süre: {rep.ort_sure_sn} sn · LLM hatası: {rep.hatali}/{rep.n}")
         for fl, c in rep.bayrak_bazinda.items():
             if any(c.values()):
                 say(f"  {fl:15} TP {c['tp']:>2}  FN {c['fn']:>2}  FP {c['fp']:>2}")
         for r in rep.vakalar:
-            if r.hata or r.kacirilan or r.yanlis_alarm or r.tramer_dogru is False or r.olumsuz_dogru is False:
+            engel = r.dogrulanamayan_iddia and not r.beklenen
+            if r.hata or r.kacirilan or r.yanlis_alarm or r.tramer_dogru is False or r.olumsuz_dogru is False or engel:
                 say(f"  ✗ {r.id}: kaçırılan={r.kacirilan} yanlış_alarm={r.yanlis_alarm} "
-                    f"tramer_doğru={r.tramer_dogru} olumsuz_doğru={r.olumsuz_dogru}" + (f" HATA: {r.hata}" if r.hata else ""))
+                    f"tramer_doğru={r.tramer_dogru} olumsuz_doğru={r.olumsuz_dogru}" + (" 🟢-engeli" if engel else "")
+                    + (f" HATA: {r.hata}" if r.hata else ""))
         say("GEÇTİ ✓" if gecti else "GEÇMEDİ ✗")
     raise typer.Exit(EXIT_OK if gecti else EXIT_ERROR)
 

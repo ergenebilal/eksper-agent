@@ -72,3 +72,14 @@ def test_seller_text_cannot_close_the_ilan_block():
     body = seen["p"].strip()
     assert body.startswith("<ilan>") and body.endswith("</ilan>")
     assert body.count("<ilan>") == 1 and body.count("</ilan>") == 1 and "< ilan >" not in body
+
+
+def test_model_cannot_set_the_internal_unverified_flag():
+    """Model şemadaki dogrulanamayan_iddia'yı kendisi true doldursa da temiz ilan 🟢'den mahrum kalmamalı."""
+    class SelfFlagging:
+        def parse_structured(self, *a, **k):
+            return DescriptionFindings(sase_direk_podye_islem="belirsiz", airbag="orijinal_beyan",
+                                       airbag_alinti="Airbagler orijinaldir", motor_sanziman="belirsiz",
+                                       km_degisimi_suphesi=False, tramer_tutari=0, dogrulanamayan_iddia=True)
+    f = analyze_description(SelfFlagging(), "", "Tramer kaydı yoktur. Airbagler orijinaldir.", second_pass="off")
+    assert f.dogrulanamayan_iddia is False

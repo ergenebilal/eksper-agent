@@ -88,6 +88,7 @@ class Report(BaseModel):
     recall: float | None          # Σ TP / Σ (TP+FN); bayrak beklenen yoksa None
     precision: float | None
     temiz_yanlis_alarm_orani: float | None   # bayraksız vakalardan bayrak alanların oranı
+    temiz_engel_orani: float | None          # bayraksız vakalardan "doğrulanamayan iddia" (🟢 engeli) alanların oranı
     tramer_dogruluk: float | None
     olumsuz_recall: float | None
     bayrak_bazinda: dict[str, dict[str, int]]
@@ -136,6 +137,7 @@ def summarize(results: list[CaseResult]) -> Report:
         n=len(results), hatali=len(results) - len(ok),
         recall=_ratio(tp, tp + fn), precision=_ratio(tp, tp + fp),
         temiz_yanlis_alarm_orani=_ratio(sum(1 for r in clean if r.bulunan), len(clean)),
+        temiz_engel_orani=_ratio(sum(1 for r in clean if r.dogrulanamayan_iddia), len(clean)),
         tramer_dogruluk=_ratio(sum(tramer), len(tramer)),
         olumsuz_recall=_ratio(sum(olumsuz), len(olumsuz)),
         bayrak_bazinda={fl: {k: c[k] for k in ("tp", "fn", "fp")} for fl, c in per.items()},
