@@ -136,7 +136,7 @@ async def fetch_and_evaluate(db: Session, collector, llm, s: ListingSummary, mar
     if res.status != "OK" or not res.html:
         return None, res
     try:
-        detail = detail_parser.parse(res.html, url=abs_url(s.url))
+        detail = detail_parser.parse(res.html, url=abs_url(s.url), il=s.il, ilce=s.ilce)
     except Exception as e:  # noqa: BLE001  (DOM değişti / beklenmeyen sayfa)
         return None, FetchResult(status="ERROR", final_url=s.url, note=f"parse hatası ({s.ilan_no}): {type(e).__name__}")
     detail.raw_html_path = res.saved_path

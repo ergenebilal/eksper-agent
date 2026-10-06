@@ -14,10 +14,10 @@ def test_missing_damage_field_is_unknown_not_no():
     assert detail_parser.parse(detail_html("123456", 800000), url="u").agir_hasar_kayitli is False
 
 
-@pytest.mark.parametrize("label", ["Yıl", "Kilometre"])
+@pytest.mark.parametrize("label", ["Yıl", "KM"])
 def test_unreadable_year_or_km_fails_the_parse(label):
-    html = detail_html("123456", 800000).replace(f'<span class="label">{label}</span><span class="value">',
-                                                 f'<span class="label">{label}</span><span class="value">?')
+    html = detail_html("123456", 800000).replace(f'<dt>{label}</dt><dd>',
+                                                 f'<dt>{label}</dt><dd>?')
     with pytest.raises(ValueError):
         detail_parser.parse(html, url="u")
 

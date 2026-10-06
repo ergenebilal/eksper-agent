@@ -1,27 +1,42 @@
-# UNVERIFIED — bu selector'lar ve BLOCK_MARKERS gerçek sahibinden HTML'iyle doğrulanmadı.
-# Gerçek sayfalar tests/fixtures/real/ altına konunca YALNIZCA oradan çıkarılıp güncellenecek (CLAUDE.md kural 5).
+# R0.4 (2026-10-07): 18 gerçek ilan + 3 gerçek arama sayfasından (tests/fixtures/real) ÇIKARILDI; eklentinin
+# extension/lib/selectors.js dosyasıyla aynı yapı. Değerler yalnız kaydedilmiş gerçek sayfalardan güncellenir (kural 5).
+# Satıcıya ait hiçbir alan (ad, telefon, mağaza, profil) için seçici TANIMLANMAZ.
 class Selectors:
-    LIST_ITEM = "div.list-item"
-    LIST_ILAN_LINK = "a.ilan-link"
-    LIST_ILAN_NO = "span.ilan-no"
-    LIST_BASLIK = "h3.baslik"
-    LIST_FIYAT = "span.fiyat"
-    LIST_YIL = "span.yil"
-    LIST_KM = "span.km"
-    LIST_IL = "span.il"
-    LIST_ILCE = "span.ilce"
-    LIST_TARIH = "span.ilan-tarihi"
-    LIST_NEXT_PAGE = "a.next-page"
+    # Arama sonuçları: tablo satırı; başlıklar thead içinde TD; reklam satırı tr.nativeAd atlanır
+    LIST_HEADER_CELLS = "thead td"
+    LIST_ITEM = "tr.searchResultsItem:not(.nativeAd)"
+    LIST_ILAN_NO_ATTR = "data-id"
+    LIST_ILAN_LINK = "a.classifiedTitle"
+    LIST_BASLIK = "td.searchResultsTitleValue"
+    LIST_TAG = "td.searchResultsTagAttributeValue"          # Marka / Seri / Model (başlık sırasıyla)
+    LIST_ATTR = "td.searchResultsAttributeValue"            # Yıl / KM (başlık sırasıyla)
+    LIST_FIYAT = "td.searchResultsPriceValue"
+    LIST_TARIH = "td.searchResultsDateValue"
+    LIST_KONUM = "td.searchResultsLocationValue"            # "İl<br>İlçe"
+    LIST_PAGES = "ul.pageNaviButtons"
+    LIST_CURRENT_PAGE = "span.currentPage"
 
-    DETAIL_ILAN_NO = "span.ilan-no"
-    DETAIL_BASLIK = "h1.baslik"
-    DETAIL_FIYAT = "span.fiyat"
-    DETAIL_INFO_LIST = "div.info-item"
-    DETAIL_INFO_LABEL = "span.label"
-    DETAIL_INFO_VALUE = "span.value"
-    DETAIL_ACIKLAMA = "div.aciklama"
+    # İlan detayı
+    DETAIL_BASLIK = ".classifiedDetailTitle h1"
+    DETAIL_FIYAT = "h3.classifiedPriceValue"
+    DETAIL_INFO_LIST = ".classifiedInfoList .classifiedInfoItem"
+    DETAIL_INFO_LABEL = "dt"
+    DETAIL_INFO_VALUE = "dd"
+    DETAIL_ACIKLAMA = "#classifiedDescription"
 
-    DAMAGE_PART = "div.part"
+    # Hasar şeması: her parça bir div; 1. sınıf parça, 2. sınıf durum
+    DAMAGE_PART = ".car-parts > div"
+
+
+PART_CLASS = {
+    "front-bumper": "on_tampon", "rear-bumper": "arka_tampon", "front-hood": "motor_kaputu", "rear-hood": "bagaj_kapagi",
+    "roof": "tavan", "front-left-mudguard": "sol_on_camurluk", "front-right-mudguard": "sag_on_camurluk",
+    "rear-left-mudguard": "sol_arka_camurluk", "rear-right-mudguard": "sag_arka_camurluk",
+    "front-left-door": "sol_on_kapi", "front-right-door": "sag_on_kapi", "rear-left-door": "sol_arka_kapi",
+    "rear-right-door": "sag_arka_kapi",
+}
+STATE_CLASS = {"original-new": "orijinal", "painted-new": "boyali", "localpainted-new": "lokal_boyali",
+               "changed-new": "degisen"}       # tanınmayan sınıf → eklenmez (bilinmiyor sayılır)
 
 
 # Engel/doğrulama sayfası işaretleri. Sıradan sayfalarda geçebilecek genel ifadeler

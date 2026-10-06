@@ -96,7 +96,7 @@ class PlaywrightCollector(Collector):
             self._log_fetch(url, "NOT_FOUND")
             return FetchResult(status="NOT_FOUND", final_url=url)
 
-        expected = Selectors.DETAIL_ILAN_NO if is_detail else Selectors.LIST_ITEM
+        expected = Selectors.DETAIL_INFO_LIST if is_detail else Selectors.LIST_ITEM
         if detect_block(status_code, html, expected):
             self._log_fetch(url, "BLOCKED")
             return FetchResult(status="BLOCKED", final_url=url, note="doğrulama/engel sayfası")

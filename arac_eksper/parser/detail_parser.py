@@ -1,70 +1,49 @@
-from bs4 import BeautifulSoup
+import re
 from datetime import datetime, timezone
-from arac_eksper.schemas import ListingDetail, PartState
-from arac_eksper.parser.selectors import Selectors
-from arac_eksper.parser.list_parser import parse_price, parse_date
-from arac_eksper.parser.damage_parser import parse as parse_damage
-from arac_eksper.privacy import mask_phones
 
-def parse(html: str, url: str = "") -> ListingDetail:
+from bs4 import BeautifulSoup
+
+from arac_eksper.parser.damage_parser import parse as parse_damage
+from arac_eksper.parser.list_parser import parse_date, parse_price
+from arac_eksper.parser.selectors import Selectors
+from arac_eksper.privacy import mask_phones
+from arac_eksper.schemas import ListingDetail
+
+
+def _req(soup, sel: str, ad: str) -> str:
+    el = soup.select_one(sel)
+    if not el:
+        raise ValueError(f"{ad} okunamadı")
+    return el.get_text(" ", strip=True)
+
+
+def parse(html: str, url: str = "", il: str = "Bilinmiyor", ilce: str | None = None) -> ListingDetail:
+    """Gerçek ilan sayfası (R0.4). Konum detay sayfasından okunmaz; arama satırından gelir (il/ilce parametresi)."""
     soup = BeautifulSoup(html, "lxml")
-    
-    ilan_no = soup.select_one(Selectors.DETAIL_ILAN_NO).text.strip()
-    baslik = soup.select_one(Selectors.DETAIL_BASLIK).text.strip()
-    fiyat = parse_price(soup.select_one(Selectors.DETAIL_FIYAT).text.strip())
-    aciklama = soup.select_one(Selectors.DETAIL_ACIKLAMA).text.strip()
-    
-    info_items = soup.select(Selectors.DETAIL_INFO_LIST)
-    info_dict = {}
-    for item in info_items:
-        label = item.select_one(Selectors.DETAIL_INFO_LABEL).text.strip()
-        value = item.select_one(Selectors.DETAIL_INFO_VALUE).text.strip()
-        info_dict[label] = value
-        
-    il_ilce = info_dict.get("İl / İlçe", " / ").split(" / ")
-    il = il_ilce[0].strip() if len(il_ilce) > 0 else "Bilinmiyor"
-    ilce = il_ilce[1].strip() if len(il_ilce) > 1 else None
-    
-    tarih_str = info_dict.get("İlan Tarihi", "")
-    ilan_tarihi = parse_date(tarih_str)
-    
-    yil_str = info_dict.get("Yıl", "0")
+    info = {}
+    for item in soup.select(Selectors.DETAIL_INFO_LIST):
+        label, value = item.select_one(Selectors.DETAIL_INFO_LABEL), item.select_one(Selectors.DETAIL_INFO_VALUE)
+        if label and value:
+            info[label.get_text(" ", strip=True)] = value.get_text(" ", strip=True)
+    ilan_no = info.get("İlan No", "")
+    if not re.fullmatch(r"\d{1,12}", ilan_no):
+        raise ValueError("ilan no okunamadı")
+    yil_str = info.get("Yıl", "")
     if not yil_str.isdigit():
         raise ValueError("yıl okunamadı")   # 0'a düşmesin: yıl=0 araç yaşını ve piyasa kümesini bozar
-    yil = int(yil_str)
-    
-    km_str = info_dict.get("Kilometre", "0").replace(".", "")
+    km_str = info.get("KM", "").replace(".", "")
     if not km_str.isdigit():
         raise ValueError("km okunamadı")    # km=0 "neredeyse sıfır araç" gibi görünürdü
-    km = int(km_str)
-    
-    hasar_raw = info_dict.get("Ağır Hasar Kayıtlı")
+    hasar_raw = info.get("Ağır Hasar Kayıtlı")
     hasar = None if hasar_raw is None else hasar_raw.strip().lower() == "evet"   # alan yoksa bilinmiyor, "hayır" değil
-    
-    parts = parse_damage(html)
-    
+    aciklama = soup.select_one(Selectors.DETAIL_ACIKLAMA)
     return ListingDetail(
-        ilan_no=ilan_no,
-        url=url,
-        baslik=baslik,
-        fiyat=fiyat,
-        yil=yil,
-        km=km,
-        il=il,
-        ilce=ilce,
-        ilan_tarihi=ilan_tarihi,
-        marka=info_dict.get("Marka", ""),
-        model=info_dict.get("Seri", ""),  # sahibinden: Marka > Seri (=model adı) > Model (=paket)
-        seri=info_dict.get("Seri"),
-        paket=info_dict.get("Model"),
-        vites=info_dict.get("Vites"),
-        yakit=info_dict.get("Yakıt Tipi"),
-        kasa_tipi=info_dict.get("Kasa Tipi"),
-        motor_hacmi=info_dict.get("Motor Hacmi"),
-        renk=info_dict.get("Renk"),
-        kimden=info_dict.get("Kimden"),
-        agir_hasar_kayitli=hasar,
-        parts=parts,
-        aciklama=mask_phones(aciklama),
-        fetched_at=datetime.now(timezone.utc)
-    )
+        ilan_no=ilan_no, url=url, baslik=_req(soup, Selectors.DETAIL_BASLIK, "başlık"),
+        fiyat=parse_price(_req(soup, Selectors.DETAIL_FIYAT, "fiyat")), yil=int(yil_str), km=int(km_str),
+        il=il, ilce=ilce, ilan_tarihi=parse_date(info.get("İlan Tarihi", "")),
+        marka=info.get("Marka", ""), model=info.get("Seri", ""),  # site: Marka > Seri (=model adı) > Model (=paket)
+        seri=info.get("Seri"), paket=info.get("Model"), vites=info.get("Vites"), yakit=info.get("Yakıt / Motor Tipi"),
+        kasa_tipi=info.get("Kasa Tipi"), motor_hacmi=info.get("Motor Hacmi"), renk=info.get("Renk"),
+        kimden=info.get("Kimden"), agir_hasar_kayitli=hasar, parts=parse_damage(html),
+        aciklama=mask_phones(aciklama.get_text("\n", strip=True) if aciklama else ""),
+        fetched_at=datetime.now(timezone.utc))
