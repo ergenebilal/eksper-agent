@@ -190,10 +190,10 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 ### R3 — Savaş Odası
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
 |---|---|---|---|---|
-| R3.1 | **Havuz**: "📌 Havuza ekle" (panel + rozet), yerel saklama, havuz görünümü (yan panel sekmesi), sil/temizle | ⬜ | Havuz yalnız `chrome.storage.local`; en fazla 10 ilan; sunucuya ilan verisi yazılmaz (test) | R0.2 |
-| R3.2 | **Görülen fiyat geçmişi + ilan yaşı**: havuzdaki ilan her açılışta snapshot; "sizin gördüğünüz fiyatlar" | ⬜ | Fiyat düşüşü yalnız kullanıcı gözleminden; dil dürüst | R0.2 (ilan tarihi), R3.1 |
-| R3.3 | `POST /api/v1/compare`: deterministik tablo + LLM gerekçeli sıralama; sayı doğrulaması; 1 hak, aynı küme tekrar ücretsiz | ⬜ | LLM çıktısındaki tablo dışı sayı içeren cümleler düşer (test); kota testleri | R3.1, R2.3 tercihen |
-| R3.4 | **Karşılaştır ve Karar Ver** UI: tablo + 3 sonuç (galip / en riskli / pazarlık) + "önce bunu ekspertize götür" | ⬜ | `frontend-design` ile; ekran görüntüsü kontrolü; e2e testi | R3.3 |
+| R3.1 | **Havuz**: "📌 Havuza ekle" (panel + rozet), yerel saklama, havuz görünümü (yan panel sekmesi), sil/temizle | ✅ 6bb1386 (panel düğmesi; rozet düğmesi yok) | Havuz yalnız `chrome.storage.local`; en fazla 10 ilan; sunucuya ilan verisi yazılmaz (test) | R0.2 |
+| R3.2 | **Görülen fiyat geçmişi + ilan yaşı**: havuzdaki ilan her açılışta snapshot; "sizin gördüğünüz fiyatlar" | ✅ 3808e36 + 6bb1386 (ilan tarihi, kimden, sitenin "fiyatı değişti" bayrağı; fiyat geçmişi sitenin kendisinden İSTENMEZ) | Fiyat düşüşü yalnız kullanıcı gözleminden; dil dürüst | R0.2 (ilan tarihi), R3.1 |
+| R3.3 | `POST /api/v1/compare`: deterministik tablo + LLM gerekçeli sıralama; sayı doğrulaması; 1 hak, aynı küme tekrar ücretsiz | ✅ 6bb1386 (`analysis/compare.py`, `tests/test_compare.py`; kararlar kodda, LLM yalnız gerekçe) | LLM çıktısındaki tablo dışı sayı içeren cümleler düşer (test); kota testleri | R3.1, R2.3 tercihen |
+| R3.4 | **Karşılaştır ve Karar Ver** UI: tablo + 3 sonuç (galip / en riskli / pazarlık) + "önce bunu ekspertize götür" | ✅ 6bb1386 (e2e `test_war_room_pool_and_compare`, ekran görüntüsü kontrol edildi) | `frontend-design` ile; ekran görüntüsü kontrolü; e2e testi | R3.3 |
 
 ### R4 — Sinyaller ve likidite
 | ID | Paket | Durum | Kabul ölçütü | Önkoşul |
@@ -207,6 +207,7 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 |---|---|---|---|---|
 | R5.1 | **F · Tramer yapıştır**: SBM metni parse + ilan beyanıyla çelişki bayrağı | ⬜ | Gerçek (maskeli) örneklerle parse testi; metin sunucuda saklanmaz | 👤 örnek metinler |
 | R5.2 | **G · Görsel röntgen** araştırması: model seçimi, maliyet, eval seti | ⬜ | Ar-Ge raporu + karar (kullanıcı) | — |
+| R5.4 | **I · Ekspertiz raporu röntgeni** (öneri, kullanıcı kararı bekliyor — §7): kullanıcının fiziksel ekspertiz raporu (PDF/metin; v1 fotoğraf) → parça durumu sade dil, ilan beyanıyla çelişki listesi, masraf_kb ile onarım aralığı, güncellenmiş teklif, al/alma özeti. Rapor sunucuda saklanmaz; plaka/şasi/ad maskelenir; her bulgu rapordan alıntılı | ⬜ | Farklı firmalardan ≥5 maskeli gerçek rapor fixture'ı; parça okuma %100; tablo dışı sayı yok | 👤 örnek raporlar, R2.1 onayı |
 | R5.3 | **H · Karar sonrası döngü**: havuzda "ekspertize gittim / aldım / almadım" → kalibrasyon raporu | ⬜ | Yönetimde "hangi kural yanlış 🟢/🔴 üretti" raporu | R3.1 |
 
 ### Platform / operasyon (paralel)
@@ -231,7 +232,9 @@ Durum: ⬜ başlanmadı · 🔄 sürüyor · ✅ bitti · ⛔ engelli (nedeni ya
 
 ## 7. Açık kararlar (kullanıcıya sorulacak — tahmin etme)
 
-_Şu an açık karar yok._ (7 Ekim 2026'da tümü yanıtlandı → §8.) Yeni karar gerektiğinde buraya ekle ve kullanıcıya sor.
+- **R5.4 Ekspertiz raporu röntgeni** eklensin mi, hangi sırayla (R4'ten önce/sonra), kaç hak? Claude önerisi: evet; R4'ten sonra, Tramer (R5.1) ile tek "Belge röntgeni" modülü; 1 hak. Önkoşul: kullanıcıdan 3-5 farklı firmanın maskeli raporu.
+
+(7 Ekim 2026 öncesi kararlar → §8.)
 
 ### Dil kılavuzu (aciliyet ve satıcı sinyalleri — kullanıcı kararı)
 Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı **yasak**; testle denetlenir (yasaklı kelime listesi).
@@ -259,6 +262,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 | 2026-10-07 | Aciliyet dili finansal/analitik/objektif (§7 dil kılavuzu) | Kullanıcı |
 | 2026-10-07 | Görsel analiz (R5.2) bütçesi askıda; metin tabanlı analizler bitince değerlendirilecek | Kullanıcı |
 | 2026-10-07 | Ham örnek sayfalar `data/samples/` (git dışı); temizlenmiş fixture `tests/fixtures/real/` | Claude, kullanıcı ile |
+| 2026-10-07 | Ürün adı **CyberOto AI** (kısa: CyberOto); CyberGene projeleri "Cyber + alan" kalıbıyla adlandırılır. Yeniden adlandırma altyapı bitince yapılır; alan adı değişikliği kullanıcıya sorulur; logo kullanıcıdan gelecek | Kullanıcı |
 
 ## 9. Devir protokolü (kota biterse / ajan değişirse)
 
@@ -273,6 +277,7 @@ Finansal, analitik, objektif dil. İtham ya da fırsatçılık çağrışımı *
 
 | Tarih | Ajan | Paket | Not |
 |---|---|---|---|
+| 2026-10-07 | Claude (5d82b169) | R3 ✅ | Savaş Odası: havuz (yalnız tarayıcıda, en fazla 10), görülen fiyat ve ilan yaşı, `/api/v1/compare` (kurallı seçimler + doğrulanmış anlatım + şablon yedeği, üye için tekil röntgen önkoşulu, aynı küme ücretsiz), panel "Havuz" sekmesi. 400 test, 6bb1386 yayında. Kullanıcı yeni fikir: ekspertiz raporu analizi → R5.4 öneri, §7'de karar bekliyor. **Sıradaki:** R4.1 aciliyet sinyalleri; altyapı bitince CyberOto AI yeniden adlandırması. |
 | 2026-10-06 | Claude (5d82b169) | — | Ar-Ge planı oluşturuldu. Mevcut durum: kapalı beta canlı (d5b97cb). Sıradaki: R0.1 (kullanıcıdan gerçek sayfalar), paralelde R1.1 taslağı ve R1.3. |
 | 2026-10-07 | Claude (5d82b169) | R1.1/R1.3 onay, R2 | Kullanıcı R1.1 (32 model) ve R1.3'ü sohbette toplu onayladı (kaynak alanlarına işlendi). R2.1 masraf_kb taslağı (42 kalem). R2.2 planı değişti: LLM yerine önce kural tabanlı bulucu (alıntılı, ön hesapta da çalışır); LLM genişletmesi R2.2b. R2.3 gerçek maliyet + teklif düşümü + panel kartı. 389 test. **Sıradaki:** kullanıcıdan masraf_kb onayı; sonra R3 (Savaş Odası). |
 | 2026-10-07 | Claude (5d82b169) | R1.2 ✅, R1.4 ✅ | Araca özel ekspertiz listesi ve soru çarşafı (`analysis/checklist.py`), API `ekspertiz`/`soru_carsafi`/`soru_metni`, panel bölümleri; 8 birim + e2e. 364 test. **R1 durumu:** R1.1 ve R1.3 taslakları kullanıcı onayı bekliyor (onaylanınca kronik/bakım maddeleri ve alım günü listesi görünür). **Sıradaki ajan:** onay gelirse `arac kb kontrol` → yayın; yoksa R2.1 `masraf_kb.yaml` taslağı (aralıklar, kaynak/tarih, onaysız). |
