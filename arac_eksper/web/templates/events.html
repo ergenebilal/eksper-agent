@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Bildirimler · Araç Eksper{% endblock %}
+{% block content %}
+<h1>Bildirimler</h1>
+<div class="card scroll">
+<table>
+  <thead><tr><th>#</th><th>Tür</th><th>Zaman (UTC)</th><th>İleti</th></tr></thead>
+  <tbody>
+  {% for e in rows %}
+  <tr><td>{{ e.id }}</td><td>{{ e.type }}</td><td>{{ e.created_at[:16].replace('T', ' ') if e.created_at }}</td>
+      <td class="desc">{{ e.text[:300] }}{% if e.ilan_no %} <a href="/listings/{{ e.ilan_no|urlencode }}">İlan →</a>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="4" class="mute">Henüz bildirim yok.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

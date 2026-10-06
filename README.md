@@ -23,6 +23,7 @@ uv run playwright install chromium
 | `arac events --since N --json` | Bildirim olayları (NOTIFY_MODE=jeff) |
 | `arac map add Renault Megane <sahibinden-arama-url>` | Kategori slug'ı ekle |
 | `arac import-html <dosya\|klasör>` | Elle kaydedilmiş sayfaları içe aktar (engel durumunda yedek yol) |
+| `arac panel serve` | Salt okunur yönetim paneli (PANEL_TOKEN zorunlu, varsayılan 127.0.0.1:8990) |
 | `arac feedback <ilan_no> pos\|neg` / `arac telegram poll` | Geri bildirim |
 
 Çıkış kodları: `0` başarılı · `1` hata · `2` BLOCKED (doğrulama sayfası) · `3` geçersiz girdi.

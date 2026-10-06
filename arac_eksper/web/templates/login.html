@@ -1,36 +1,19 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş - Araç Eksper Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giriş · Araç Eksper</title>
+<link rel="stylesheet" href="/static/app.css">
 </head>
-<body class="antialiased flex items-center justify-center min-h-screen">
-
-    <div class="bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-2xl w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-6 text-center">🚗 Eksper Panel</h1>
-        
-        {% if error %}
-        <div class="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded mb-4 text-sm">
-            {{ error }}
-        </div>
-        {% endif %}
-
-        <form method="POST" action="/login" class="flex flex-col gap-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1">Erişim Jetonu (Token)</label>
-                <input type="password" name="token" required autofocus
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-            </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-3 rounded-lg transition-colors mt-2">
-                Giriş Yap
-            </button>
-        </form>
-    </div>
-
+<body>
+<div class="login card">
+  <h1>Araç Eksper</h1>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <p><input type="password" name="token" required autofocus autocomplete="current-password" style="width:100%" placeholder="Erişim jetonu"></p>
+    <button class="pri" type="submit">Giriş</button>
+  </form>
+</div>
 </body>
 </html>

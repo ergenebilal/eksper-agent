@@ -1,0 +1,26 @@
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--fg:#f1f5f9;--mute:#94a3b8;--ok:#4ade80;--warn:#facc15;--bad:#f87171;--acc:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--acc);text-decoration:none}
+nav{background:var(--card);border-bottom:1px solid var(--line);padding:.6rem 1rem;position:sticky;top:0;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+nav a{color:var(--mute);font-weight:500}nav a.on{color:var(--fg)}nav .sp{flex:1}
+nav form{margin:0}nav button{background:none;border:0;color:var(--mute);cursor:pointer;font:inherit}
+main{max-width:56rem;margin:0 auto;padding:1rem}
+h1,h2{margin:.2rem 0 1rem}h2{font-size:1.1rem;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.75rem;padding:1rem;margin-bottom:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.75rem;margin-bottom:1rem}
+.stat{text-align:center}.stat b{display:block;font-size:1.4rem}.stat span{color:var(--mute);font-size:.75rem;text-transform:uppercase}
+.tag{display:inline-block;padding:.1rem .6rem;border-radius:99px;font-size:.75rem;border:1px solid var(--line)}
+.ALINIR{color:var(--ok);border-color:var(--ok)}.DUSUNULEBILIR{color:var(--warn);border-color:var(--warn)}.ALINMAZ{color:var(--bad);border-color:var(--bad)}.BEKLEMEDE{color:var(--mute)}
+.alert{border:1px solid var(--bad);background:#7f1d1d55;border-radius:.75rem;padding:1rem;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.5rem;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:500;font-size:.75rem;text-transform:uppercase}
+.scroll{overflow-x:auto}.mute{color:var(--mute)}.mono{font-family:ui-monospace,monospace}
+mark{background:#facc1540;color:var(--fg);padding:0 .1rem;border-radius:.2rem}
+.desc{white-space:pre-wrap;word-break:break-word}
+input,select{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:.5rem;padding:.55rem;font:inherit}
+button.pri{background:#2563eb;color:#fff;border:0;border-radius:.5rem;padding:.6rem 1rem;font:inherit;cursor:pointer}
+.login{max-width:24rem;margin:20vh auto;padding:0 1rem}
+.err{color:var(--bad);margin-bottom:.75rem}
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+ul.plain{padding-left:1.1rem;margin:.3rem 0}
+.disc{color:var(--mute);font-size:.8rem}

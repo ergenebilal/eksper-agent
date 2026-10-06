@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}İlan {{ d.ilan_no }} · Araç Eksper{% endblock %}
+{% block content %}
+{% set v = d.verdict %}{% set a = d.detail %}
+<p><a href="/listings">← İlanlar</a></p>
+<h1>{{ a.marka }} {{ a.model }} <span class="tag {{ 'BEKLEMEDE' if v.beklemede else v.etiket }}">{{ 'ANALİZ BEKLİYOR' if v.beklemede else v.etiket }}</span></h1>
+<p class="mute">{{ a.baslik }} · {{ a.yil }} · {{ '{:,}'.format(a.km).replace(',', '.') }} km · {{ a.il }}{% if a.ilce %}/{{ a.ilce }}{% endif %}</p>
+
+<div class="grid">
+  <div class="card stat"><span>Fiyat</span><b>{{ '{:,}'.format(a.fiyat).replace(',', '.') }} TL</b></div>
+  <div class="card stat"><span>Skor</span><b>{{ v.guven_skoru }}/10</b></div>
+  <div class="card stat"><span>Veri tamlığı</span><b>%{{ (v.veri_tamlik * 100)|int }}</b></div>
+  {% if v.piyasa %}<div class="card stat"><span>Piyasa ilan medyanı (n={{ v.piyasa.n }}, {{ v.piyasa.guven }})</span><b>{{ '{:,}'.format(v.piyasa.medyan).replace(',', '.') }} TL</b></div>{% endif %}
+</div>
+
+{% if v.tavsiye_teklif %}
+<div class="card"><h2>Teklif</h2>
+  <p>Açılış: <b>{{ '{:,}'.format(v.tavsiye_teklif).replace(',', '.') }} TL</b>{% if v.ust_sinir %} · Üst sınır: <b>{{ '{:,}'.format(v.ust_sinir).replace(',', '.') }} TL</b>{% endif %}</p>
+  <p class="disc">Bunlar ilan (talep) fiyatlarından türetilen tahminlerdir, gerçek satış fiyatı değildir.</p></div>
+{% endif %}
+
+{% if v.hard_fails %}<div class="alert"><b>Elenme nedenleri</b><ul class="plain">{% for h in v.hard_fails %}<li>{{ h }}</li>{% endfor %}</ul></div>{% endif %}
+
+<div class="card"><h2>Artılar / eksiler</h2>
+  <ul class="plain">{% for x in v.artilar %}<li>✅ {{ x }} <span class="mute">(beyan)</span></li>{% endfor %}
+  {% for x in v.eksiler %}<li>⚠️ {{ x }}</li>{% endfor %}</ul>
+  {% if not v.artilar and not v.eksiler %}<p class="mute">Kayıt yok.</p>{% endif %}</div>
+
+<div class="card"><h2>Puan dökümü</h2>
+  <table><tbody><tr><td>Başlangıç</td><td>10.0</td></tr>
+  {% for t in v.trace %}<tr><td>{{ t.kural }}</td><td>{{ '%+.2f' % t.puan }}</td></tr>{% endfor %}</tbody></table></div>
+
+<div class="card"><h2>Parçalar</h2>
+  {% if a.parts %}<table><tbody>{% for name, state in a.parts.items() %}<tr><td>{{ name.replace('_', ' ') }}</td><td>{{ state }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="mute">Parça diyagramı yok.</p>{% endif %}</div>
+
+<div class="card"><h2>Satıcı açıklaması <span class="disc">(sarı: analizde alıntılanan yerler)</span></h2>
+  <div class="desc">{% for text, hl in d.aciklama_parcalari %}{% if hl %}<mark>{{ text }}</mark>{% else %}{{ text }}{% endif %}{% endfor %}</div></div>
+
+<div class="card"><h2>Fiyat geçmişi</h2>
+  {% for p in d.fiyat_gecmisi %}<div>{{ p.zaman[:16].replace('T', ' ') }} UTC — {{ '{:,}'.format(p.fiyat).replace(',', '.') }} TL</div>
+  {% else %}<p class="mute">Kayıt yok.</p>{% endfor %}</div>
+
+<div class="card"><h2>Ekspertizde mutlaka bakılacak</h2>
+  <ul class="plain">{% for k in v.ekspertiz_kontrol_listesi %}<li>{{ k }}</li>{% endfor %}</ul>
+  {% if d.ilan_url %}<p><a href="{{ d.ilan_url }}" rel="noopener noreferrer nofollow" target="_blank">İlanı sahibinden’de aç ↗</a></p>{% endif %}
+  <p class="disc">Karar zamanı: {{ d.karar_zamani[:16].replace('T', ' ') }} UTC</p></div>
+{% endblock %}

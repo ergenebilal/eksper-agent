@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sistem · Araç Eksper{% endblock %}
+{% block content %}
+<h1>Sistem</h1>
+<div class="grid">
+  <div class="card stat"><span>Ardışık engel</span><b>{{ s.ardisik_engel }}</b></div>
+  <div class="card stat"><span>LLM önbellek kaydı</span><b>{{ s.llm_onbellek_kaydi }}</b></div>
+  <div class="card stat"><span>Bildirim modu</span><b>{{ s.bildirim_modu }}</b></div>
+  <div class="card stat"><span>Zamanlayıcı</span><b>{{ s.zamanlayici_modu }}</b></div>
+</div>
+<div class="card"><h2>Son 24 saat çekimleri</h2>
+  {% for k, n in s.son_24_saat.items() %}<span class="tag">{{ k }}: {{ n }}</span> {% else %}<span class="mute">Çekim yok.</span>{% endfor %}</div>
+<div class="card"><h2>Engel geçmişi</h2>
+  {% for b in s.engel_gecmisi %}<div>{{ b.zaman[:16].replace('T', ' ') }} UTC</div>{% else %}<p class="mute">Engel kaydı yok.</p>{% endfor %}</div>
+<div class="card scroll"><h2>Son çekimler</h2>
+  <table><tbody>{% for l in s.fetch_loglari %}<tr><td>{{ l.zaman[:19].replace('T', ' ') }}</td><td>{{ l.durum }}</td></tr>{% endfor %}</tbody></table></div>
+<p class="disc">LLM çağrı sayacı ve denetim kaydı P1’de eklenecek (tablolar henüz yok).</p>
+{% endblock %}

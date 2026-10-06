@@ -1,33 +1,48 @@
-import os
+"""Araç Eksper paneli (P0: salt okunur). Yerel öncelikli; token olmadan BAŞLAMAZ.
+HTML ekranları ve /v1 JSON uç noktaları aynı veri katmanını (service.py) kullanır.
+Panel hiçbir toplama işi başlatmaz, hiçbir koruma ayarını değiştirmez (P0'da yazma yolu yok)."""
+import hmac
 from contextlib import asynccontextmanager
-from typing import Optional
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from arac_eksper.config.settings import settings
 from arac_eksper.storage.db import SessionLocal
-from arac_eksper.storage import repo
+from arac_eksper.web import security, service
 
-# Templates setup
 BASE_DIR = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))   # .html için otomatik kaçış AÇIK
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    security.check_startup()     # token yoksa/zayıfsa sunucu ayağa kalkmaz
     yield
-    # Shutdown
 
-app = FastAPI(title="Araç Eksper Panel", lifespan=lifespan)
 
-# Static files
+app = FastAPI(title="Araç Eksper Panel", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-# Dependency for DB
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for k, v in security.SECURITY_HEADERS.items():
+        response.headers.setdefault(k, v)
+    return response
+
+
+@app.exception_handler(HTTPException)
+async def http_exc(request: Request, exc: HTTPException):
+    if exc.status_code == 303:
+        return RedirectResponse(exc.headers["Location"], status_code=303)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -35,114 +50,115 @@ def get_db():
     finally:
         db.close()
 
-# Auth Dependency
-def verify_auth(request: Request):
-    token = request.cookies.get("panel_token")
-    if not token or token != settings.panel_token:
-        # Check authorization header for API requests
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or auth_header != f"Bearer {settings.panel_token}":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
 
-def require_html_auth(request: Request):
-    token = request.cookies.get("panel_token")
-    if not token or token != settings.panel_token:
-        # Redirect to login
-        raise HTTPException(status_code=302, headers={"Location": "/login"})
+def page(request: Request, name: str, sess: dict, **ctx):
+    return templates.TemplateResponse(request, name, {"csrf": sess["csrf"], **ctx})
+
+
+# ------------------------------------------------------------------ giriş / çıkış
+@app.get("/healthz")
+async def healthz():
+    return {"ok": True}      # yalnızca bu; sürüm/yol/ayar bilgisi yok
+
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse(request, "login.html")
+    return templates.TemplateResponse(request, "login.html", {"error": None})
+
 
 @app.post("/login")
-async def login(request: Request):
-    form = await request.form()
-    token = form.get("token")
-    if token == settings.panel_token:
-        response = RedirectResponse(url="/", status_code=302)
-        response.set_cookie(key="panel_token", value=token, httponly=True, max_age=86400 * 30)
-        return response
-    return templates.TemplateResponse(request, "login.html", {"error": "Hatalı token"})
+async def login(request: Request, token: str = Form("")):
+    ip = security.client_ip(request)
+    if security.login_blocked(ip):
+        return templates.TemplateResponse(request, "login.html",
+                                          {"error": "Çok fazla deneme. Biraz sonra tekrar deneyin."}, status_code=429)
+    if not security.origin_ok(request) or not security.token_matches(token):
+        security.record_fail(ip)
+        return templates.TemplateResponse(request, "login.html", {"error": "Giriş başarısız."}, status_code=401)
+    sid, _ = security.new_session()
+    resp = RedirectResponse("/", status_code=303)
+    resp.set_cookie(security.COOKIE, sid, httponly=True, samesite="strict", secure=settings.panel_cookie_secure,
+                    max_age=settings.panel_session_hours * 3600, path="/")
+    return resp
 
-@app.get("/logout")
-async def logout():
-    response = RedirectResponse(url="/login", status_code=302)
-    response.delete_cookie("panel_token")
-    return response
 
-# P0 Routes - Read Only
+@app.post("/logout")
+async def logout(request: Request, csrf: str = Form(""), sess: dict = Depends(security.require_page_auth)):
+    if not security.origin_ok(request) or not hmac.compare_digest(csrf, sess["csrf"]):
+        raise HTTPException(status_code=403, detail="CSRF doğrulaması başarısız")
+    security.drop_session(request)
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie(security.COOKIE, path="/")
+    return resp
 
-@app.get("/", response_class=HTMLResponse, dependencies=[Depends(require_html_auth)])
-async def dashboard(request: Request, db=Depends(get_db)):
-    from arac_eksper.collector import guard
-    from arac_eksper.storage.models import FetchLog, Watch, Verdict
-    from datetime import datetime, timezone, timedelta
-    
-    # 1. Son başarılı çekim
-    last_ok = db.query(FetchLog).filter(FetchLog.status == "OK").order_by(FetchLog.id.desc()).first()
-    
-    # 2. Sayfa kullanımı (son 1 saat)
-    hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-    pages_used = db.query(FetchLog).filter(FetchLog.timestamp >= hour_ago).count()
-    
-    # 3. Engel durumu
-    blocked_until = guard.is_blocked_now(db)
-    
-    # 4. Son 24 saat 🟢/🟡/🔴
-    day_ago = datetime.now(timezone.utc) - timedelta(days=1)
-    verdicts = db.query(Verdict).filter(Verdict.created_at >= day_ago).all()
-    v_stats = {"alinir": 0, "dusunulebilir": 0, "alinmaz": 0, "beklemede": 0}
-    for v in verdicts:
-        if v.beklemede:
-            v_stats["beklemede"] += 1
-        elif v.etiket == "ALINIR":
-            v_stats["alinir"] += 1
-        elif v.etiket == "DUSUNULEBILIR":
-            v_stats["dusunulebilir"] += 1
-        else:
-            v_stats["alinmaz"] += 1
-            
-    # 5. Radarlar
-    watches = db.query(Watch).all()
-    
-    return templates.TemplateResponse(request, "dashboard.html", {
-        "last_ok": last_ok,
-        "pages_used": pages_used,
-        "max_pages": settings.max_pages_per_hour,
-        "blocked_until": blocked_until,
-        "v_stats": v_stats,
-        "watches": watches,
-    })
 
-@app.get("/listings", response_class=HTMLResponse, dependencies=[Depends(require_html_auth)])
-async def listings_page(request: Request, db=Depends(get_db)):
-    from arac_eksper.storage.models import Verdict
-    from sqlalchemy.orm import joinedload
-    
-    # Tüm karne kararlarını (ve ilişkili ilanları) çek, en yüksek puandan en düşüğe, sonra tarihe göre sırala
-    verdicts = (
-        db.query(Verdict)
-        .options(joinedload(Verdict.listing))
-        .order_by(
-            # Kendi içinde etiket sırası: ALINIR (1), DUSUNULEBILIR (2), ALINMAZ (3)
-            # SQLAlchemy'de case kullanmak yerine basitçe skora göre dizebiliriz:
-            Verdict.guven_skoru.desc(),
-            Verdict.created_at.desc()
-        )
-        .limit(100)
-        .all()
-    )
-    
-    return templates.TemplateResponse(request, "listings.html", {
-        "verdicts": verdicts
-    })
+# ------------------------------------------------------------------ ekranlar (P0, salt okunur)
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request, db=Depends(get_db), sess=Depends(security.require_page_auth)):
+    return page(request, "dashboard.html", sess, s=service.status(db), nav="home")
 
-@app.get("/search", response_class=HTMLResponse, dependencies=[Depends(require_html_auth)])
-async def search_page(request: Request):
-    return templates.TemplateResponse(request, "search.html", {})
 
-# Run with: uv run uvicorn arac_eksper.web.app:app --reload --port 8990
+@app.get("/listings", response_class=HTMLResponse)
+async def listings_page(request: Request, etiket: str | None = Query(None, max_length=20),
+                        q: str | None = Query(None, max_length=60), db=Depends(get_db),
+                        sess=Depends(security.require_page_auth)):
+    return page(request, "listings.html", sess, rows=service.listings(db, etiket, q), etiket=etiket, q=q or "",
+                nav="listings")
+
+
+@app.get("/listings/{ilan_no}", response_class=HTMLResponse)
+async def listing_page(request: Request, ilan_no: str, db=Depends(get_db), sess=Depends(security.require_page_auth)):
+    d = service.listing_detail(db, ilan_no[:40])
+    if not d:
+        raise HTTPException(status_code=404, detail="İlan bulunamadı")
+    return page(request, "detail.html", sess, d=d, nav="listings")
+
+
+@app.get("/events", response_class=HTMLResponse)
+async def events_page(request: Request, db=Depends(get_db), sess=Depends(security.require_page_auth)):
+    return page(request, "events.html", sess, rows=service.events(db), nav="events")
+
+
+@app.get("/system", response_class=HTMLResponse)
+async def system_page(request: Request, db=Depends(get_db), sess=Depends(security.require_page_auth)):
+    return page(request, "system.html", sess, s=service.system(db), nav="system")
+
+
+# ------------------------------------------------------------------ /v1 (Jeff + panel, aynı veri)
+@app.get("/v1/status", dependencies=[Depends(security.require_api_auth)])
+async def v1_status(db=Depends(get_db)):
+    return service.status(db)
+
+
+@app.get("/v1/listings", dependencies=[Depends(security.require_api_auth)])
+async def v1_listings(etiket: str | None = Query(None, max_length=20), q: str | None = Query(None, max_length=60),
+                      limit: int = Query(100, ge=1, le=service.MAX_LIST), db=Depends(get_db)):
+    return {"listings": service.listings(db, etiket, q, limit)}
+
+
+@app.get("/v1/listings/{ilan_no}", dependencies=[Depends(security.require_api_auth)])
+async def v1_listing(ilan_no: str, db=Depends(get_db)):
+    d = service.listing_detail(db, ilan_no[:40])
+    if not d:
+        raise HTTPException(status_code=404, detail="İlan bulunamadı")
+    d["aciklama_parcalari"] = [{"metin": t, "vurgulu": h} for t, h in d["aciklama_parcalari"]]
+    return d
+
+
+@app.get("/v1/events", dependencies=[Depends(security.require_api_auth)])
+async def v1_events(since: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=service.MAX_LIST), db=Depends(get_db)):
+    return {"events": service.events(db, since, limit)}
+
+
+def serve() -> None:
+    """`arac panel serve`: token yoksa başlamaz; yerel olmayan bind uyarı verir."""
+    import sys
+    import uvicorn
+    problem = security.token_problem()
+    if problem:
+        print(problem + " .env dosyasına PANEL_TOKEN=<en az 16 rastgele karakter> ekleyin.", file=sys.stderr)
+        raise SystemExit(3)
+    if settings.panel_host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"UYARI: panel {settings.panel_host} adresinde dinliyor. Yalnızca Tailscale/yerel ağ için; "
+              "internete açmayın.", file=sys.stderr)
+    uvicorn.run("arac_eksper.web.app:app", host=settings.panel_host, port=settings.panel_port, log_level="warning")

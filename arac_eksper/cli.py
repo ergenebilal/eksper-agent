@@ -389,6 +389,17 @@ def status(json_out: bool = typer.Option(False, "--json")):
         db.close()
 
 
+panel_app = typer.Typer(help="Yönetim paneli")
+app.add_typer(panel_app, name="panel")
+
+
+@panel_app.command("serve")
+def panel_serve():
+    """Paneli başlatır (PANEL_HOST/PANEL_PORT env'den; varsayılan 127.0.0.1:8990). PANEL_TOKEN yoksa başlamaz."""
+    from arac_eksper.web import app as web
+    web.serve()
+
+
 telegram_app = typer.Typer(help="Telegram")
 app.add_typer(telegram_app, name="telegram")
 

@@ -30,9 +30,12 @@ class Settings(BaseSettings):
     scheduler_mode: str = "internal"
     min_watch_interval_minutes: int = 15
 
-    # Panel
-    panel_token: str = "arac-secret-123"
+    # Panel: token boşsa/zayıfsa panel BAŞLAMAZ (varsayılan yok). Varsayılan bind yalnızca yerel makine.
+    panel_token: str = ""
+    panel_host: str = "127.0.0.1"
     panel_port: int = 8990
+    panel_session_hours: int = 12
+    panel_cookie_secure: bool = False   # https (Tailscale Serve vb.) arkasında True yap
 
     # Toplama güvenliği (CLAUDE.md kural 1-2)
     block_backoff_minutes: list[int] = [30, 120, 360]
