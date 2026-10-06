@@ -1,16 +1,62 @@
-# Türk ikinci el araç piyasası jargonu sözlüğü
+# Türk ikinci el araç piyasası jargonu sözlüğü — LLM açıklama röntgeninin sistem promptuna enjekte edilir.
+# Tanımlar yanlışsa model yanlış yönlenir: emin olunmayan terim EKLENMEZ; yeni maddeyi tests/data/aciklamalar.jsonl
+# değerlendirmesiyle (uv run arac eval) birlikte doğrula. Eşleme notları köşeli parantezde: [şema alanı → değer].
 jargon:
-  "podye": "Şasenin ön kısmı, kazalarda kritik"
-  "şase ucu": "Şasenin darbe emen uç kısmı, işlemli olması değer kaybettirir"
-  "direk": "Aracın iskeleti, tavanı taşıyan sütunlar"
-  "sandık motor": "Tamamen sıfır takılmış yeni motor"
-  "kafa yapıldı": "Aracın ön bölümü ağır hasar alıp yeniden toplanmış"
-  "bedelsiz": "Hasar kaydı var ama tutarı belli değil (ağır hasar olabilir)"
-  "çekme belgeli": "Trafikten men edilmiş, genellikle pert"
-  "sigorta şişirmesi": "Ağır hasar kaydını gizlemek için uydurulan bahane"
-  "takas fiyatı farklı": "Sıcak paraya ihtiyacı var veya arabaya değerinden fazla biçiyor"
-  "hatasız": "Hiçbir kusuru, boyası, değişeni yok"
-  "hatasız gibi": "Aslında kusurları var ama göze batmıyor (yalan olabilir)"
-  "kaporta temiz": "Boya/değişen bilgisi vermiyor, sadece kozmetik iyi diyor"
-  "ufak tefek": "Maliyetli ama küçümsenen masraflar"
-  "bel altı boyalı": "Tavan hariç komple boyalı"
+  # --- Yapısal hasar (🔴 nedeni) ---
+  "şase": "Aracın taşıyıcı iskeleti. 'Şase işlemli/düzeltmeli/kaynaklı' ciddi darbe işaretidir [sase_direk_podye_islem → var]"
+  "şase ucu": "Şasenin ön/arka darbe emen uç kısmı; işlemli olması ciddi darbe işaretidir [sase_direk_podye_islem → var]"
+  "podye": "Süspansiyonun bağlandığı, çamurluk içindeki taşıyıcı sac bölüm; işlem görmesi ciddi darbe işaretidir [sase_direk_podye_islem → var]"
+  "direk": "Kabinin tavanı taşıyan A/B/C sütunları; işlem görmesi ciddi darbe ya da takla işaretidir [sase_direk_podye_islem → var]"
+  "kesme / kaynak": "Yapısal parçanın kesilip kaynakla birleştirilmesi; ağır onarım işaretidir [sase_direk_podye_islem → var]"
+  "tavan değişen / tavan boyalı": "Tavan nadiren tek başına hasar alır; takla ya da ağır darbe şüphesidir"
+  # --- Kayıtlı ağır hasar (🔴 nedeni) ---
+  "pert": "Sigortanın onarılamaz/ekonomik değil saydığı araç; ağır hasar kayıtlıdır [agir_hasar_beyan → var]"
+  "çekme belgeli": "Pert sayılıp sigortadan çekme belgesiyle satılmış araç; ağır hasar kayıtlıdır [agir_hasar_beyan → var]"
+  "ağır hasar kayıtlı": "Ruhsat/kayıtta ağır hasar şerhi var [agir_hasar_beyan → var]"
+  "pert değil / ağır hasar kaydı yok": "OLUMSUZLAMA: ağır hasar YOK beyanıdır, bayrak değildir [agir_hasar_beyan → yok_beyan]"
+  # --- Hava yastığı ---
+  "airbag açmış / patlamış": "Kazada hava yastığı açılmış; ciddi ön/yan darbe işaretidir [airbag → acmis]"
+  "airbag orijinal / açmamış": "Satıcı beyanı: hava yastıkları açılmamış [airbag → orijinal_beyan]"
+  "airbag lambası yanıyor": "Hava yastığı sisteminde arıza ya da önceki açılma izi olabilir; ekspertizde kontrol edilmeli"
+  # --- Motor / şanzıman ---
+  "sandık motor": "Yurt dışından getirilmiş, çoğunlukla KULLANILMIŞ (çıkma) motor; sıfır motor DEĞİLDİR. Motor değişmiş demektir [motor_sanziman → degisen]"
+  "motor değişti / motor takıldı": "Orijinal motor yerine başka motor takılmış [motor_sanziman → degisen]"
+  "kafa yapıldı / kafa açıldı": "Motorun silindir kapağı (kafa) sökülüp revizyon yapılmış; motor sorun yaşamıştır [motor_sanziman → sorunlu]"
+  "rektefiye": "Motorun komple revizyonu (silindir/krank işlenmesi); motor ağır sorun yaşamıştır [motor_sanziman → sorunlu]"
+  "conta yaktı / hararet yaptı": "Motor aşırı ısınmış, silindir kapak contası zarar görmüş [motor_sanziman → sorunlu]"
+  "yağ eksiltiyor / yağ yakıyor": "Motor yağ tüketiyor; aşınma işaretidir [motor_sanziman → sorunlu]"
+  "şanzıman yapıldı / revizyonlu": "Şanzıman arıza sonrası onarılmış [motor_sanziman → sorunlu]"
+  "motor yürür aksam sorunsuz": "Satıcı beyanı; doğrulanmış bilgi değildir [motor_sanziman → sorunsuz_beyan]"
+  # --- Boya / değişen ---
+  "değişen": "Parça yenisi ya da çıkmasıyla değiştirilmiş"
+  "lokal boyalı": "Parçanın yalnız bir bölümü boyanmış (genelde çizik/sürtme)"
+  "bel altı boyalı": "Kapı/çamurluk gibi panellerin bel çizgisinin ALTINDA kalan kısmı boyanmış; genelde taş/sürtme kaynaklıdır, tavan hariç komple boyalı DEMEK DEĞİLDİR"
+  "komple boyalı": "Aracın tamamı ya da büyük kısmı boyanmış; hasar geçmişini gizleyebilir, belirsiz/olumsuz sinyaldir"
+  "çıkma parça": "Hurda ya da başka araçtan sökülmüş kullanılmış parça"
+  "boyasız göçük düzeltme (PDR)": "Boya yapılmadan göçük düzeltme; genelde dolu ya da küçük vuruk için"
+  "dolu hasarı / dolu yedi": "Doludan kaynaklı tavan/kaput göçükleri; tramer kaydı oluşturmuş olabilir"
+  # --- Tramer ---
+  "tramer": "Sigorta Bilgi ve Gözetim Merkezi (SBM) kayıtlı hasar ödemesi tutarı; açıklamada yazmıyorsa tahmin etme [tramer_tutari]"
+  "tramer yok / hasar kaydı yok": "Satıcı beyanı: kayıtlı hasar ödemesi yok [tramer_tutari → 0]; doğrulanmış bilgi değildir"
+  # --- Belirsiz / kaçamak ifadeler ---
+  "hatasız": "Satıcı beyanı: boya, değişen, tramer yok iddiası; doğrulanmış bilgi değildir"
+  "hatasız gibi / hatasıza yakın": "Tam hatasız değil; kusurları var ama belirtilmemiş [belirsiz_ifadeler]"
+  "kaporta temiz": "Yalnızca görünüş iyi demektir; boya/değişen bilgisi VERMEZ [belirsiz_ifadeler]"
+  "ufak tefek": "Küçük kusur/masraf var ama ne olduğu açıklanmamış; sorulmalı [belirsiz_ifadeler]"
+  "makyajlı": "Üreticinin makyajlı (facelift) kasası; HASARLA İLGİSİ YOKTUR, bayrak değildir"
+  # --- Kilometre ---
+  "gösterge / kadran değişti": "Kilometre göstergesi değişmiş; gerçek km bilinmiyor olabilir [km_degisimi_suphesi → true]"
+  "km düşürülmüş / km oynanmış": "Kilometre geri alınmış [km_degisimi_suphesi → true]"
+  # --- Olumlu satıcı beyanları (olumlu_sinyaller, hepsi beyandır) ---
+  "ilk sahibinden": "Araç ilk sahibinin elinden satılıyor (beyan)"
+  "servis bakımlı / yetkili servis bakımlı": "Bakımlar yetkili serviste yapılmış (beyan; kayıtla doğrulanmalı)"
+  "faturalı": "Araç ya da bakımlar faturalı (beyan)"
+  "triger seti yapıldı": "Periyodik ağır bakım yapılmış (beyan); olumlu sinyaldir"
+  # --- Fiyat / satış biçimi ---
+  "takas fiyatı farklı": "İlan fiyatı nakit içindir; takasla alımda fiyat yükselir. Kendi başına olumsuz değildir"
+  "acil satılık": "Satıcı acele ediyor; fiyat piyasanın çok altındaysa dolandırıcılık riskiyle birlikte değerlendir"
+  # --- Dolandırıcılık kalıpları (dolandiricilik_sinyalleri) ---
+  "kapora": "Aracı görmeden kapora/ön ödeme istenmesi tipik dolandırıcılık kalıbıdır [dolandiricilik_sinyalleri]"
+  "yurt dışındayım / askerdeyim": "Satıcının aracı gösterememe bahanesi; tipik dolandırıcılık kalıbıdır [dolandiricilik_sinyalleri]"
+  "kargo / tır ile gönderilir": "Aracı görmeden uzaktan teslim vaadi; tipik dolandırıcılık kalıbıdır [dolandiricilik_sinyalleri]"
+  "sadece whatsapp / mesajla iletişim": "Platform dışına çekme; dolandırıcılık sinyali olabilir [dolandiricilik_sinyalleri]"

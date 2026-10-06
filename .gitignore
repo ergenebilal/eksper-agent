@@ -28,7 +28,7 @@ venv/
 ENV/
 
 # Database and Data
-data/
+/data/
 *.db
 *.sqlite3
 

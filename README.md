@@ -25,6 +25,7 @@ uv run playwright install chromium
 | `arac import-html <dosya\|klasör>` | Elle kaydedilmiş sayfaları içe aktar (engel durumunda yedek yol) |
 | `arac panel serve` | Salt okunur yönetim paneli (PANEL_TOKEN zorunlu, varsayılan 127.0.0.1:8990) |
 | `arac feedback <ilan_no> pos\|neg` / `arac telegram poll` | Geri bildirim |
+| `arac eval [--second-pass hard] [--limit N] [--json]` | Açıklama röntgenini `tests/data/aciklamalar.jsonl` ile ölçer (gerçek LLM); recall < %90 → çıkış 1 |
 
 Çıkış kodları: `0` başarılı · `1` hata · `2` BLOCKED (doğrulama sayfası) · `3` geçersiz girdi.
 `--json` modunda stdout yalnızca JSON'dur, loglar stderr'e gider.

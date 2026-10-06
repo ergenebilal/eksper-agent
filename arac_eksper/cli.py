@@ -411,6 +411,49 @@ def xray_serve():
     xray_app.serve()
 
 
+@app.command("eval")
+def eval_cmd(
+    dataset: Optional[Path] = typer.Option(None, help="JSONL veri seti (varsayılan: tests/data/aciklamalar.jsonl)"),
+    second_pass: str = typer.Option("hard", help="all | hard | off (üretimdeki XRAY_SECOND_PASS ile aynı anlam)"),
+    limit: Optional[int] = typer.Option(None, help="Yalnız ilk N vaka (hızlı deneme)"),
+    min_recall: float = typer.Option(0.90, help="Kabul eşiği: kırmızı bayrak recall (SPEC §4.1)"),
+    json_out: bool = typer.Option(False, "--json"),
+):
+    """Açıklama röntgenini etiketli veri setiyle ölçer (gerçek LLM çağrısı yapar, önbellek kullanmaz).
+    Çıkış: 0 = recall eşiği geçti, 1 = geçmedi ya da LLM hatası, 3 = geçersiz veri seti/girdi."""
+    from arac_eksper.analysis import evaluation
+    from arac_eksper.llm import client as llm_client
+    if second_pass not in ("all", "hard", "off"):
+        say("--second-pass yalnızca all | hard | off olabilir.", json_out)
+        raise typer.Exit(EXIT_BAD_INPUT)
+    try:
+        cases = evaluation.load_dataset(dataset or evaluation.DEFAULT_DATASET)
+    except (OSError, ValueError) as e:
+        say(f"Veri seti okunamadı: {e}", json_out)
+        raise typer.Exit(EXIT_BAD_INPUT)
+    cases = cases[:limit] if limit else cases
+    say(f"{len(cases)} vaka ölçülüyor (ikinci geçiş: {second_pass})...", True)
+    rep = evaluation.evaluate(llm_client.OpenAIClient(), cases, second_pass)
+    gecti = rep.recall is not None and rep.recall >= min_recall and rep.hatali == 0
+    if json_out:
+        emit_json({**rep.model_dump(), "min_recall": min_recall, "gecti": gecti})
+    else:
+        pct = lambda v: "—" if v is None else f"%{v * 100:.1f}"
+        say(f"Kırmızı bayrak recall: {pct(rep.recall)} (eşik {pct(min_recall)}) · precision: {pct(rep.precision)}")
+        say(f"Temiz vakada yanlış alarm: {pct(rep.temiz_yanlis_alarm_orani)} · tramer doğruluğu: "
+            f"{pct(rep.tramer_dogruluk)} · olumsuz sinyal recall: {pct(rep.olumsuz_recall)}")
+        say(f"Ortalama süre: {rep.ort_sure_sn} sn · LLM hatası: {rep.hatali}/{rep.n}")
+        for fl, c in rep.bayrak_bazinda.items():
+            if any(c.values()):
+                say(f"  {fl:15} TP {c['tp']:>2}  FN {c['fn']:>2}  FP {c['fp']:>2}")
+        for r in rep.vakalar:
+            if r.hata or r.kacirilan or r.yanlis_alarm or r.tramer_dogru is False or r.olumsuz_dogru is False:
+                say(f"  ✗ {r.id}: kaçırılan={r.kacirilan} yanlış_alarm={r.yanlis_alarm} "
+                    f"tramer_doğru={r.tramer_dogru} olumsuz_doğru={r.olumsuz_dogru}" + (f" HATA: {r.hata}" if r.hata else ""))
+        say("GEÇTİ ✓" if gecti else "GEÇMEDİ ✗")
+    raise typer.Exit(EXIT_OK if gecti else EXIT_ERROR)
+
+
 telegram_app = typer.Typer(help="Telegram")
 app.add_typer(telegram_app, name="telegram")
 
