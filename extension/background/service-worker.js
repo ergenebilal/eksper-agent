@@ -99,7 +99,7 @@ const groupOfPath = (p) => { const seg = String(p || '').split('?')[0].split('/'
 const groupOfDetail = (pl) => (pl.marka && pl.seri ? 'm:' + fold(pl.marka + ' ' + pl.seri) : null);
 const validRow = (id, r) => /^[A-Za-z0-9_-]{1,20}$/.test(id) && r && Number.isInteger(r.y) && r.y >= 1950 && r.y <= 2100
   && Number.isInteger(r.k) && r.k >= 0 && r.k <= 3000000 && Number.isInteger(r.f) && r.f >= 1 && r.f <= 500000000;
-const toComps = (rows) => Object.entries(rows).filter(([id, r]) => validRow(id, r)).map(([id, r]) => ({ id, yil: r.y, km: r.k, fiyat: r.f }));
+const toComps = (rows) => Object.entries(rows).filter(([id, r]) => validRow(id, r)).map(([id, r]) => (r.s ? { id, yil: r.y, km: r.k, fiyat: r.f, seri: String(r.s).slice(0, 60) } : { id, yil: r.y, km: r.k, fiyat: r.f }));
 
 function nearby(comps, yil, km) {
   return comps.filter((c) => Math.abs(c.yil - yil) <= 2 && Math.abs(c.km - km) <= km * 0.5 + 1).slice(0, 200);
@@ -156,7 +156,7 @@ async function handle(msg, sender) {
         }
         if (group) {       // bu ilan da yerel emsal olur (yalnız sayısal nitelikler)
           mk.groups[group] = mk.groups[group] || {};
-          mk.groups[group][p.ilan_no] = { y: p.yil, k: p.km, f: p.fiyat, t: Date.now() };
+          mk.groups[group][p.ilan_no] = p.seri ? { y: p.yil, k: p.km, f: p.fiyat, t: Date.now(), s: String(p.seri).slice(0, 60) } : { y: p.yil, k: p.km, f: p.fiyat, t: Date.now() };
           mk.idx[p.ilan_no] = group;
           await chrome.storage.local.set({ [MK]: pruneMk(mk) });
         }
@@ -165,9 +165,9 @@ async function handle(msg, sender) {
     }
     case 'batch': {
       if (!fromSupportedSite(sender)) return { ok: false, code: 'forbidden' };
-      const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km }) => ({ ilan_no, fiyat, yil, km })).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
+      const items = (msg.items || []).map(({ ilan_no, fiyat, yil, km, seri }) => (seri ? { ilan_no, fiyat, yil, km, seri: String(seri).slice(0, 60) } : { ilan_no, fiyat, yil, km })).filter((i) => validRow(i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat }));
       const mk = await loadMk(), group = groupOfPath(msg.pagePath), now = Date.now();
-      const pageRows = Object.fromEntries(items.map((i) => [i.ilan_no, { y: i.yil, k: i.km, f: i.fiyat, t: now }]));
+      const pageRows = Object.fromEntries(items.map((i) => [i.ilan_no, i.seri ? { y: i.yil, k: i.km, f: i.fiyat, t: now, s: i.seri } : { y: i.yil, k: i.km, f: i.fiyat, t: now }]));
       if (group) {            // sayfada ZATEN görünen satırlar yerel emsal olarak birikir
         mk.groups[group] = { ...(mk.groups[group] || {}), ...pageRows };
         for (const id of Object.keys(pageRows)) mk.idx[id] = group;

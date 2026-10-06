@@ -5,7 +5,14 @@ import numpy as np
 from arac_eksper.config.rules_loader import load_rules
 from arac_eksper.schemas import MarketStats
 
-Comparable = tuple[str, int, int, int]      # (kimlik, yıl, km, fiyat)
+Comparable = tuple  # (kimlik, yıl, km, fiyat) ya da (kimlik, yıl, km, fiyat, seri)
+
+_FOLD = str.maketrans("çşğöüı", "csgoui")
+
+
+def norm_seri(s) -> str:
+    s = (s or "").replace("İ", "i").replace("I", "ı").lower().translate(_FOLD)
+    return " ".join("".join(c if c.isalnum() else " " for c in s).split())
 
 
 def summarize_prices(prices: list[int], guven: str) -> MarketStats:
@@ -19,14 +26,18 @@ def summarize_prices(prices: list[int], guven: str) -> MarketStats:
                        p75=int(np.percentile(valid, 75)), guven=guven)
 
 
-def stats_from_comparables(target_id: str, yil: int, km: int, comps: list[Comparable]) -> MarketStats:
-    """Hedef ilanın kendisi (kimlik) emsal sayılmaz. Dar aralık yetmezse bir kez genişletilir ve güven düşer."""
+def stats_from_comparables(target_id: str, yil: int, km: int, comps: list[Comparable], seri: str | None = None) -> MarketStats:
+    """Hedef ilanın kendisi (kimlik) emsal sayılmaz. Hedefin serisi biliniyorsa YALNIZ aynı seriden emsaller sayılır
+    (farklı seri/donanım karıştırılırsa sapma yanıltır). Dar aralık yetmezse bir kez genişletilir ve güven düşer."""
     pz = load_rules()["piyasa"]
     others = [c for c in comps if c[0] != target_id]
+    want = norm_seri(seri)
+    if want:
+        others = [c for c in others if len(c) > 4 and norm_seri(c[4]) == want]
 
     def pick(dy: int, share: float) -> list[int]:
         lo, hi = max(0, km - km * share), km + km * share
-        return [f for _, y, k, f in others if abs(y - yil) <= dy and lo <= k <= hi]
+        return [c[3] for c in others if abs(c[1] - yil) <= dy and lo <= c[2] <= hi]
 
     prices, guven = pick(1, pz["dar_km_payi"]), "yuksek"
     if len(prices) < pz["dar_min_n"]:

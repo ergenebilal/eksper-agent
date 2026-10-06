@@ -31,6 +31,7 @@
 
   async function run() {
     const cur = A.extractSearchRows(document);
+    if (!cur.rows.length) { status.textContent = 'Bu görünümde okunabilir ilan yok (liste yenileniyor olabilir).'; return; }   // boş liste gönderilmez
     btn.disabled = true;
     status.textContent = `${cur.rows.length} ilan değerlendiriliyor…`;
     const res = await send({ type: 'batch', items: A.rowsToItems(cur.rows), pagePath: location.pathname });
@@ -55,9 +56,19 @@
       }
     }
     status.textContent = `${res.data.sonuclar.length} ilan · yalnız fiyat kıyasıdır, karar değildir` +
-      (found.atlanan.length ? ` · ${found.atlanan.length} satır okunamadı` : '');
+      (cur.atlanan.length ? ` · ${cur.atlanan.length} satır okunamadı` : '');
   }
 
   btn.addEventListener('click', run);
+
+  // Sekme/sıralama değişiminde liste sayfa yenilenmeden değişir: yeni satırlar gelince bir kez yeniden değerlendir.
+  // Yalnız satır (TR/TABLE) ekleme/çıkarma izlenir; kendi rozetlerimiz tetiklemez.
+  let timer = null;
+  new MutationObserver((muts) => {
+    const rowChange = muts.some((m) => [...m.addedNodes, ...m.removedNodes].some((n) => n.nodeType === 1 && (n.tagName === 'TR' || n.tagName === 'TABLE' || (n.querySelector && n.querySelector('tr.searchResultsItem')))));
+    if (!rowChange) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => { send({ type: 'getSettings' }).then((s) => { if (s && s.configured && s.autoBatch !== false) run(); }); }, 900);
+  }).observe(table.parentElement, { childList: true, subtree: true });
   send({ type: 'getSettings' }).then((s) => { if (s && s.configured && s.autoBatch !== false) run(); });
 })();

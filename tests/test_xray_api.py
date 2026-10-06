@@ -279,3 +279,25 @@ def test_every_extension_script_is_syntactically_valid():
     for f in files:
         r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
         assert r.returncode == 0, f"{f.relative_to(root)}: {r.stderr[:300]}"
+
+
+def test_comparables_are_restricted_to_the_same_series():
+    """Gerçek sayfada farklı seriler (Vito / Vito Tourer Select) karışınca 'avantajlı/pahalı' rozeti yanıltıyordu."""
+    from arac_eksper.analysis.market_calc import stats_from_comparables
+    pool = ([(f"a{i}", 2022, 60000, 900_000 + i, "Vito Tourer") for i in range(6)]
+            + [(f"b{i}", 2022, 60000, 3_000_000 + i, "Vito Tourer Select") for i in range(6)])
+    s = stats_from_comparables("t", 2022, 60000, pool, "VİTO  tourer")           # büyük/küçük harf, aksan, boşluk farkı yok sayılır
+    assert s.n == 6 and 899_000 < s.medyan < 910_000
+    assert stats_from_comparables("t", 2022, 60000, pool, "Viano").n == 0         # aynı seriden emsal yok → "emsal yetersiz"
+    assert stats_from_comparables("t", 2022, 60000, pool).n == 12                  # seri bilinmiyorsa filtre yok (geri uyumlu)
+
+
+def test_batch_uses_series_and_rejects_nothing_extra(client):
+    emsal = [dict(id=f"A{i}", yil=2022, km=60000, fiyat=900_000 + i * 1000, seri="Megane") for i in range(8)]
+    emsal += [dict(id=f"C{i}", yil=2022, km=60000, fiyat=300_000 + i * 1000, seri="Clio") for i in range(8)]
+    items = [dict(ilan_no="X1", fiyat=905_000, yil=2022, km=60000, seri="Megane"),
+             dict(ilan_no="X2", fiyat=310_000, yil=2022, km=60000, seri="Clio"),
+             dict(ilan_no="X3", fiyat=310_000, yil=2022, km=60000, seri="Fiat Egea")]
+    got = {s["ilan_no"]: s for s in client.post("/api/v1/batch-evaluate", headers=H, json={"items": items, "emsal": emsal}).json()["sonuclar"]}
+    assert got["X1"]["rozet"] == "piyasada" and got["X2"]["rozet"] == "piyasada"        # Clio, Megane ile kıyaslanmadı
+    assert got["X3"]["rozet"] == "emsal_yetersiz"

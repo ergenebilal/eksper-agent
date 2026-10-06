@@ -102,7 +102,7 @@ def browser_ctx(backend, tmp_path_factory):
         sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker", timeout=30000)
         ext_id = sw.url.split("/")[2]
         now = int(time.time() * 1000)
-        mk = {"groups": {"m:renault megane": {f"L{i}": {"y": 2022, "k": 60000, "f": 900_000 + i * 1000, "t": now}
+        mk = {"groups": {"m:renault megane": {f"L{i}": {"y": 2022, "k": 60000, "f": 900_000 + i * 1000, "t": now, "s": "Megane"}
                                               for i in range(8)}}, "idx": {f"L{i}": "m:renault megane" for i in range(8)}}
         sw.evaluate("s => chrome.storage.local.set(s)", {
             "apiBase": f"http://127.0.0.1:{backend['port']}", "token": TOKEN, "autoAnalyze": True, "autoBatch": True, "mk": mk})
@@ -207,7 +207,7 @@ def test_search_page_adds_neutral_price_badges_from_local_comparables(browser_ct
     ctx, sw = browser_ctx["ctx"], browser_ctx["sw"]
     page = ctx.new_page()
     page.goto(SEARCH_URL)
-    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 8", timeout=60000)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=60000)
     rows = page.eval_on_selector_all(
         "tr.searchResultsItem",
         "els => els.map(e => [e.dataset.id, Array.from(e.querySelectorAll('.aracx-badge')).map(b => b.className + '|' + b.textContent)])")
@@ -217,6 +217,7 @@ def test_search_page_adds_neutral_price_badges_from_local_comparables(browser_ct
     assert "aracx-pahali" in by["3333333333"][0] and "Pahalı" in by["3333333333"][0]
     assert "aracx-cok_ucuz_suphe" in by["4444444444"][0] and "nedenini sor" in by["4444444444"][0]
     assert by["9999999990"] == []                                            # okunamayan satır rozetsiz
+    assert "aracx-emsal_yetersiz" in by["1313131313"][0]                     # farklı seri (Clio) Megane'lerle KIYASLANMADI
     assert by["1212121212"] == []                                            # iki fiyatlı (eski/yeni) satır belirsiz: atlanır, batch bozulmaz
     assert all("kelepir" not in b.lower() for v in by.values() for b in v)
     assert "karar değildir" in page.inner_text(".aracx-status") and "2 satır okunamadı" in page.inner_text(".aracx-status")
@@ -224,8 +225,24 @@ def test_search_page_adds_neutral_price_badges_from_local_comparables(browser_ct
 
     # emsaller yalnızca kullanıcının tarayıcısında (yerel depo) birikti
     mk = sw.evaluate("async () => (await chrome.storage.local.get('mk')).mk")
-    assert len(mk["groups"]["p:renault-megane"]) == 8
-    assert all(set(r) == {"y", "k", "f", "t"} for r in mk["groups"]["p:renault-megane"].values())   # başlık/bağlantı yok
+    assert len(mk["groups"]["p:renault-megane"]) == 9
+    assert all(set(r) <= {"y", "k", "f", "t", "s"} for r in mk["groups"]["p:renault-megane"].values())   # başlık/bağlantı yok
+    assert {r["s"] for r in mk["groups"]["p:renault-megane"].values()} == {"Megane", "Clio"}
+    page.close()
+
+
+def test_empty_list_is_never_sent_and_list_changes_are_reevaluated(browser_ctx):
+    """Gerçek sayfada sekme değişince satırlar boşalıp yeniden doluyor: boş liste sunucuya gitmemeli (422),
+    yeni satırlar gelince otomatik yeniden değerlendirilmeli."""
+    page = browser_ctx["ctx"].new_page()
+    page.goto(SEARCH_URL)
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=60000)
+    page.evaluate("""() => { window.__saved = document.querySelector('tbody').innerHTML; document.querySelector('tbody').replaceChildren(); }""")
+    page.click(".aracx-btn")
+    page.wait_for_function("document.querySelector('.aracx-status').textContent.includes('okunabilir ilan yok')", timeout=15000)
+    assert "reddetti" not in page.inner_text(".aracx-status")
+    page.evaluate("() => { document.querySelector('tbody').innerHTML = window.__saved; }")      # liste yeniden dolar
+    page.wait_for_function("document.querySelectorAll('.aracx-badge').length >= 9", timeout=30000)   # kendiliğinden
     page.close()
 
 

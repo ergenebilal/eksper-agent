@@ -43,6 +43,7 @@ class Comp(BaseModel):
     yil: int = Field(ge=1950, le=2100)
     km: int = Field(ge=0, le=3_000_000)
     fiyat: int = Field(ge=1, le=500_000_000)
+    seri: str | None = Field(None, max_length=60)
 
 
 class AnalyzeRequest(BaseModel):
@@ -77,6 +78,7 @@ class AnalyzeRequest(BaseModel):
 
 class BatchItem(BaseModel):
     ilan_no: str = Field(pattern=ID_RE)
+    seri: str | None = Field(None, max_length=60)
     fiyat: int = Field(ge=1, le=500_000_000)
     yil: int = Field(ge=1950, le=2100)
     km: int = Field(ge=0, le=3_000_000)
@@ -89,7 +91,7 @@ class BatchRequest(BaseModel):
 
 # ------------------------------------------------------------------ yardımcılar
 def _comps(emsal: list[Comp]) -> list[market_calc.Comparable]:
-    return [(c.id, c.yil, c.km, c.fiyat) for c in emsal]
+    return [(c.id, c.yil, c.km, c.fiyat, c.seri) for c in emsal]
 
 
 def _llm_budget_ok() -> bool:
@@ -156,7 +158,7 @@ def analyze(req: AnalyzeRequest, llm=Depends(get_llm)):
     if not _llm_budget_ok():
         raise HTTPException(status_code=429, detail="Günlük analiz sınırı doldu")
     detail = _detail(req)
-    stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal))
+    stats = market_calc.stats_from_comparables(req.ilan_no, req.yil, req.km, _comps(req.emsal), req.seri)
     try:
         findings = description_llm.analyze_description(llm, detail.baslik, detail.aciklama)   # db yok → önbellek yok
     except (LLMUnavailable, ValueError):       # pydantic.ValidationError bir ValueError'dır
@@ -195,7 +197,7 @@ def batch_evaluate(req: BatchRequest):
     now_year = datetime.now(timezone.utc).year
     sonuc = []
     for it in req.items:
-        st: MarketStats = market_calc.stats_from_comparables(it.ilan_no, it.yil, it.km, comps)
+        st: MarketStats = market_calc.stats_from_comparables(it.ilan_no, it.yil, it.km, comps, it.seri)
         sapma = _sapma(it.fiyat, st.medyan or None)
         kod, metin = rozet(sapma, st.n, rules)
         yillik = round(it.km / max(now_year - it.yil, 1))
