@@ -32,7 +32,11 @@ _Son güncelleme: 6 Ekim 2026_
 - [x] Kural ağırlıkları (puan dökümü) yalnızca sahibe gider.
 - [x] Eklentide geri bildirim: 👍/👎, ekspertiz sonucu, not (`arac xray feedback`).
 - [x] Barındırma dosyaları: Caddy (HTTPS) + systemd (`deploy/`).
-- [ ] **Senden:** VPS ve alan adı seçimi; Chrome Web Store geliştirici hesabı ("Liste dışı" yayın).
+- [x] Canlı: `https://otoxray.cybergene.co` (Hermes, nginx, HTTPS); CyberGene markası.
+- [x] E-postaya bağlı üyelik: e-posta koduyla giriş, kişiye özel günlük/aylık hak, bitiş tarihi, rozet izni, durdur/iptal.
+- [x] Yönetim sayfası `/yonetim` (e-posta koduyla giriş) + CyberGene kimliğinde arayüz (`design/cybergene-dna.json`).
+- [ ] **Senden:** sunucu `.env` dosyasına SMTP ayarları ve `ADMIN_EMAILS`; Chrome Web Store geliştirici hesabı
+  ("Özel" görünürlük + güvenilir test kullanıcıları listesi = davetlilerin e-postaları), sonra `STORE_URL`.
 - [ ] Davetliler için kısa kullanım koşulları (tersine mühendislik ve toplu kullanım yasak) ve KVKK aydınlatma metni.
 - [ ] "otoXray" marka araştırması ve tescil başvurusu (TÜRKPATENT).
 - [ ] 10–30 davetli; haftalık geri bildirim özeti.
