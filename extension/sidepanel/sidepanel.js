@@ -104,6 +104,14 @@ function havuzView(tabId) {
     const rm = el('button', 'mini', 'Çıkar');
     rm.addEventListener('click', async () => { const r = await chrome.runtime.sendMessage({ type: 'havuz:remove', ilan_no: it.ilan_no }); if (r && r.ok) { HV = r.data; SEL.delete(it.ilan_no); render(); } });
     acts.append(open, rm);
+    // R5.3: gerçek sonuç (ekspertiz / aldım) → kalibrasyon. Seçim bilerek yapılır; ilan metni gönderilmez.
+    const ds = document.createElement('select'); ds.className = 'durum'; ds.setAttribute('aria-label', 'Sonuç: ' + (it.meta.baslik || it.ilan_no));
+    SONUC.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = v ? t : 'Sonuç ekle'; o.selected = (it.durum || '') === v; ds.append(o); });
+    ds.addEventListener('change', async () => {
+      const r = await chrome.runtime.sendMessage({ type: 'havuz:durum', ilan_no: it.ilan_no, sonuc: ds.value || null });
+      if (r && r.ok) { HV = r.data; render(); }
+    });
+    body.append(ds);
     card.append(cb, body, acts);
     list.append(card);
   });
@@ -572,7 +580,8 @@ function renderOk(st, tabId) {
 }
 
 const SONUC = [['', 'Ekspertiz sonucu (varsa)'], ['ekspertiz_temiz', 'Ekspertiz temiz çıktı'],
-  ['ekspertiz_kucuk_kusur', 'Küçük kusur çıktı'], ['ekspertiz_agir_kusur', 'Ağır kusur çıktı'], ['gitmedim', 'Ekspertize gitmedim']];
+  ['ekspertiz_kucuk_kusur', 'Küçük kusur çıktı'], ['ekspertiz_agir_kusur', 'Ağır kusur çıktı'], ['gitmedim', 'Ekspertize gitmedim'],
+  ['satin_aldim', 'Satın aldım'], ['almadim', 'Almadım']];
 
 function feedbackCard(d, meta) {
   // Geri bildirim: kullanıcının bilerek gönderdiği oy/sonuç/not. Açıklama metni GÖNDERİLMEZ.

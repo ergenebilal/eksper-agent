@@ -18,7 +18,7 @@ from pathlib import Path
 from arac_eksper.config.settings import PROJECT_ROOT, settings
 
 KEY_PREFIX = "oxr_"
-SONUCLAR = ("ekspertiz_temiz", "ekspertiz_kucuk_kusur", "ekspertiz_agir_kusur", "gitmedim")
+SONUCLAR = ("ekspertiz_temiz", "ekspertiz_kucuk_kusur", "ekspertiz_agir_kusur", "gitmedim", "satin_aldim", "almadim")
 DURUMLAR = ("aktif", "durduruldu", "iptal")
 CODE_TTL_S, CODE_MAX_ATTEMPTS = 10 * 60, 5
 CODE_MIN_GAP_S, CODE_MAX_PER_HOUR = 60, 5
@@ -316,6 +316,30 @@ def list_feedback(limit: int = 200) -> list[dict]:
         rows = c.execute("""SELECT f.*, m.email, m.ad FROM feedback f LEFT JOIN members m ON m.id = f.member_id
                             ORDER BY f.id DESC LIMIT ?""", (limit,)).fetchall()
     return [dict(r) for r in rows]
+
+
+def kalibrasyon() -> dict:
+    """R5.3: etiket × gerçek sonuç tablosu. Her (üye, ilan) için SONUÇLU son geri bildirim sayılır (tekrar oy şişirmez).
+    Kural bazında döküm yoktur: kural izi (trace) sunucuda saklanmaz (durumsuz API); yalnız etiket düzeyi."""
+    with closing(_conn()) as c:
+        rows = [dict(r) for r in c.execute(
+            """SELECT f.ilan_no, f.etiket, f.skor, f.sonuc, f.created_at, m.email FROM feedback f
+               LEFT JOIN members m ON m.id = f.member_id
+               WHERE f.id IN (SELECT MAX(id) FROM feedback WHERE sonuc IS NOT NULL AND etiket IS NOT NULL
+                              GROUP BY member_id, ilan_no)
+               ORDER BY f.id DESC""").fetchall()]
+    tablo = {e: {s: 0 for s in SONUCLAR} for e in ("ALINIR", "DUSUNULEBILIR", "ALINMAZ")}
+    for r in rows:
+        if r["etiket"] in tablo and r["sonuc"] in tablo[r["etiket"]]:
+            tablo[r["etiket"]][r["sonuc"]] += 1
+    # Yanlış yeşil: 🟢 dediğimiz araçta ekspertiz ağır kusur buldu. Kaçan aday: 🔴 dediğimiz araçta ekspertiz temiz çıktı.
+    yanlis_yesil = [r for r in rows if r["etiket"] == "ALINIR" and r["sonuc"] == "ekspertiz_agir_kusur"]
+    kacan = [r for r in rows if r["etiket"] == "ALINMAZ" and r["sonuc"] == "ekspertiz_temiz"]
+    ekspertizli = [r for r in rows if r["sonuc"] in ("ekspertiz_temiz", "ekspertiz_kucuk_kusur", "ekspertiz_agir_kusur")]
+    yesil = [r for r in ekspertizli if r["etiket"] == "ALINIR"]
+    return {"tablo": tablo, "toplam": len(rows), "ekspertizli": len(ekspertizli), "yanlis_yesil": yanlis_yesil,
+            "kacan": kacan, "yesil_isabet": (sum(1 for r in yesil if r["sonuc"] != "ekspertiz_agir_kusur") / len(yesil))
+            if yesil else None}
 
 
 # ------------------------------------------------------------------ yönetim oturumları

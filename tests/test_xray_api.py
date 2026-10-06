@@ -398,3 +398,13 @@ def test_manifest_is_store_ready_and_points_to_hosted_api():
     assert len(m["description"]) <= 132                       # Chrome Web Store sınırı
     assert "https://otoxray.cybergene.co/*" in m["host_permissions"]
     assert not any(p.startswith(("http://*", "https://*", "<all_urls>")) for p in m["host_permissions"])
+
+
+def test_evidence_list_has_no_duplicate_quotes():
+    """P.4: aynı alıntı hem olumsuz sinyal hem hard-claim olarak gelirse tek satır, özgül etiketle."""
+    from arac_eksper.schemas import DescriptionFindings, Evidence
+    f = DescriptionFindings(sase_direk_podye_islem="var", sase_alinti="Şase ucu işlemli", airbag="belirsiz",
+                            motor_sanziman="belirsiz", km_degisimi_suphesi=False,
+                            olumsuz_sinyaller=[Evidence(etiket="Şase işlemi", alinti="şase ucu işlemli")])
+    kanit, vurgu = api._kanitlar(f)
+    assert len(kanit) == 1 and kanit[0]["etiket"] == "Şase/podye/direk işlemi" and len(vurgu) == 1

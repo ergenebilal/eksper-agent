@@ -604,6 +604,8 @@ def test_war_room_pool_and_compare(browser_ctx):
     assert "Fiyat/performans galibi" in txt and "En riskli" in txt and "Pazarlık şansı en yüksek" in txt
     son = sw.evaluate("async () => (await chrome.storage.local.get('havuz')).havuz.son")
     assert len(son["ids"]) == 2 and son["data"]["galip"] in son["ids"]
+    panel.locator(".havuz-item select.durum").nth(0).select_option("ekspertiz_temiz")      # R5.3 gerçek sonuç
+    panel.wait_for_function("async () => Object.values((await chrome.storage.local.get('havuz')).havuz.items).some((it) => it.durum === 'ekspertiz_temiz')", timeout=15000)
     for page, p in panels:
         p.close(); page.close()
     sw.evaluate("() => chrome.storage.local.remove('havuz')")

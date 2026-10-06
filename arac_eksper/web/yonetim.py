@@ -291,6 +291,14 @@ def geri_bildirim(request: Request):
     return _page(request, "geri_bildirim.html", sess, kayitlar=accounts.list_feedback(300))
 
 
+@router.get("/kalibrasyon")
+def kalibrasyon(request: Request):
+    sess = _session(request)
+    if not sess:
+        return _go("/giris")
+    return _page(request, "kalibrasyon.html", sess, k=accounts.kalibrasyon(), sonuclar=accounts.SONUCLAR)
+
+
 @router.get("/davetler")
 def davetler(request: Request):
     sess = _session(request)

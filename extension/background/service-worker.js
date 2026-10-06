@@ -282,6 +282,17 @@ async function handle(msg, sender) {
       if (r.ok) await chrome.storage.session.set({ ['b:' + msg.tabId]: { t: Date.now(), ilan_no: cur && cur.p ? cur.p.ilan_no : null, data: r.data } });
       return r;
     }
+    case 'havuz:durum': {         // R5.3: havuzdaki ilanın gerçek sonucu (yerel) + bilerek gönderilen geri bildirim
+      if (!fromPanel(sender)) return { ok: false, code: 'forbidden' };
+      const h = await loadHavuz(), it = h.items[msg.ilan_no];
+      if (!it) return { ok: false, message: 'İlan havuzda değil.' };
+      it.durum = msg.sonuc || null;
+      await saveHavuz(h);
+      if (!msg.sonuc || !it.sonuc) return { ok: true, data: h, gonderildi: false };
+      const r = await api('/api/v1/feedback', { body: { ilan_no: it.ilan_no, etiket: it.sonuc.etiket, skor: it.sonuc.skor,
+                                                        oy: null, sonuc: msg.sonuc, notu: null } });
+      return { ok: true, data: h, gonderildi: !!r.ok };
+    }
     case 'havuz:get':
     case 'havuz:add':
     case 'havuz:remove':

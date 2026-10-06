@@ -150,7 +150,12 @@ def _kanitlar(findings) -> tuple[list[dict], list[dict]]:
         ("Motor/şanzıman sorunu", findings.motor_sanziman in ("degisen", "sorunlu"), findings.motor_alinti),
         ("Pert/çekme belgeli/ağır hasar", findings.agir_hasar_beyan == "var", findings.agir_hasar_alinti)):
         if claim_ok and alinti:
-            out.append({"tur": "olumsuz", "etiket": etiket, "alinti": alinti})
+            # aynı alıntı olumsuz sinyal olarak zaten varsa iki kez gösterme: daha özgül (hard-claim) etiketi kalır
+            ayni = next((k for k in out if description_llm._match_key(k["alinti"]) == description_llm._match_key(alinti)), None)
+            if ayni:
+                ayni.update(tur="olumsuz", etiket=etiket)
+            else:
+                out.append({"tur": "olumsuz", "etiket": etiket, "alinti": alinti})
     vurgu_tur = {"olumlu": "olumlu", "olumsuz": "olumsuz", "dolandiricilik": "olumsuz", "belirsiz": "belirsiz"}
     return out, [{"alinti": k["alinti"], "tur": vurgu_tur[k["tur"]]} for k in out]
 

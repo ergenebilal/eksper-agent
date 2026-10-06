@@ -487,3 +487,26 @@ def test_real_smtp_message_is_multipart_alternative(monkeypatch):
     msg = sent["msg"]
     assert msg.get_content_type() == "multipart/alternative"
     assert [p.get_content_type() for p in msg.iter_parts()] == ["text/plain", "text/html"]
+
+
+def test_calibration_report_counts_latest_outcome_per_member_and_listing(client, outbox):
+    """R5.3: etiket × sonuç; aynı üye + ilan için yalnız son sonuçlu bildirim; yanlış yeşil ve kaçan aday listeleri."""
+    a = accounts.create_member("k1@ornek.com")
+    b = accounts.create_member("k2@ornek.com")
+    accounts.add_feedback(a, "1", "ALINIR", 8.0, None, "ekspertiz_temiz", None)
+    accounts.add_feedback(a, "1", "ALINIR", 8.0, None, "ekspertiz_agir_kusur", None)     # aynı ilan: son kayıt geçerli
+    accounts.add_feedback(b, "1", "ALINIR", 8.0, None, "ekspertiz_temiz", None)
+    accounts.add_feedback(a, "2", "ALINMAZ", 4.0, None, "ekspertiz_temiz", None)
+    accounts.add_feedback(a, "3", "DUSUNULEBILIR", 6.5, "pos", None, None)               # sonuçsuz: sayılmaz
+    accounts.add_feedback(b, "4", "DUSUNULEBILIR", 6.5, None, "satin_aldim", None)
+    k = accounts.kalibrasyon()
+    assert k["toplam"] == 4 and k["ekspertizli"] == 3
+    assert k["tablo"]["ALINIR"]["ekspertiz_agir_kusur"] == 1 and k["tablo"]["ALINIR"]["ekspertiz_temiz"] == 1
+    assert [r["ilan_no"] for r in k["yanlis_yesil"]] == ["1"] and [r["ilan_no"] for r in k["kacan"]] == ["2"]
+    assert k["yesil_isabet"] == 0.5
+    admin_login(client, outbox)
+    page = client.get("/yonetim/kalibrasyon").text
+    assert "Yanlış yeşil" in page and "k1@ornek.com" in page and "Satın aldı" in page
+    _, h = member("k3@ornek.com")
+    assert client.post("/api/v1/feedback", json={"ilan_no": "9", "etiket": "ALINIR", "sonuc": "almadim"},
+                       headers=h).status_code == 200

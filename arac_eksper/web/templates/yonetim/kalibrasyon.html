@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Kalibrasyon{% endblock %}
+{% block content %}
+{% set ETIKET = {'ALINIR': 'Alınır', 'DUSUNULEBILIR': 'Düşünülebilir', 'ALINMAZ': 'Alınmaz'} %}
+{% set SONUC = {'ekspertiz_temiz': 'Ekspertiz temiz', 'ekspertiz_kucuk_kusur': 'Küçük kusur', 'ekspertiz_agir_kusur': 'Ağır kusur', 'gitmedim': 'Gitmedi', 'satin_aldim': 'Satın aldı', 'almadim': 'Almadı'} %}
+<section class="card">
+  <h1>Kalibrasyon</h1>
+  <p class="muted">Gösterilen etiket ile davetlinin bildirdiği gerçek sonuç. Her üye ve ilan için son sonuçlu bildirim sayılır.
+    Kural izi sunucuda saklanmadığı için döküm etiket düzeyindedir; yanlış çıkan ilanı sahip anahtarıyla yeniden açıp kural izine bakın.</p>
+  {% if k.toplam %}
+  <p>{{ k.toplam }} sonuçlu bildirim, {{ k.ekspertizli }} tanesi ekspertizli.
+    {% if k.yesil_isabet is not none %}Alınır dediğimiz ve ekspertize giden araçların %{{ (k.yesil_isabet * 100) | round | int }}'inde ağır kusur çıkmadı.{% endif %}</p>
+  <div class="table-wrap">
+  <table class="stackable">
+    <thead><tr><th>Gösterilen</th>{% for s in sonuclar %}<th>{{ SONUC[s] }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for e, satir in k.tablo.items() %}
+      <tr><td data-label="Gösterilen">{{ ETIKET[e] }}</td>
+        {% for s in sonuclar %}<td class="num" data-label="{{ SONUC[s] }}">{{ satir[s] or '—' }}</td>{% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">Henüz sonuç bildirilmedi. Davetliler panelde ya da havuzda "Ekspertiz sonucu" seçtikçe burada birikir.</p>{% endif %}
+</section>
+<section class="card">
+  <h2>Yanlış yeşil</h2>
+  <p class="muted">Alınır dediğimiz, ekspertizde ağır kusur çıkan ilanlar. Kural ya da LLM kaçırmış olabilir.</p>
+  {% if k.yanlis_yesil %}<ul>{% for r in k.yanlis_yesil %}<li class="num">{{ r.ilan_no }} · {{ r.email or '—' }} · {{ r.created_at[:10] }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">Yok.</p>{% endif %}
+  <h2>Kaçan aday</h2>
+  <p class="muted">Alınmaz dediğimiz, ekspertizi temiz çıkan ilanlar. Elenme nedeni fazla sert olabilir.</p>
+  {% if k.kacan %}<ul>{% for r in k.kacan %}<li class="num">{{ r.ilan_no }} · {{ r.email or '—' }} · {{ r.created_at[:10] }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">Yok.</p>{% endif %}
+</section>
+{% endblock %}

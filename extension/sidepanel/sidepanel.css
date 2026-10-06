@@ -171,3 +171,6 @@ ul.sig q{display:block;color:var(--muted)}
 .belge-sonuc{margin-top:.9rem;border-top:1px solid var(--line,rgba(255,255,255,.08));padding-top:.8rem}
 .belge-sonuc li.bk-celiski{color:#fca5a5}
 .belge-sonuc li.bk-uyari{color:#fcd34d}
+
+/* R5.3 havuz sonucu */
+.havuz-item select.durum{margin-top:6px;max-width:100%;background:transparent;color:var(--text-2);border:1px solid var(--line-2);border-radius:8px;padding:4px 6px;font:inherit;font-size:12px}
