@@ -590,6 +590,14 @@ def test_invite_without_store_links_setup_page(client, outbox):
     assert f'href="{kurulum}"' in m["html"] and "Kurulum sayfasını aç" in m["html"] and kurulum in m["body"]
 
 
+def test_landing_page_uses_transparent_mark_without_screenshots(client):
+    r = client.get("/")
+    assert r.status_code == 200 and "<script" not in r.text and "/kurulum" in r.text and "tanitim/" not in r.text
+    assert "cyberoto-isaret.png" in r.text and "ekspertize" in r.text
+    img = client.get("/yonetim/static/cyberoto-isaret.png")
+    assert img.status_code == 200 and img.headers["content-type"] == "image/png"
+
+
 def test_privacy_page_is_public(client):
     r = client.get("/gizlilik")
     assert r.status_code == 200 and "saklanmaz" in r.text and "info@cybergene.co" in r.text and "<script" not in r.text

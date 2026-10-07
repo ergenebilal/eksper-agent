@@ -10,40 +10,123 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/yonetim/static/favicon-16.png">
 <link rel="apple-touch-icon" href="/yonetim/static/apple-touch-icon.png">
 <link rel="preload" href="/yonetim/static/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/yonetim/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/yonetim/static/yonetim.css">
 </head>
 <body class="vitrin">
-<header class="v-ust">
-  <span class="brand"><img src="/yonetim/static/cg-ikon.png" alt=""><b>Cyber<span class="oto">Oto</span> AI</b></span>
-  <a class="v-link" href="/kurulum">Kurulum</a>
+<header class="s-ust">
+  <a class="marka" href="/" aria-label="CyberOto AI ana sayfa"><img src="/yonetim/static/cyberoto-isaret.png" alt="" width="30" height="30"><span class="kelime">Cyber<em>Oto</em></span><span class="ai">AI</span></a>
+  <nav>
+    <a href="#nasil">Nasıl çalışır</a>
+    <a href="/gizlilik">Gizlilik</a>
+    <a class="s-ust-dugme" href="/kurulum">Kurulum</a>
+  </nav>
 </header>
 
 <main>
-  <section class="v-hero">
-    <div class="v-hero-metin">
-      <h1>Her ilan<br>ekspertize değmez.</h1>
-      <p>Açtığınız araç ilanını yan panelde okur; hangisinin ekspertize götürülmeye değer olduğunu kanıtıyla gösterir.</p>
-      <div class="v-eylem">
-        <a class="v-dugme" href="/kurulum">Kurulum</a>
-        <span class="v-beta">Kapalı beta · davetle</span>
+  <section class="s-hero">
+    <div class="s-hero-metin">
+      <p class="s-etiket"><i></i>Kapalı beta · Chrome eklentisi</p>
+      <h1>Her ilan ekspertize&nbsp;değmez.</h1>
+      <p class="s-giris">CyberOto açtığınız araç ilanını yan panelde okur; hangisinin ekspertize götürülmeye değer olduğunu, ilandan alıntılanan kanıtla gösterir.</p>
+      <div class="s-eylem">
+        <a class="s-dugme" href="/kurulum">Kuruluma başla</a>
+        <a class="s-ikincil" href="#nasil">Nasıl çalışır <span aria-hidden="true">→</span></a>
       </div>
     </div>
-    <div class="v-sahne" aria-label="CyberOto yan panelinden örnek ekranlar">
-      <img class="v-arka" src="/yonetim/static/tanitim/kanit.png" alt="" width="348" height="390">
-      <img class="v-on" src="/yonetim/static/tanitim/karne.png" alt="Yan panelde ilan karnesi: Alınır, güven 9,7 / 10" width="380" height="300">
+
+    <figure class="karne" aria-label="Örnek ilan karnesi">
+      <div class="karne-ust">
+        <span>Örnek karne</span>
+        <span class="karne-kaynak">ilan · 835.000 TL · 98.000 km</span>
+      </div>
+      <p class="karne-baslik">2019 Renault Megane 1.5 dCi Touch EDC</p>
+      <div class="karne-karar">
+        <div class="halka">
+          <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+            <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="5"/>
+            <circle cx="32" cy="32" r="27" fill="none" stroke="#10b981" stroke-width="5" stroke-linecap="round"
+                    stroke-dasharray="164.6 169.6" transform="rotate(-90 32 32)"/>
+          </svg>
+          <span>9,7<small>/10</small></span>
+        </div>
+        <div class="karar-metin">
+          <b>Alınır</b>
+          <span>Ekspertize götürmeye değer</span>
+        </div>
+      </div>
+      <ul class="bulgular">
+        <li class="iyi"><b>İlk sahibinden</b><q>ilk sahibinden</q></li>
+        <li class="iyi"><b>Yetkili servis bakımlı</b><q>tüm bakımları yetkili serviste yapıldı</q></li>
+        <li class="kotu"><b>Klima gazı bitmiş</b><q>Klimanın gazı bitti</q></li>
+      </ul>
+      <dl class="karne-alt">
+        <div><dt>Piyasaya göre</dt><dd class="olumlu">%5,8 avantajlı</dd></div>
+        <div><dt>Açılış teklifi</dt><dd>800.000 TL</dd></div>
+      </dl>
+    </figure>
+  </section>
+
+  <section class="s-bolum" id="nasil">
+    <h2 class="s-baslik">Nasıl çalışır</h2>
+    <ol class="adim3">
+      <li><span>01</span><b>İlanı açın</b><p>Bir araç ilanındayken CyberOto simgesine tıklayın; yan panel ilanı okur.</p></li>
+      <li><span>02</span><b>Kanıtı görün</b><p>Her bulgu açıklamadan alıntılanan cümleyle gelir. Kanıtı olmayan iddia gösterilmez.</p></li>
+      <li><span>03</span><b>Karar verin</b><p>Karne, ilanın ekspertize değip değmediğini ve makul teklif aralığını söyler.</p></li>
+    </ol>
+  </section>
+
+  <section class="s-bolum">
+    <h2 class="s-baslik">Panelde neler var</h2>
+    <div class="ozellik">
+      <div>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h8M8 11h8M8 15h5"/><rect x="4" y="3" width="16" height="18" rx="3"/></svg>
+        <b>Kanıtlı bulgular</b>
+        <p>Açıklamadaki beyanlar ve riskler, ilandan birebir alıntıyla.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 16v-4M10 16V8M14 16v-6M18 16V5"/></svg>
+        <b>Piyasa konumu</b>
+        <p>Fiyatın, aynı serideki emsal ilanlara göre nerede durduğu.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+        <b>Masraf ve teklif</b>
+        <p>Yakın dönem masraflar, açılış teklifi ve size özel üst sınır.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></svg>
+        <b>Aday karşılaştırma</b>
+        <p>Beğendiğiniz ilanları bir havuzda toplayıp yan yana görün.</p>
+      </div>
     </div>
   </section>
 
-  <section class="v-uclu" aria-label="Panelde neler var">
-    <figure><div><img src="/yonetim/static/tanitim/kanit.png" alt="" loading="lazy"></div><figcaption>Kanıtlı bulgular</figcaption></figure>
-    <figure><div><img src="/yonetim/static/tanitim/piyasa.png" alt="" loading="lazy"></div><figcaption>Piyasa ve teklif</figcaption></figure>
-    <figure><div><img src="/yonetim/static/tanitim/karsilastirma.png" alt="" loading="lazy"></div><figcaption>Aday karşılaştırma</figcaption></figure>
+  <section class="s-bolum">
+    <h2 class="s-baslik">Etiketler ne anlama gelir</h2>
+    <ul class="etiketler">
+      <li class="yesil"><b>Alınır</b><span>Ekspertize götürmeye değer. “Satın al” anlamına gelmez.</span></li>
+      <li class="sari"><b>Düşünülebilir</b><span>Eksik ya da belirsiz noktalar var; satıcıya sormadan yola çıkmayın.</span></li>
+      <li class="kirmizi"><b>Alınmaz</b><span>Ciddi bir risk bulundu; vaktinizi başka ilana ayırın.</span></li>
+    </ul>
+    <p class="s-dipnot">Belirtilmemiş bilgi iyi sayılmaz; puanı hafifçe düşürür.</p>
+  </section>
+
+  <section class="s-kapanis">
+    <div>
+      <h2>Davetle kullanılır.</h2>
+      <p>CyberOto şu an kapalı betada. Davet e-postası aldıysanız kurulum iki dakika sürer.</p>
+    </div>
+    <a class="s-dugme" href="/kurulum">Kuruluma başla</a>
   </section>
 </main>
 
-<footer class="v-alt">
-  <span class="brand-kucuk"><img src="/yonetim/static/cg-ikon.png" alt="">CyberOto AI · bir <a href="https://cybergene.co">CyberGene</a> ürünüdür.</span>
-  <small>Karar destek aracıdır; resmi ekspertiz raporu değildir. 🟢 “ekspertize götürmeye değer” demektir.</small>
+<footer class="s-alt">
+  <div class="s-alt-ust">
+    <a class="marka kucuk" href="/"><img src="/yonetim/static/cyberoto-isaret.png" alt="" width="22" height="22"><span class="kelime">Cyber<em>Oto</em></span><span class="ai">AI</span></a>
+    <nav><a href="/kurulum">Kurulum</a><a href="/gizlilik">Gizlilik</a><a href="mailto:info@cybergene.co">İletişim</a></nav>
+  </div>
+  <p>Bir <a href="https://cybergene.co">CyberGene</a> ürünüdür. Karar destek aracıdır; resmi ekspertiz raporu değildir.</p>
 </footer>
 </body>
 </html>
