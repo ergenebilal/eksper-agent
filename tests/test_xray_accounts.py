@@ -455,9 +455,9 @@ def test_invite_email_is_branded_html_with_plain_text_and_real_rights(client, ou
     h = m["html"]
     assert "12 analiz" in h and "200 analiz" in h and "31.01.2099 tarihine kadar" in h
     assert "Ayşe &lt;b&gt;" in h and "<b>," not in h                        # ad kaçışlı
-    kurulum = settings.public_url.rstrip("/") + "/kurulum"
-    assert f'href="{kurulum}"' in h and "Kurulum sayfasını aç" in h and "Eklentiyi kurun" in h   # tek tık: kurulum sayfası
-    assert kurulum in m["body"]
+    store = "https://chromewebstore.google.com/detail/otoxray/abc"                       # mağaza varsa tek tık: Chrome'a ekle
+    assert f'href="{store}"' in h and "Chrome&#39;a ekle" in h and "Eklentiyi kurun" in h
+    assert store in m["body"]
     assert "/yonetim/static/mail-logo.png" in h and "CyberOto AI" in h
 
 
@@ -579,3 +579,17 @@ def test_setup_page_and_extension_zip(client, monkeypatch):
     names = zipfile.ZipFile(_io.BytesIO(z.content)).namelist()
     assert "manifest.json" in names and "icons/cg-ikon.png" in names and not any(n.endswith(".md") for n in names)
     assert not any(n.startswith(("arac_eksper", "tests")) or ".env" in n for n in names)          # yalnız istemci
+
+
+
+def test_invite_without_store_links_setup_page(client, outbox):
+    csrf = admin_login(client, outbox)
+    client.post("/yonetim/uye", data={"csrf": csrf, "email": "k2@ornek.com", "gunluk": "5", "davet": "on"})
+    m = next(x for x in outbox if x["to"] == "k2@ornek.com")
+    kurulum = settings.public_url.rstrip("/") + "/kurulum"
+    assert f'href="{kurulum}"' in m["html"] and "Kurulum sayfasını aç" in m["html"] and kurulum in m["body"]
+
+
+def test_privacy_page_is_public(client):
+    r = client.get("/gizlilik")
+    assert r.status_code == 200 and "saklanmaz" in r.text and "info@cybergene.co" in r.text and "<script" not in r.text

@@ -415,6 +415,6 @@ def test_root_landing_page_is_public_static_and_noindex(monkeypatch):
     monkeypatch.setattr(settings, "extension_token", EXT)
     with TestClient(xray_app.app, base_url="http://panel.test") as c:
         r = c.get("/")
-    assert r.status_code == 200 and "CyberOto" in r.text and "kapalı beta" in r.text
+    assert r.status_code == 200 and "CyberOto" in r.text and "Kapalı beta" in r.text
     assert 'name="robots" content="noindex' in r.text and "<form" not in r.text and "<script" not in r.text
-    assert DISCLAIMER in r.text and "default-src 'none'" in r.headers["content-security-policy"]
+    assert "resmi ekspertiz raporu değildir" in r.text and "default-src 'none'" in r.headers["content-security-policy"]

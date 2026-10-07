@@ -193,3 +193,48 @@ td form{margin:0}
 @media (max-width:900px){.hero{grid-template-columns:1fr;gap:32px;margin:24px 0 56px}.akis ol{grid-template-columns:1fr 1fr;row-gap:8px}}
 @media (max-width:600px){.hero h1{font-size:36px}.tarayici-ic{grid-template-columns:1fr}.ilan-taslak{display:none}
   .akis ol{grid-template-columns:1fr}.kartlar{grid-template-columns:1fr}.kurulum h1{font-size:30px}.adimlar>li{padding:18px 18px 18px 56px}.adimlar>li::before{left:16px}}
+/* Vitrin (/) — 2026-10-07 yeniden tasarım: az metin, tek güçlü görsel (üst üste iki gerçek panel ekranı), geniş boşluk */
+.vitrin{background:radial-gradient(1100px 620px at 78% 18%,rgba(255,154,36,.07),transparent 60%),
+  radial-gradient(900px 600px at 70% 30%,rgba(168,85,247,.10),transparent 65%),var(--night)}
+.v-ust{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1180px;margin:0 auto;padding:28px 32px}
+.v-ust .brand{gap:12px}.v-ust .brand img{width:30px;height:30px;border-radius:8px}
+.v-ust .brand b{font:500 18px/1 var(--display);letter-spacing:-.02em}
+.v-link{color:var(--text-2);text-decoration:none;font-size:14px;padding:9px 16px;border:1px solid var(--line-2);border-radius:999px}
+.v-link:hover{color:var(--text);border-color:rgba(255,255,255,.28)}
+.vitrin main{max-width:1180px;padding:0 32px}
+.v-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:40px;min-height:calc(100vh - 190px);padding:24px 0 64px}
+.v-hero h1{font:500 76px/.98 var(--display);letter-spacing:-.055em;margin:0}
+.v-hero p{color:var(--text-2);font-size:18px;line-height:1.55;max-width:34ch;margin:28px 0 0}
+.v-eylem{display:flex;align-items:center;gap:20px;margin-top:40px}
+.v-dugme{display:inline-block;padding:14px 30px;border-radius:999px;background:var(--text);color:var(--night);font-weight:600;text-decoration:none;font-size:15px}
+.v-dugme:hover{background:#fff}
+.v-beta{color:var(--muted);font-size:13.5px}
+.v-beta::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff9a24;margin-right:9px;vertical-align:1px;box-shadow:0 0 12px rgba(255,154,36,.7)}
+.v-sahne{position:relative;height:540px}
+.v-sahne img{position:absolute;display:block;height:auto;border-radius:18px;border:1px solid var(--line-2);background:var(--night)}
+.v-arka{width:58%;right:0;top:40px;opacity:.55;transform:rotate(3deg);filter:saturate(.8)}
+.v-on{width:72%;left:4%;top:150px;box-shadow:0 50px 100px rgba(0,0,0,.6),0 0 0 1px rgba(255,154,36,.12),0 0 80px rgba(168,85,247,.18)}
+.v-uclu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;padding:48px 0 96px;border-top:1px solid var(--line)}
+.v-uclu figure{margin:0}
+.v-uclu figure>div{height:300px;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--night);position:relative;padding:20px 20px 0}
+.v-uclu figure>div::after{content:"";position:absolute;inset:auto 0 0 0;height:90px;background:linear-gradient(transparent,var(--night))}
+.v-uclu img{display:block;width:100%;height:auto}
+.v-uclu figcaption{margin-top:16px;font:500 16px/1.3 var(--display);color:var(--text)}
+.v-alt{width:100%;max-width:1180px;margin:0 auto;padding:26px 32px 36px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px}
+.brand-kucuk{display:flex;align-items:center;gap:10px;font:500 15px/1.4 var(--display);color:var(--text-2)}
+.brand-kucuk img{width:22px;height:22px;border-radius:6px}.brand-kucuk a{color:var(--text)}
+.v-alt small{color:var(--faint);font-size:12px}
+@media (max-width:960px){.v-hero{grid-template-columns:1fr;min-height:0;gap:8px}.v-hero h1{font-size:56px}.v-sahne{height:440px}
+  .v-uclu{grid-template-columns:1fr;gap:36px}}
+@media (max-width:560px){.v-ust,.vitrin main,.v-alt{padding-left:20px;padding-right:20px}.v-hero h1{font-size:44px}
+  .v-sahne{height:340px}.v-on{width:86%;left:0;top:90px}.v-arka{width:66%;top:10px}.v-uclu figure>div{height:240px}}
+@media (prefers-reduced-motion:no-preference){.v-on{animation:v-gir .7s cubic-bezier(.2,.8,.2,1) both}}
+@keyframes v-gir{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+/* Metin sayfaları (gizlilik) */
+.metin{max-width:680px;padding:24px 0 80px}
+.metin h1{font:500 44px/1.05 var(--display);letter-spacing:-.045em}
+.metin .guncel{color:var(--faint);font-size:13px;margin:10px 0 28px}
+.metin h2{font:500 19px/1.3 var(--display);margin:34px 0 10px}
+.metin p,.metin li{color:var(--text-2);font-size:15.5px;line-height:1.65}
+.metin ul{padding-left:20px;margin:0}.metin li{margin:6px 0}
+.metin a{color:var(--text)}

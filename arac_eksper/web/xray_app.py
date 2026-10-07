@@ -55,6 +55,12 @@ def acilis(request: Request):
     return yonetim.templates.TemplateResponse(request, "acilis.html", {"yasal": DISCLAIMER})
 
 
+@app.get("/gizlilik", include_in_schema=False)
+def gizlilik(request: Request):
+    """Gizlilik politikası (Chrome Web Store kaydı bu adresi ister). Sistemin gerçekte sakladıklarına göre yazıldı."""
+    return yonetim.templates.TemplateResponse(request, "gizlilik.html", {})
+
+
 @app.get("/kurulum", include_in_schema=False)
 def kurulum(request: Request):
     """Davet e-postasındaki tek tık: eklentiyi kurma, e-posta koduyla giriş, ilk kullanım."""
